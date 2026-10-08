@@ -86,7 +86,7 @@ services:
     environment:
       LOG_FILE: /app/logs/candle-polling.log
     env_file:
-      - ../.env
+      - ./.env
     volumes:
       - ./gate/logs:/app/logs
       - ./gate/secrets:/app/configs/secrets:ro
@@ -106,7 +106,7 @@ services:
     environment:
       LOG_FILE: /app/logs/market-sync.log
     env_file:
-      - ../.env
+      - ./.env
     volumes:
       - ./gate/logs:/app/logs
       - ./gate/secrets:/app/configs/secrets:ro
@@ -126,7 +126,7 @@ services:
     environment:
       LOG_FILE: /app/logs/tse-market-data-sync.log
     env_file:
-      - ../.env
+      - ./.env
     volumes:
       - ./gate/logs:/app/logs
       - ./gate/secrets:/app/configs/secrets:ro
@@ -146,7 +146,7 @@ services:
     environment:
       LOG_FILE: /app/logs/indicator-watch.log
     env_file:
-      - ../.env
+      - ./.env
     volumes:
       - ./gate/logs:/app/logs
       - ./gate/tdlib:/app/.tdlib2
@@ -167,7 +167,7 @@ services:
     environment:
       LOG_FILE: /app/logs/proxy-health-checker.log
     env_file:
-      - ../.env
+      - ./.env
     volumes:
       - ./gate/logs:/app/logs
       - ./gate/tdlib:/app/.tdlib2
@@ -188,7 +188,7 @@ services:
     environment:
       LOG_FILE: /app/logs/connection-monitor.log
     env_file:
-      - ../.env
+      - ./.env
     volumes:
       - ./gate/logs:/app/logs
       - ./gate/tdlib:/app/.tdlib2
@@ -209,7 +209,7 @@ services:
     environment:
       LOG_FILE: /app/logs/stock-market-sync.log
     env_file:
-      - ../.env
+      - ./.env
     volumes:
       - ./gate/logs:/app/logs
       - ./gate/secrets:/app/configs/secrets:ro
@@ -229,7 +229,7 @@ services:
     environment:
       LOG_FILE: /app/logs/stock-instrument-sync.log
     env_file:
-      - ../.env
+      - ./.env
     volumes:
       - ./gate/logs:/app/logs
       - ./gate/secrets:/app/configs/secrets:ro
