@@ -1,0 +1,58 @@
+# Template — rendered by scripts/render-nginx.sh from deployment/.env.
+# Upstream bind addresses + ports come from the same vars docker-compose uses, so
+# nginx always points at the port the container was actually published on.
+# Every brace-style variable (dollar + {NAME}) is substituted and must be set
+# in .env; nginx's own $vars ($host, $remote_addr, ...) are left untouched.
+
+# ==========================================
+# 1. Backend Service (External - HTTPS)
+# ==========================================
+server {
+    # گوش دادن به پورت 35220 با پروتکل SSL
+    listen 35220 ssl;
+    server_name gatec.ir;
+
+    # تنظیمات گواهینامه SSL
+    ssl_certificate     /etc/nginx/ssl/dayins.com.crt;
+    ssl_certificate_key /etc/nginx/ssl/dayins.com.key;
+
+    # تنظیمات امنیتی پیشنهادی SSL
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384;
+
+    # هدایت ترافیک مسیر /api به سرویس بک‌اند داکر
+    location /api/ {
+        # نکته: اگر بک‌اند شما خودش مسیر /api را مدیریت می‌کند، اسلش انتهای آدرس را حذف کنید.
+        # در حال حاضر با اسلش انتهای آدرس، /api از URL حذف شده و به ریشه بک‌اند ارسال می‌شود.
+        proxy_pass http://${GATE_BIND_ADDRESS}:${GATE_HOST_PORT}/;
+        
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # تنظیمات مناسب برای وب‌سوکت یا کانکشن‌های طولانی (اختیاری اما مفید)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+
+    location /dashboard {
+        proxy_pass http://${GATE_UI_BIND_ADDRESS}:${GATE_UI_HOST_PORT};
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+
+    # مسدود کردن دسترسی به هر مسیر دیگری به جز /api برای امنیت بیشتر
+    location / {
+        return 404;
+    }
+}

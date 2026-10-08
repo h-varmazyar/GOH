@@ -1,0 +1,267 @@
+name: gatec
+
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx:/etc/nginx/conf.d:ro
+    networks:
+      - gate
+  nats:
+    image: nats:2-alpine
+    command: ["-js", "-sd", "/data"]
+    ports:
+      - "${NATS_PUBLISH_PORT:-4220}:4222"
+      - "${NATS_MONITOR_PUBLISH_PORT:-8220}:8222"
+    volumes:
+      - nats-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8222/healthz >/dev/null"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+    networks:
+      gate:
+        ipv4_address: 10.72.0.10
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB_NAME:-gatec}
+      POSTGRES_USER: ${POSTGRES_USER:-gatec}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gatec-dev-password}
+    ports:
+      - "${POSTGRES_PUBLISH_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      gate:
+        ipv4_address: 10.72.0.20
+
+  gate:
+    # build:
+    #   context: ..
+    #   dockerfile: deployments/Dockerfile
+    #   args:
+    #     GO_IMAGE: ${GO_IMAGE:-golang:1.26-bookworm}
+    #     RUNTIME_IMAGE: ${RUNTIME_IMAGE:-debian:bookworm-slim}
+    #     TDLIB_REF: ${TDLIB_REF:-master}
+    image: ${GATE_IMAGE:?set GATE_IMAGE in .env}
+    environment:
+      LOG_FILE: /app/logs/gate.log
+    env_file:
+      - ./.env
+    ports:
+      - "${GATE_PUBLISH_PORT:-8575}:8575"
+    volumes:
+      - ./gate/logs:/app/logs
+      - ./gate/tdlib:/app/.tdlib2
+      - ./gate/secrets:/app/configs/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      gate:
+        ipv4_address: 10.72.10.10
+
+  candle-polling:
+    image: ${GATE_WORKER_IMAGE:?set GATE_WORKER_IMAGE in .env}
+    command: ["candle-polling"]
+    environment:
+      LOG_FILE: /app/logs/candle-polling.log
+    env_file:
+      - ../.env
+    volumes:
+      - ./gate/logs:/app/logs
+      - ./gate/secrets:/app/configs/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      gate:
+        ipv4_address: 10.72.20.0
+
+  market-sync:
+    image: ${GATE_WORKER_IMAGE:?set GATE_WORKER_IMAGE in .env}
+    command: ["market-sync"]
+    environment:
+      LOG_FILE: /app/logs/market-sync.log
+    env_file:
+      - ../.env
+    volumes:
+      - ./gate/logs:/app/logs
+      - ./gate/secrets:/app/configs/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      gate:
+        ipv4_address: 10.72.20.1
+
+  tse-market-data-sync:
+    image: ${GATE_WORKER_IMAGE:?set GATE_WORKER_IMAGE in .env}
+    command: ["tse-market-data-sync"]
+    environment:
+      LOG_FILE: /app/logs/tse-market-data-sync.log
+    env_file:
+      - ../.env
+    volumes:
+      - ./gate/logs:/app/logs
+      - ./gate/secrets:/app/configs/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    restart: on-failure
+    networks:
+      gate:
+        ipv4_address: 10.72.20.2
+
+  indicator-watch:
+    image: ${GATE_WORKER_IMAGE:?set GATE_WORKER_IMAGE in .env}
+    command: ["indicator-calculator", "tse-market-watch"]
+    environment:
+      LOG_FILE: /app/logs/indicator-watch.log
+    env_file:
+      - ../.env
+    volumes:
+      - ./gate/logs:/app/logs
+      - ./gate/tdlib:/app/.tdlib2
+      - ./gate/secrets:/app/configs/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      gate:
+        ipv4_address: 10.72.20.3
+
+  proxy-health-checker:
+    image: ${GATE_WORKER_IMAGE:?set GATE_WORKER_IMAGE in .env}
+    command: ["proxy-health-checker"]
+    environment:
+      LOG_FILE: /app/logs/proxy-health-checker.log
+    env_file:
+      - ../.env
+    volumes:
+      - ./gate/logs:/app/logs
+      - ./gate/tdlib:/app/.tdlib2
+      - ./gate/secrets:/app/configs/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      gate:
+        ipv4_address: 10.72.20.4
+
+  connection-monitor:
+    image: ${GATE_WORKER_IMAGE:?set GATE_WORKER_IMAGE in .env}
+    command: ["connection-monitor"]
+    environment:
+      LOG_FILE: /app/logs/connection-monitor.log
+    env_file:
+      - ../.env
+    volumes:
+      - ./gate/logs:/app/logs
+      - ./gate/tdlib:/app/.tdlib2
+      - ./gate/secrets:/app/configs/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      gate:
+        ipv4_address: 10.72.20.5
+
+  stock-market-sync:
+    image: ${GATE_WORKER_IMAGE:?set GATE_WORKER_IMAGE in .env}
+    command: ["stock-market-sync"]
+    environment:
+      LOG_FILE: /app/logs/stock-market-sync.log
+    env_file:
+      - ../.env
+    volumes:
+      - ./gate/logs:/app/logs
+      - ./gate/secrets:/app/configs/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      gate:
+        ipv4_address: 10.72.20.6
+
+  stock-instrument-sync:
+    image: ${GATE_WORKER_IMAGE:?set GATE_WORKER_IMAGE in .env}
+    command: ["stock-instrument-sync"]
+    environment:
+      LOG_FILE: /app/logs/stock-instrument-sync.log
+    env_file:
+      - ../.env
+    volumes:
+      - ./gate/logs:/app/logs
+      - ./gate/secrets:/app/configs/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      gate:
+        ipv4_address: 10.72.20.7
+  gate-ui:
+    image: ${GATE_UI_IMAGE:?set GATE_UI_IMAGE in .env}
+    restart: unless-stopped
+    ports:
+      - "${GATE_UI_BIND_ADDRESS:-127.0.0.1}:${GATE_UI_HOST_PORT:-8091}:3000"
+    networks:
+      gozar:
+        ipv4_address: 10.72.10.20
+
+volumes:
+  postgres-data:
+  nats-data:
+  gatec-logs:
+  tdlib-data:
+
+networks:
+  gozar:
+    name: gozar
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.72.0.0/16
+          gateway: 10.72.0.1
