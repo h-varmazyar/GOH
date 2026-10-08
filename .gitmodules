@@ -1,0 +1,7 @@
+[submodule "gatec"]
+	path = gatec
+	url = git@github.com:h-varmazyar/gatec.git
+
+[submodule "gate-ui"]
+	path = gate-ui
+	url = git@github.com:h-varmazyar/gatec-ui.git
