@@ -21,7 +21,7 @@ services:
     volumes:
       - nats-data:/data
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8222/healthz >/dev/null"]
+      test: wget http://localhost:8222/healthz -q -S -O -
       interval: 5s
       timeout: 3s
       retries: 12
