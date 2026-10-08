@@ -248,7 +248,7 @@ services:
     ports:
       - "${GATE_UI_BIND_ADDRESS:-127.0.0.1}:${GATE_UI_HOST_PORT:-8091}:3000"
     networks:
-      gozar:
+      gate:
         ipv4_address: 10.72.10.20
 
 volumes:
@@ -258,8 +258,8 @@ volumes:
   tdlib-data:
 
 networks:
-  gozar:
-    name: gozar
+  gate:
+    name: gate
     driver: bridge
     ipam:
       config:

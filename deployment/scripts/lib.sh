@@ -147,7 +147,7 @@ image_repos() {
 	printf '%s' "${out[*]}"
 }
 
-# Env var prefix for a name: gozargah-worker → GOZARGAH_WORKER.
+# Env var prefix for a name: gategah-worker → GATEGAH_WORKER.
 var_prefix() {
 	local v="${1^^}"
 	v="${v//-/_}"
