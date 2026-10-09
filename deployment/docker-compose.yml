@@ -80,6 +80,25 @@ services:
       gate:
         ipv4_address: 10.72.10.10
 
+  airdrop-catcher:
+    image: ${GATE_IMAGE:?set GATE_IMAGE in .env}
+    entrypoint: ["/usr/local/bin/gatec-airdrop-catcher"]
+    environment:
+      LOG_FILE: /app/logs/airdrop-catcher.log
+    env_file:
+      - ./.env
+    volumes:
+      - ./gatec/logs:/app/logs
+      - ./gatec/tdlib:/app/.tdlib2
+      - ./gatec/secrets:/app/configs/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      gate:
+        ipv4_address: 10.72.20.8
+
   candle-polling:
     image: ${GATE_WORKER_IMAGE:?set GATE_WORKER_IMAGE in .env}
     command: ["candle-polling"]
