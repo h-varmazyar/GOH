@@ -1,0 +1,29 @@
+schema_version: 1
+id: example_ema_cross
+name: "Example EMA cross"
+version: 1
+enabled: true
+mode: shadow
+type: declarative
+market: crypto
+direction: long
+universe:
+  symbols: ["*"]
+  exclude: ["*UP", "*DOWN"]
+timeframes:
+  trigger: 15m
+entry:
+  all:
+    - crosses_above: [close, ema_20]
+    - gt: [rsi, 50]
+exit:
+  any:
+    - lt: [close, ema_20]
+risk:
+  stop_loss: {type: percent, value: 1}
+  take_profit: {type: percent, value: 2}
+  time_stop: {max_bars: 24}
+limits:
+  cooldown_bars: 4
+  max_open_positions: 5
+  max_signals_per_day: 20

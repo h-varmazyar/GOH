@@ -1,0 +1,386 @@
+version: 1
+
+strategy:
+  name: stochastic_rsi_trend
+  provider: nobitex
+  description: >
+    Trend-following stochastic strategy with RSI, EMA,
+    ADX and volume confirmation.
+
+  enabled: true
+
+  tags:
+    - scalping
+    - intraday
+    - trend-following
+
+indicators:
+
+  fast_ema:
+    id: 15
+    type: ema
+    timeframe: 5m
+    configs:
+      length: 50
+      source: close
+
+  slow_ema:
+    id: 16
+    type: ema
+    timeframe: 5m
+    configs:
+      length: 200
+      source: close
+
+  entry_stoch:
+    id:
+    type: stochastic
+    timeframe: 5m
+    configs:
+      k: 14
+      d: 3
+      smooth: 3
+
+  entry_rsi:
+    id: 44
+    type: rsi
+    timeframe: 5m
+    configs:
+      length: 14
+      source: close
+
+  trend_adx:
+    id: 88
+    type: adx
+    timeframe: 5m
+    configs:
+      length: 14
+
+market:
+
+  symbols:
+    - "*"
+
+  excluded_symbols:
+    - "BTCDOMUSDT"
+
+  timeframes:
+    - "5m"                                                                                                    
+
+
+  sessions:
+    - "24x7"
+
+filters:
+
+  market:
+
+    min_daily_volume_usdt: 1000000
+
+    max_spread_percent: 0.20
+
+    min_price: 0.0001
+
+    max_price: 100000
+
+    blacklist_low_liquidity: true
+
+  volatility:
+
+    atr:
+
+      min_percentile: 20
+      max_percentile: 95
+
+  cooldown:
+
+    after_entry_seconds: 300
+
+    after_stoploss_seconds: 600
+
+  correlation:
+
+    enabled: true
+
+    max_same_direction_positions: 3
+
+regime:
+
+  trending:
+
+    conditions:
+      all:
+        - "adx.adx > 25"
+        - "ema.ema50 > ema.ema200"
+
+  ranging:
+
+    conditions:
+      all:
+        - "adx.adx < 18"
+
+  volatile:
+
+    conditions:
+      all:
+        - "atr.percentile > 85"
+
+entry:
+
+  long:
+
+    all:
+
+      # trend filter
+      - "ema.ema50 > ema.ema200"
+
+      # trend strength
+      - "adx.adx > 25"
+
+      # stochastic oversold
+      - "stochastic.k < 20"
+      - "stochastic.d < 20"
+
+      # bullish stochastic cross
+      - "crosses_over(stochastic.k, stochastic.d)"
+
+      # RSI confirmation
+      - "rsi.rsi < 35"
+
+      # momentum confirmation
+      - "macd.histogram > 0"
+
+      # candle confirmation
+      - "close > open"
+
+      # VWAP confirmation
+      - "close > vwap.value"
+
+      # volume confirmation
+      - "volume.current > volume.sma20 * 1.5"
+
+    score:
+
+      minimum: 0.65
+
+      weights:
+
+        trend: 0.40
+
+        momentum: 0.30
+
+        volatility: 0.10
+
+        volume: 0.20
+
+  short:
+
+    all:
+
+      # trend filter
+      - "ema.ema50 < ema.ema200"
+
+      # trend strength
+      - "adx.adx > 25"
+
+      # stochastic overbought
+      - "stochastic.k > 80"
+      - "stochastic.d > 80"
+
+      # bearish stochastic cross
+      - "crosses_under(stochastic.k, stochastic.d)"
+
+      # RSI confirmation
+      - "rsi.rsi > 65"
+
+      # momentum confirmation
+      - "macd.histogram < 0"
+
+      # candle confirmation
+      - "close < open"
+
+      # VWAP confirmation
+      - "close < vwap.value"
+
+      # volume confirmation
+      - "volume.current > volume.sma20 * 1.5"
+
+    score:
+
+      minimum: 0.65
+
+      weights:
+
+        trend: 0.40
+
+        momentum: 0.30
+
+        volatility: 0.10
+
+        volume: 0.20
+
+exit:
+
+  long:
+
+    any:
+
+      # stochastic reversal
+      - "crosses_under(stochastic.k, stochastic.d)"
+
+      # RSI exhaustion
+      - "rsi.rsi > 75"
+
+      # MACD weakness
+      - "macd.histogram < 0"
+
+      # trailing stop trigger
+      - "close < trailing_stop"
+
+  short:
+
+    any:
+
+      # stochastic reversal
+      - "crosses_over(stochastic.k, stochastic.d)"
+
+      # RSI exhaustion
+      - "rsi.rsi < 25"
+
+      # MACD weakness
+      - "macd.histogram > 0"
+
+      # trailing stop trigger
+      - "close > trailing_stop"
+
+risk:
+
+  position:
+
+    max_open_positions: 10
+
+    max_position_per_symbol: 1
+
+    risk_per_trade_percent: 1.0
+
+    max_daily_loss_percent: 5.0
+
+    max_drawdown_percent: 15.0
+
+  stoploss:
+
+    type: atr
+
+    atr:
+
+      multiplier: 1.5
+
+      minimum_percent: 0.4
+
+      maximum_percent: 3.0
+
+  trailing_stop:
+
+    enabled: true
+
+    activation_rr: 1.0
+
+    atr_multiplier: 1.0
+
+  takeprofit:
+
+    type: risk_reward
+
+    risk_reward:
+
+      minimum: 1.5
+
+      target: 2.0
+
+      partial_close_rr: 1.0
+
+      partial_close_percent: 50
+
+execution:
+
+  order_type: market
+
+  slippage:
+
+    max_percent: 0.15
+
+  retry:
+
+    enabled: true
+
+    attempts: 3
+
+    delay_ms: 200
+
+  timeout_ms: 3000
+
+scoring:
+
+  confidence:
+
+    minimum: 0.60
+
+  penalties:
+
+    low_volume: -0.20
+
+    high_spread: -0.30
+
+    weak_adx: -0.25
+
+    conflicting_signal: -0.40
+
+  bonuses:
+
+    strong_trend: 0.20
+
+    strong_volume: 0.15
+
+    multi_timeframe_alignment: 0.30
+
+state:
+
+  signal_cooldown_seconds: 120
+
+  prevent_duplicate_signals: true
+
+  remember_last_regime: true
+
+  remember_last_signal: true
+
+multi_timeframe:
+
+  enabled: true
+
+  confirmation:
+
+    higher_timeframe: "1h"
+
+    conditions:
+
+      all:
+        - "ema.ema50 > ema.ema200"
+        - "adx.adx > 20"
+
+telemetry:
+
+  enabled: true
+
+  log_signals: true
+
+  log_rejections: true
+
+  log_scores: true
+
+  metrics:
+
+    - winrate
+    - sharpe
+    - pnl
+    - drawdown
+    - exposure

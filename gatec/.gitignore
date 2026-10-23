@@ -1,0 +1,49 @@
+# Compiled binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+main
+gatec
+
+# Test binary
+*.test
+
+# Go coverage
+*.out
+coverage.html
+
+# Environment variables
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# TDLib session data
+.tdlib/
+.tdlib2/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Vendor (uncomment if you don't want to track vendor)
+# vendor/
+
+# Docs generated (uncomment if regenerated on build)
+# docs/
+
+# Debug
+__debug_bin*
+
+# Runtime logs
+logs/
+*.log
+
+secrets/
+*.secret

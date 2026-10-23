@@ -1,0 +1,282 @@
+name: gatec
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB_NAME:-gatec}
+      POSTGRES_USER: ${POSTGRES_USER:-gatec}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gatec-dev-password}
+    ports:
+      - "${POSTGRES_PUBLISH_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+
+  nats:
+    image: nats:2-alpine
+    command: ["-js", "-sd", "/data", "-m", "8222"]
+    ports:
+      - "${NATS_PUBLISH_PORT:-4220}:4222"
+      - "${NATS_MONITOR_PUBLISH_PORT:-8220}:8222"
+    volumes:
+      - nats-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8222/healthz >/dev/null"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        GO_IMAGE: ${GO_IMAGE:-golang:1.26-bookworm}
+        RUNTIME_IMAGE: ${RUNTIME_IMAGE:-debian:bookworm-slim}
+        TDLIB_REF: ${TDLIB_REF:-master}
+    image: gatec:local
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      NATS_URL: nats://nats:4222
+      LOG_FILE: /app/logs/gatec.log
+    env_file:
+      - ../.env
+    ports:
+      - "${SERVER_PUBLISH_PORT:-8575}:8575"
+    volumes:
+      - gatec-logs:/app/logs
+      - tdlib-data:/app/.tdlib2
+      - ../configs/secrets:/app/configs/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    restart: unless-stopped
+
+  airdrop-catcher:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        GO_IMAGE: ${GO_IMAGE:-golang:1.26-bookworm}
+        RUNTIME_IMAGE: ${RUNTIME_IMAGE:-debian:bookworm-slim}
+        TDLIB_REF: ${TDLIB_REF:-master}
+    image: gatec:local
+    entrypoint: ["/usr/local/bin/gatec-airdrop-catcher"]
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      LOG_FILE: /app/logs/airdrop-catcher.log
+    env_file:
+      - ../.env
+    volumes:
+      - gatec-logs:/app/logs
+      - tdlib-data:/app/.tdlib2
+      - ../configs/secrets:/app/configs/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  candle-polling:
+    image: gatec:local
+    command: ["candle-polling"]
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      NATS_URL: nats://nats:4222
+      LOG_FILE: /app/logs/candle-polling.log
+    env_file:
+      - ../.env
+    volumes:
+      - gatec-logs:/app/logs
+      - ../configs/secrets:/app/configs/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    restart: unless-stopped
+
+  market-sync:
+    image: gatec:local
+    command: ["market-sync"]
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      NATS_URL: nats://nats:4222
+      LOG_FILE: /app/logs/market-sync.log
+    env_file:
+      - ../.env
+    volumes:
+      - gatec-logs:/app/logs
+      - ../configs/secrets:/app/configs/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    restart: unless-stopped
+
+  tse-market-data-sync:
+    image: gatec:local
+    command: ["tse-market-data-sync"]
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      NATS_URL: nats://nats:4222
+      LOG_FILE: /app/logs/tse-market-data-sync.log
+    env_file:
+      - ../.env
+    volumes:
+      - gatec-logs:/app/logs
+      - ../configs/secrets:/app/configs/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    restart: on-failure
+
+  indicator-watch:
+    image: gatec:local
+    command: ["indicator-calculator", "tse-market-watch"]
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      NATS_URL: nats://nats:4222
+      LOG_FILE: /app/logs/indicator-watch.log
+    env_file:
+      - ../.env
+    volumes:
+      - gatec-logs:/app/logs
+      - tdlib-data:/app/.tdlib2
+      - ../configs/secrets:/app/configs/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    restart: unless-stopped
+
+  signal-worker:
+    image: gatec:local
+    entrypoint: ["/usr/local/bin/gatec-worker"]
+    command: ["signal-worker"]
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      NATS_URL: nats://nats:4222
+      LOG_FILE: /app/logs/signal-worker.log
+    env_file:
+      - ../.env
+    volumes:
+      - gatec-logs:/app/logs
+      - ../strategies:/app/strategies:ro
+      - ../configs/secrets:/app/configs/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+      indicator-watch:
+        condition: service_started
+    restart: unless-stopped
+
+  proxy-health-checker:
+    image: gatec:local
+    command: ["proxy-health-checker"]
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      NATS_URL: nats://nats:4222
+      LOG_FILE: /app/logs/proxy-health-checker.log
+    env_file:
+      - ../.env
+    volumes:
+      - gatec-logs:/app/logs
+      - tdlib-data:/app/.tdlib2
+      - ../configs/secrets:/app/configs/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    restart: unless-stopped
+
+  connection-monitor:
+    image: gatec:local
+    command: ["connection-monitor"]
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      NATS_URL: nats://nats:4222
+      LOG_FILE: /app/logs/connection-monitor.log
+    env_file:
+      - ../.env
+    volumes:
+      - gatec-logs:/app/logs
+      - tdlib-data:/app/.tdlib2
+      - ../configs/secrets:/app/configs/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    restart: unless-stopped
+
+  stock-market-sync:
+    image: gatec:local
+    command: ["stock-market-sync"]
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      NATS_URL: nats://nats:4222
+      LOG_FILE: /app/logs/stock-market-sync.log
+    env_file:
+      - ../.env
+    volumes:
+      - gatec-logs:/app/logs
+      - ../configs/secrets:/app/configs/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    restart: unless-stopped
+
+  stock-instrument-sync:
+    image: gatec:local
+    command: ["stock-instrument-sync"]
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      NATS_URL: nats://nats:4222
+      LOG_FILE: /app/logs/stock-instrument-sync.log
+    env_file:
+      - ../.env
+    volumes:
+      - gatec-logs:/app/logs
+      - ../configs/secrets:/app/configs/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  nats-data:
+  gatec-logs:
+  tdlib-data:

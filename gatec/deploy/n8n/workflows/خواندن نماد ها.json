@@ -1,0 +1,380 @@
+{
+  "name": "خواندن نماد ها",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -304,
+        -288
+      ],
+      "id": "4950ede1-f18f-4c87-a273-4837a40444cf",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tse_markets",
+          "mode": "list",
+          "cachedResultName": "tse_markets"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ins_code": "={{ $json.ins_code }}",
+            "label": "={{ $json.label }}",
+            "name": "={{ $json.name }}",
+            "industry_group_code": "={{ $json.group }}",
+            "industry_sub_code": "={{ $json.sub_group }}",
+            "status": "={{ $json.status }}",
+            "market_type": "={{ $json.market_type }}",
+            "symbol_type": "={{ $json.symbol_type }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "label",
+              "displayName": "label",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "nav",
+              "displayName": "nav",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "esp",
+              "displayName": "esp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "industry_group_code",
+              "displayName": "industry_group_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "industry_sub_code",
+              "displayName": "industry_sub_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "market_type",
+              "displayName": "market_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "symbol_type",
+              "displayName": "symbol_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "instrument_state_code",
+              "displayName": "instrument_state_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ins_code",
+              "displayName": "ins_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "last_price_date",
+              "displayName": "last_price_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "state_updated_at",
+              "displayName": "state_updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "skipOnConflict": true
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1040,
+        -288
+      ],
+      "id": "47d4a8db-defb-479b-a6e7-6b63501db636",
+      "name": "Insert rows in a table",
+      "alwaysOutputData": false,
+      "credentials": {
+        "postgres": {
+          "id": "H3DRLSYGs9AWkmD4",
+          "name": "gatec"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "drop TABLE tse_markets",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -80,
+        -288
+      ],
+      "id": "bc91b7a4-19ae-4a7c-b429-c759c3caed3b",
+      "name": "delete table",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "H3DRLSYGs9AWkmD4",
+          "name": "gatec"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "create table tse_markets\n(\n    id          bigserial primary key,\n    label       text,\n    name        text,\n    nav         numeric,\n    esp         numeric,\n    industry_group_code TEXT,\n    industry_sub_code TEXT,\n    market_type TEXT,\n    symbol_type TEXT,\n    instrument_state_code TEXT,\n    status      TEXT,\n    ins_code    TEXT\n        constraint tse_markets_ins_code_key unique,\n    last_price_date       date,\n    state_updated_at      timestamp with time zone\n);\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        144,
+        -288
+      ],
+      "id": "78b34aa7-52d3-4005-bc70-219d8e5265c9",
+      "name": "create table tse markets",
+      "credentials": {
+        "postgres": {
+          "id": "H3DRLSYGs9AWkmD4",
+          "name": "gatec"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "fromJson",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        592,
+        -288
+      ],
+      "id": "5793004b-863d-4fc0-9bcd-aa9c1d1cf2f9",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "fileSelector": "/home/node/.n8n-files/tse/instruments/**.json",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        368,
+        -288
+      ],
+      "id": "6de7acc3-e073-4754-a548-fdee87079bd5",
+      "name": "Read instrument files from disk",
+      "notesInFlow": true,
+      "notes": "file must be placed in docker volume in path: /n8n-data/tse/instruments"
+    },
+    {
+      "parameters": {
+        "jsCode": "const symbolType= {\n  \"300\":\"سهام عادی - بورس\",\n  \"303\":\"سهام عادی - فرابورس\",\n  \"307\":\"سهام عادی - تسهیلات فرابورس\",\n  \"309\":\"سهام عادی - پایه فرابورس\",\n  \"313\":\"سهام عادی - شرکت های کوچک و متوسط فرابورس\",\n  \"400\":\"حق تقدم - بورس\",\n  \"403\":\"حق تقدم - فرابورس\",\n  \"404\":\"حق تقدم - پایه فرابورس\",\n  \"401\":\"حق تقدم - شرکت های کوچک و متوسط قرابورس\",\n  \"402\":\"اوراق مشارکت - مظنه یابی\",\n  \"208\":\"اوراق مشارکت - اوراق صکوک\",\n  \"706\":\"اوراق مشارکت - صکوک اختصاصی\",\n  \"306\":\"اوراق مشارکت - اوراق مشارکت فرابورس\",\n  \"305\":\"صندوق های سرمایه گذاری قابل معامله در بورس\",\n}\n\nconst marketStatus = {\n  1:\"tradeable\",\n  0: \"untradeable\",\n}\n\nconst symbolStatus = {\n  \"I\":\"ممنوع\",\n  \"A\":\"مجاز\",\n  \"AG\":\"مجاز - مسدود\",\n  \"AS\":\"مجاز - متوقف\",\n  \"AR\":\"مجاز - محفوظ\",\n  \"IG\":\"ممنوع - مسدود\",\n  \"IS\":\"ممنوع - متوقف\",\n  \"IR\":\"ممنوع - محفوظ\",\n}\n\nconst marketType = {\n  1:\"بورس\",\n  2:\"فرابورس\",\n  3:\"آتی\",\n  4:\"پایه فرابورس\",\n  6:\"بورس انرژی\",\n  7:\"بورس کالا\",\n}\n\nfunction safeTrim(value) {\n  if (value === null || value === undefined) {\n    return null;\n  }\n  return String(value).trim();\n}\n\nvar response = [];\nfor (const data of $input.all()) {\n  const instruments = data.json.data.items[0].instruments;\n  for (const item of instruments) {\n    response.push({\n    \"ins_code\":item.insCode,\n    \"label\":item.smallSymbolName,\n    \"name\":item.symbolFullName,\n    \"group\":safeTrim(item.industryGroupCode),\n    \"sub_group\":item.industrySubCode,\n    \"symbol_status\":symbolStatus[item.symbolStatus],\n    \"symbol_type\":symbolType[item.type],\n    \"market_type\":marketType[item.marketCode],\n    \"status\":marketStatus[item.status],\n    \n  })\n  }\n}\nreturn response;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        816,
+        -288
+      ],
+      "id": "b98ec203-9deb-4a45-aed3-e3d973c987d0",
+      "name": "format markets"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "delete table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table": {
+      "main": [
+        [],
+        []
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "format markets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read instrument files from disk": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "delete table": {
+      "main": [
+        [
+          {
+            "node": "create table tse markets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create table tse markets": {
+      "main": [
+        [
+          {
+            "node": "Read instrument files from disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "format markets": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "757fd6d1-2709-4d44-baf3-05df1dacab74",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "939a3ba0cbd0a303689224bc2521013425c4788043aad303ab17c0b91285e62d"
+  },
+  "id": "5TH4JrMBaxtP48Fi",
+  "tags": []
+}

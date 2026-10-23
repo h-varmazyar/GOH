@@ -1,0 +1,2419 @@
+{
+    "schemes": [
+        "http"
+    ],
+    "swagger": "2.0",
+    "info": {
+        "title": "gatec API collection",
+        "contact": {},
+        "version": "1.0.0"
+    },
+    "host": "localhost:8575",
+    "basePath": "/",
+    "paths": {
+        "/v1/airdrops/gifts": {
+            "get": {
+                "security": [
+                    {
+                        "BearerTokenAuth": []
+                    }
+                ],
+                "description": "Get paginated list of airdrop gifts",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Airdrop"
+                ],
+                "summary": "List airdrop gifts",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Items per page",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/airdrops/gifts/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerTokenAuth": []
+                    }
+                ],
+                "description": "Get a specific airdrop gift by its ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Airdrop"
+                ],
+                "summary": "Get airdrop gift by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Gift ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/airdrops/routes": {
+            "get": {
+                "security": [
+                    {
+                        "BearerTokenAuth": []
+                    }
+                ],
+                "description": "Get paginated list of airdrop routes",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Airdrop"
+                ],
+                "summary": "List airdrop routes",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Items per page",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerTokenAuth": []
+                    }
+                ],
+                "description": "Create a new airdrop route with phrase and route",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Airdrop"
+                ],
+                "summary": "Create airdrop route",
+                "parameters": [
+                    {
+                        "description": "Route info",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_airdrop.CreateRouteReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/auth/login": {
+            "post": {
+                "description": "Authenticate user with mobile and password",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Login by password",
+                "parameters": [
+                    {
+                        "description": "Login credentials",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_auth.LoginByPasswordReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/auth/logout": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerTokenAuth": []
+                    }
+                ],
+                "description": "Invalidate user session",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Logout user",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/auth/register": {
+            "post": {
+                "description": "Create a new user account",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Register new user",
+                "parameters": [
+                    {
+                        "description": "Registration info",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_auth.RegisterReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/logs/{component}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerTokenAuth": []
+                    }
+                ],
+                "description": "Returns matching JSON log entries from newest to oldest",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Logs"
+                ],
+                "summary": "List application logs by component",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "tse-market-history-sync",
+                        "description": "Component, worker, or adapter name",
+                        "name": "component",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Reverse page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Items per page",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_applog.listResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_applog.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_applog.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/messaging/access/check": {
+            "get": {
+                "description": "Check if a sender has permission to use a specific client",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Messaging"
+                ],
+                "summary": "Check access",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Sender ID",
+                        "name": "sender_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Client ID",
+                        "name": "client_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "default": "send",
+                        "description": "Permission type",
+                        "name": "permission",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_messaging.errorResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/messaging/access/rules": {
+            "get": {
+                "description": "Get all active access control rules",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Messaging"
+                ],
+                "summary": "List access rules",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Grant a sender access to use a specific Telegram client",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Messaging"
+                ],
+                "summary": "Grant access",
+                "parameters": [
+                    {
+                        "description": "Access grant request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_messaging.grantAccessReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_h-varmazyar_gatec_internal_models.AccessRule"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_messaging.errorResp"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_messaging.errorResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/messaging/access/rules/{id}": {
+            "delete": {
+                "description": "Revoke an access rule by its ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Messaging"
+                ],
+                "summary": "Revoke access",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Rule ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_messaging.errorResp"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_messaging.errorResp"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_messaging.errorResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/messaging/schedule": {
+            "post": {
+                "description": "Schedule a message for future delivery",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Messaging"
+                ],
+                "summary": "Schedule a message",
+                "parameters": [
+                    {
+                        "description": "Scheduled message",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_messaging.scheduleMessageReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_messaging.errorResp"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_messaging.errorResp"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_messaging.errorResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/messaging/schedule/{id}": {
+            "delete": {
+                "description": "Cancel a message that was scheduled for future delivery",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Messaging"
+                ],
+                "summary": "Cancel a scheduled message",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Message ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_messaging.errorResp"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_messaging.errorResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/messaging/send": {
+            "post": {
+                "description": "Send a message through a registered sender",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Messaging"
+                ],
+                "summary": "Send a message",
+                "parameters": [
+                    {
+                        "description": "Message to send",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_messaging.sendMessageReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_h-varmazyar_gatec_internal_models.SendResult"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_messaging.errorResp"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_messaging.errorResp"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_messaging.errorResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/messaging/senders": {
+            "get": {
+                "description": "Get all registered message senders",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Messaging"
+                ],
+                "summary": "List registered senders",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/proxies": {
+            "get": {
+                "description": "Get paginated list of all proxies",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Proxy"
+                ],
+                "summary": "List proxies",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Items per page",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_proxy.errorResp"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Add a new proxy server to the system",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Proxy"
+                ],
+                "summary": "Create a new proxy",
+                "parameters": [
+                    {
+                        "description": "Proxy configuration",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_proxy.createProxyReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_h-varmazyar_gatec_internal_models.Proxy"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_proxy.errorResp"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_proxy.errorResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/proxies/active": {
+            "get": {
+                "description": "Get list of all active (enabled + active status) proxies",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Proxy"
+                ],
+                "summary": "List active proxies",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_proxy.errorResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/proxies/enabled": {
+            "get": {
+                "description": "Get list of all enabled proxies (regardless of status)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Proxy"
+                ],
+                "summary": "List enabled proxies",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_proxy.errorResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/proxies/stats": {
+            "get": {
+                "description": "Get statistics about proxies (total, active, assignments, etc.)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Proxy"
+                ],
+                "summary": "Get proxy statistics",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_proxy.proxyStatsResp"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_proxy.errorResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/proxies/{id}": {
+            "get": {
+                "description": "Get detailed information about a proxy",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Proxy"
+                ],
+                "summary": "Get proxy details",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Proxy ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_h-varmazyar_gatec_internal_models.Proxy"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_proxy.errorResp"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_proxy.errorResp"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_proxy.errorResp"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update an existing proxy configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Proxy"
+                ],
+                "summary": "Update a proxy",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Proxy ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Updated proxy configuration",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_proxy.updateProxyReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_h-varmazyar_gatec_internal_models.Proxy"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_proxy.errorResp"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_proxy.errorResp"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_proxy.errorResp"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete a proxy (soft delete - marks as disabled)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Proxy"
+                ],
+                "summary": "Delete a proxy",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Proxy ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_proxy.errorResp"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_proxy.errorResp"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_proxy.errorResp"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_proxy.errorResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/proxies/{id}/force-check": {
+            "post": {
+                "description": "Trigger an immediate health check for a proxy",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Proxy"
+                ],
+                "summary": "Force health check",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Proxy ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_proxy.errorResp"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_proxy.errorResp"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_proxy.errorResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/proxies/{id}/toggle": {
+            "patch": {
+                "description": "Enable or disable a proxy",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Proxy"
+                ],
+                "summary": "Toggle proxy status",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Proxy ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Enable/disable flag",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_proxy.toggleProxyReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_h-varmazyar_gatec_internal_models.Proxy"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_proxy.errorResp"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_proxy.errorResp"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_proxy.errorResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/tabdeal/auth-token": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerTokenAuth": []
+                    }
+                ],
+                "description": "Persist and apply the Tabdeal auth token at runtime",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Tabdeal"
+                ],
+                "summary": "Update Tabdeal auth token",
+                "parameters": [
+                    {
+                        "description": "New auth token",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tabdeal.UpdateAuthTokenReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/user/info": {
+            "get": {
+                "security": [
+                    {
+                        "BearerTokenAuth": []
+                    }
+                ],
+                "description": "Get current authenticated user information",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Get user info",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/telegram/accounts": {
+            "get": {
+                "description": "Get paginated list of telegram accounts from database",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TelegramV2"
+                ],
+                "summary": "List telegram accounts",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Items per page",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/telegram/sessions": {
+            "post": {
+                "description": "Start a new telegram account authentication session",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TelegramV2"
+                ],
+                "summary": "Create telegram account session",
+                "parameters": [
+                    {
+                        "description": "Session type",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.createAccountReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.createAccountResp"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp"
+                        }
+                    },
+                    "408": {
+                        "description": "Request Timeout",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/telegram/sessions/code": {
+            "post": {
+                "description": "Submit verification code for an active telegram session",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TelegramV2"
+                ],
+                "summary": "Submit OTP code",
+                "parameters": [
+                    {
+                        "description": "OTP code",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.submitCodeReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.stateResp"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp"
+                        }
+                    },
+                    "408": {
+                        "description": "Request Timeout",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/telegram/sessions/password": {
+            "post": {
+                "description": "Submit two-factor authentication password for an active telegram session",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TelegramV2"
+                ],
+                "summary": "Submit 2FA password",
+                "parameters": [
+                    {
+                        "description": "Password",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.submitPasswordReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.stateResp"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp"
+                        }
+                    },
+                    "408": {
+                        "description": "Request Timeout",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/telegram/sessions/phone": {
+            "post": {
+                "description": "Submit phone number for an active telegram session",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TelegramV2"
+                ],
+                "summary": "Submit phone number",
+                "parameters": [
+                    {
+                        "description": "Phone number",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.submitPhoneReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.stateResp"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp"
+                        }
+                    },
+                    "408": {
+                        "description": "Request Timeout",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/telegram/sessions/re-auth": {
+            "post": {
+                "description": "Start re-authentication for an account that needs login. Automatically submits the stored phone number and returns the next state.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TelegramV2"
+                ],
+                "summary": "Re-authenticate an existing account",
+                "parameters": [
+                    {
+                        "description": "Account ID",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.reAuthReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.stateResp"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp"
+                        }
+                    },
+                    "408": {
+                        "description": "Request Timeout",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/telegram/sessions/{session_id}/state": {
+            "get": {
+                "description": "Get the current state of a telegram session",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TelegramV2"
+                ],
+                "summary": "Get session state",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Session ID",
+                        "name": "session_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.stateResp"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/telegram/subscription-filters": {
+            "get": {
+                "description": "Get paginated list of telegram subscription filters",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TelegramV2"
+                ],
+                "summary": "List subscription filters",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Items per page",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Create a new subscription filter for telegram updates",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TelegramV2"
+                ],
+                "summary": "Create subscription filter",
+                "parameters": [
+                    {
+                        "description": "Filter info",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.createFilterReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/telegram/subscription-filters/{id}": {
+            "delete": {
+                "description": "Delete a telegram subscription filter by ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TelegramV2"
+                ],
+                "summary": "Delete subscription filter",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Filter ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "github_com_h-varmazyar_gatec_internal_models.AccessRule": {
+            "type": "object",
+            "properties": {
+                "client_id": {
+                    "description": "ClientID identifies the Telegram client/account that can be used",
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "deletedAt": {
+                    "$ref": "#/definitions/gorm.DeletedAt"
+                },
+                "expires_at": {
+                    "description": "ExpiresAt is when the access rule expires (null for no expiration)",
+                    "type": "string"
+                },
+                "granted_at": {
+                    "description": "GrantedAt is when the access was granted",
+                    "type": "string"
+                },
+                "granted_by": {
+                    "description": "GrantedBy identifies who granted the access",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "ID is the unique identifier for the access rule (UUID)",
+                    "type": "string"
+                },
+                "permissions": {
+                    "description": "Permissions contains the granted permissions for this rule",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_h-varmazyar_gatec_internal_models.PermissionSet"
+                        }
+                    ]
+                },
+                "reason": {
+                    "description": "Reason explains why access was granted",
+                    "type": "string"
+                },
+                "sender_id": {
+                    "description": "SenderID identifies the service/worker granted access",
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_h-varmazyar_gatec_internal_models.PermissionSet": {
+            "type": "object",
+            "properties": {
+                "allowed_chat_ids": {
+                    "description": "AllowedChatIDs contains specific chat IDs the sender can message",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "can_schedule_messages": {
+                    "description": "CanScheduleMessages indicates if sender can schedule future messages",
+                    "type": "boolean"
+                },
+                "can_send_messages": {
+                    "description": "CanSendMessages indicates if sender can send messages",
+                    "type": "boolean"
+                },
+                "can_send_to_all_chats": {
+                    "description": "CanSendToAllChats indicates if sender can send to any chat without restriction",
+                    "type": "boolean"
+                },
+                "max_messages_per_minute": {
+                    "description": "MaxMessagesPerMinute defines rate limit for the sender",
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_h-varmazyar_gatec_internal_models.Proxy": {
+            "type": "object",
+            "properties": {
+                "assigned_accounts": {
+                    "description": "Usage tracking",
+                    "type": "integer"
+                },
+                "consecutive_fails": {
+                    "type": "integer"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "deletedAt": {
+                    "$ref": "#/definitions/gorm.DeletedAt"
+                },
+                "fail_count": {
+                    "type": "integer"
+                },
+                "http_only": {
+                    "description": "HTTP specific",
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_enable": {
+                    "type": "boolean"
+                },
+                "last_checked_at": {
+                    "description": "Health tracking",
+                    "type": "string"
+                },
+                "last_success_at": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "port": {
+                    "type": "integer"
+                },
+                "secret": {
+                    "description": "MTProto specific",
+                    "type": "string"
+                },
+                "server": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/github_com_h-varmazyar_gatec_internal_models.ProxyStatus"
+                },
+                "type": {
+                    "$ref": "#/definitions/github_com_h-varmazyar_gatec_internal_models.ProxyType"
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "username": {
+                    "description": "SOCKS5/HTTP specific",
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_h-varmazyar_gatec_internal_models.ProxyStatus": {
+            "type": "string",
+            "enum": [
+                "active",
+                "inactive",
+                "unknown"
+            ],
+            "x-enum-varnames": [
+                "ProxyStatusActive",
+                "ProxyStatusInactive",
+                "ProxyStatusUnknown"
+            ]
+        },
+        "github_com_h-varmazyar_gatec_internal_models.ProxyType": {
+            "type": "string",
+            "enum": [
+                "mtproto",
+                "socks5",
+                "http"
+            ],
+            "x-enum-varnames": [
+                "ProxyTypeMTProto",
+                "ProxyTypeSocks5",
+                "ProxyTypeHTTP"
+            ]
+        },
+        "github_com_h-varmazyar_gatec_internal_models.SendResult": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "description": "Error contains error message if the send operation failed",
+                    "type": "string"
+                },
+                "message_id": {
+                    "description": "MessageID is the Telegram message ID if successfully sent (0 if failed)",
+                    "type": "integer"
+                },
+                "sent_at": {
+                    "description": "SentAt is the timestamp when the message was sent (or attempted)",
+                    "type": "string"
+                },
+                "success": {
+                    "description": "Success indicates whether the message was sent successfully",
+                    "type": "boolean"
+                }
+            }
+        },
+        "github_com_h-varmazyar_gatec_pkg_paginator.Response": {
+            "type": "object",
+            "properties": {
+                "page": {
+                    "type": "integer"
+                },
+                "page_size": {
+                    "type": "integer"
+                },
+                "total_items": {
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
+                }
+            }
+        },
+        "gorm.DeletedAt": {
+            "type": "object",
+            "properties": {
+                "time": {
+                    "type": "string"
+                },
+                "valid": {
+                    "description": "Valid is true if Time is not NULL",
+                    "type": "boolean"
+                }
+            }
+        },
+        "internal_api_rest_handlers_v1_airdrop.CreateRouteReq": {
+            "type": "object",
+            "properties": {
+                "phrase": {
+                    "type": "string"
+                },
+                "route": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_api_rest_handlers_v1_applog.errorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "failed to read application logs"
+                }
+            }
+        },
+        "internal_api_rest_handlers_v1_applog.listResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": {}
+                    }
+                },
+                "pagination": {
+                    "$ref": "#/definitions/github_com_h-varmazyar_gatec_pkg_paginator.Response"
+                }
+            }
+        },
+        "internal_api_rest_handlers_v1_auth.LoginByPasswordReq": {
+            "type": "object",
+            "required": [
+                "mobile",
+                "password"
+            ],
+            "properties": {
+                "mobile": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_api_rest_handlers_v1_auth.RegisterReq": {
+            "type": "object",
+            "required": [
+                "first_name",
+                "last_name",
+                "mobile",
+                "password",
+                "username"
+            ],
+            "properties": {
+                "first_name": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "mobile": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string",
+                    "minLength": 8
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_api_rest_handlers_v1_messaging.errorResp": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_api_rest_handlers_v1_messaging.grantAccessReq": {
+            "type": "object",
+            "required": [
+                "client_id",
+                "granted_by",
+                "permission",
+                "sender_id"
+            ],
+            "properties": {
+                "client_id": {
+                    "type": "string"
+                },
+                "expires_at_unix": {
+                    "description": "0 = no expiration",
+                    "type": "integer"
+                },
+                "granted_by": {
+                    "type": "string"
+                },
+                "permission": {
+                    "description": "send, schedule, send_to_all_chats",
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "sender_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_api_rest_handlers_v1_messaging.scheduleMessageReq": {
+            "type": "object",
+            "required": [
+                "chat_id",
+                "client_id",
+                "content",
+                "scheduled_at_unix",
+                "sender_id"
+            ],
+            "properties": {
+                "chat_id": {
+                    "type": "integer"
+                },
+                "client_id": {
+                    "type": "string"
+                },
+                "content": {
+                    "type": "string"
+                },
+                "content_type": {
+                    "type": "string"
+                },
+                "scheduled_at_unix": {
+                    "type": "integer"
+                },
+                "sender_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_api_rest_handlers_v1_messaging.sendMessageReq": {
+            "type": "object",
+            "required": [
+                "chat_id",
+                "client_id",
+                "content",
+                "sender_id"
+            ],
+            "properties": {
+                "chat_id": {
+                    "type": "integer"
+                },
+                "client_id": {
+                    "type": "string"
+                },
+                "content": {
+                    "type": "string"
+                },
+                "content_type": {
+                    "description": "text, photo, document",
+                    "type": "string"
+                },
+                "sender_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_api_rest_handlers_v1_proxy.createProxyReq": {
+            "type": "object",
+            "required": [
+                "port",
+                "server",
+                "type"
+            ],
+            "properties": {
+                "http_only": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "is_enable": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "password": {
+                    "type": "string",
+                    "example": "proxypass"
+                },
+                "port": {
+                    "type": "integer",
+                    "maximum": 65535,
+                    "minimum": 1,
+                    "example": 443
+                },
+                "secret": {
+                    "type": "string",
+                    "example": "ee1603010200010001fc030386e24c3add626973636f7474692e79656b74616e65742e636f6d"
+                },
+                "server": {
+                    "type": "string",
+                    "example": "tanzibjf.club"
+                },
+                "type": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_h-varmazyar_gatec_internal_models.ProxyType"
+                        }
+                    ],
+                    "example": "mtproto"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "proxyuser"
+                }
+            }
+        },
+        "internal_api_rest_handlers_v1_proxy.errorResp": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "server is required"
+                }
+            }
+        },
+        "internal_api_rest_handlers_v1_proxy.proxyStatsResp": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "integer",
+                    "example": 6
+                },
+                "assignments": {
+                    "type": "integer",
+                    "example": 15
+                },
+                "enabled": {
+                    "type": "integer",
+                    "example": 8
+                },
+                "total": {
+                    "type": "integer",
+                    "example": 10
+                }
+            }
+        },
+        "internal_api_rest_handlers_v1_proxy.toggleProxyReq": {
+            "type": "object",
+            "required": [
+                "enable"
+            ],
+            "properties": {
+                "enable": {
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
+        "internal_api_rest_handlers_v1_proxy.updateProxyReq": {
+            "type": "object",
+            "required": [
+                "port",
+                "server",
+                "type"
+            ],
+            "properties": {
+                "http_only": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "is_enable": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "password": {
+                    "type": "string",
+                    "example": "proxypass"
+                },
+                "port": {
+                    "type": "integer",
+                    "maximum": 65535,
+                    "minimum": 1,
+                    "example": 443
+                },
+                "secret": {
+                    "type": "string",
+                    "example": "ee1603010200010001fc030386e24c3add626973636f7474692e79656b74616e65742e636f6d"
+                },
+                "server": {
+                    "type": "string",
+                    "example": "tanzibjf.club"
+                },
+                "type": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_h-varmazyar_gatec_internal_models.ProxyType"
+                        }
+                    ],
+                    "example": "mtproto"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "proxyuser"
+                }
+            }
+        },
+        "internal_api_rest_handlers_v1_tabdeal.UpdateAuthTokenReq": {
+            "type": "object",
+            "required": [
+                "token"
+            ],
+            "properties": {
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_api_rest_handlers_v1_tgaccount.createAccountReq": {
+            "type": "object",
+            "required": [
+                "session_type"
+            ],
+            "properties": {
+                "session_type": {
+                    "type": "string",
+                    "example": "client"
+                }
+            }
+        },
+        "internal_api_rest_handlers_v1_tgaccount.createAccountResp": {
+            "type": "object",
+            "properties": {
+                "next_step": {
+                    "type": "string",
+                    "example": "wait_phone"
+                },
+                "session_id": {
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                }
+            }
+        },
+        "internal_api_rest_handlers_v1_tgaccount.createFilterReq": {
+            "type": "object",
+            "required": [
+                "account_id",
+                "chat_id"
+            ],
+            "properties": {
+                "account_id": {
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                },
+                "chat_id": {
+                    "type": "integer",
+                    "example": -1003944858901
+                }
+            }
+        },
+        "internal_api_rest_handlers_v1_tgaccount.errorResp": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "session not found"
+                }
+            }
+        },
+        "internal_api_rest_handlers_v1_tgaccount.reAuthReq": {
+            "type": "object",
+            "required": [
+                "account_id"
+            ],
+            "properties": {
+                "account_id": {
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                }
+            }
+        },
+        "internal_api_rest_handlers_v1_tgaccount.stateResp": {
+            "type": "object",
+            "properties": {
+                "next_step": {
+                    "type": "string",
+                    "example": "wait_code"
+                },
+                "session_id": {
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                }
+            }
+        },
+        "internal_api_rest_handlers_v1_tgaccount.submitCodeReq": {
+            "type": "object",
+            "required": [
+                "code",
+                "session_id"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "12345"
+                },
+                "session_id": {
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                }
+            }
+        },
+        "internal_api_rest_handlers_v1_tgaccount.submitPasswordReq": {
+            "type": "object",
+            "required": [
+                "password",
+                "session_id"
+            ],
+            "properties": {
+                "password": {
+                    "type": "string",
+                    "example": "my2fapassword"
+                },
+                "session_id": {
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                }
+            }
+        },
+        "internal_api_rest_handlers_v1_tgaccount.submitPhoneReq": {
+            "type": "object",
+            "required": [
+                "phone_number",
+                "session_id"
+            ],
+            "properties": {
+                "phone_number": {
+                    "type": "string",
+                    "example": "+989123456789"
+                },
+                "session_id": {
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "APIKeyAuth": {
+            "type": "apiKey",
+            "name": "X-API-Key",
+            "in": "header"
+        },
+        "BearerTokenAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    }
+}

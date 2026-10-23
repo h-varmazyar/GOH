@@ -1,0 +1,102 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* Primary - Emerald/Teal scale based on #2FA084, #1F6F5F, #12372A, #8BDFDD */
+  --color-primary-50: #e6f7f4;
+  --color-primary-100: #c5ede5;
+  --color-primary-200: #8BDFDD;
+  --color-primary-300: #6dd0c2;
+  --color-primary-400: #4ab9a5;
+  --color-primary-500: #2FA084;
+  --color-primary-600: #258872;
+  --color-primary-700: #1F6F5F;
+  --color-primary-800: #195648;
+  --color-primary-900: #12372A;
+  --color-primary-950: #0a2218;
+
+  /* Accent - Periwinkle (#A6B1E1) */
+  --color-accent-100: #eceffa;
+  --color-accent-200: #d4daf0;
+  --color-accent-300: #A6B1E1;
+  --color-accent-400: #8a96d3;
+  --color-accent-500: #6e7cc1;
+
+  /* Success - Mint (#6FCF97) */
+  --color-success-300: #9ce0b6;
+  --color-success-400: #6FCF97;
+  --color-success-500: #4cb87b;
+  --color-success-600: #389e64;
+
+  /* Danger - (#DA0037) */
+  --color-danger-300: #f25577;
+  --color-danger-400: #ed2d56;
+  --color-danger-500: #DA0037;
+  --color-danger-600: #b3002e;
+
+  /* Warning - Soft Pink/Cream (#FFC7C7, #FFF5E4) */
+  --color-warning-200: #FFF5E4;
+  --color-warning-300: #FFC7C7;
+  --color-warning-400: #ffa3a3;
+  --color-warning-500: #f57f7f;
+  --color-warning-600: #e05c5c;
+
+  /* Surface - based on #222831 (dark) and #364F6B (mid) */
+  --color-surface-50: #f7f8fa;
+  --color-surface-100: #eef0f4;
+  --color-surface-200: #dce0e8;
+  --color-surface-300: #b8c0cf;
+  --color-surface-400: #8b95aa;
+  --color-surface-500: #5d6a82;
+  --color-surface-600: #475669;
+  --color-surface-700: #364F6B;
+  --color-surface-800: #2b3849;
+  --color-surface-900: #222831;
+  --color-surface-950: #161b22;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  background-color: var(--color-surface-50);
+  color: var(--color-surface-900);
+  font-family: 'Vazirmatn', 'Inter', system-ui, sans-serif;
+  direction: rtl;
+}
+
+.dark body {
+  background-color: var(--color-surface-950);
+  color: var(--color-surface-100);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-surface-100 dark:bg-surface-800;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-surface-300 dark:bg-surface-600 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-surface-400 dark:bg-surface-500;
+}
+
+/* Input number arrows removal */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}

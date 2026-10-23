@@ -1,0 +1,359 @@
+{
+  "name": "بروزرسانی سابقه بازار",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "055a4526-ebba-42a1-b08c-5084b1e2016e",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tse_markets",
+          "mode": "list",
+          "cachedResultName": "tse_markets"
+        },
+        "returnAll": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        208,
+        0
+      ],
+      "id": "e20e70d0-7181-4f60-86f3-5eb77de3467d",
+      "name": "Select rows from a table",
+      "credentials": {
+        "postgres": {
+          "id": "H3DRLSYGs9AWkmD4",
+          "name": "gatec"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://cdn.tsetmc.com/api/MarketData/GetInstrumentStateAll/{{ $json.ins_code }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        416,
+        0
+      ],
+      "id": "7ff9fed7-71b0-4e68-ab35-e9155e8e418c",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tse_markets",
+          "mode": "list",
+          "cachedResultName": "tse_markets"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ins_code": "={{ $json.insCode }}",
+            "status": "={{ $json.status }}",
+            "state_updated_at": "={{ $json.statusUpdatedAt }}",
+            "instrument_state_code": "={{ $json.symbolStatus }}"
+          },
+          "matchingColumns": [
+            "ins_code"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "label",
+              "displayName": "label",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "nav",
+              "displayName": "nav",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "esp",
+              "displayName": "esp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "industry_group_code",
+              "displayName": "industry_group_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "industry_sub_code",
+              "displayName": "industry_sub_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "market_type",
+              "displayName": "market_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "symbol_type",
+              "displayName": "symbol_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "symbol_status",
+              "displayName": "symbol_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ins_code",
+              "displayName": "ins_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "symbol",
+              "displayName": "symbol",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "instrument_state_code",
+              "displayName": "instrument_state_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "instrument_state_title",
+              "displayName": "instrument_state_title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "under_supervision",
+              "displayName": "under_supervision",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "last_price_date",
+              "displayName": "last_price_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "state_updated_at",
+              "displayName": "state_updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        832,
+        0
+      ],
+      "id": "06c4abb9-9a59-4852-ae35-3c406762397e",
+      "name": "Update rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "H3DRLSYGs9AWkmD4",
+          "name": "gatec"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "function parseDate(str) {\n  if (!str  || !/^\\d{8}$/.test(str)) {\n    throw new Error(`فرمت تاریخ نامعتبر: ${str} (باید YYYYMMDD باشد)`);\n  }\n\n  const year  = parseInt(str.substring(0, 4), 10);\n  const month = parseInt(str.substring(4, 6), 10) - 1;\n  const day   = parseInt(str.substring(6, 8), 10);\n\n  const date = new Date(year, month, day);\n\n  // بررسی اینکه تاریخ واقعاً معتبر است (مثلاً ماه 13 وجود ندارد)\n  if (date.getFullYear() !== year || \n      date.getMonth() !== month || \n      date.getDate() !== day) {\n    throw new Error(`تاریخ نامعتبر: ${str}`);\n  }\n\n  return date;\n}\n\nvar resp = [];\nconst now = new Date().toISOString();\nfor (let index = 0; index < $input.all().length; index++) {\n  const item = $input.all()[index];\n  if (item.json.instrumentState.length>0) {\n    resp.push({\n      \"insCode\":item.json.instrumentState[0].insCode,\n      \"status\":\"tradeable\",\n      \"symbolStatus\":item.json.instrumentState[0].cEtaval,\n      \"statusUpdatedAt\":parseDate(item.json.instrumentState[0].dEven+\"\")\n    })\n  }else{\n    resp.push({\n      \"insCode\":$('Select rows from a table').all()[index].json.ins_code,\n      \"status\":\"untradeable\",\n      \"symbolStatus\":\"N/A\",\n      \"statusUpdatedAt\":now,\n    })\n  }\n}\n\nreturn resp;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        624,
+        0
+      ],
+      "id": "03c8bb67-6940-4ac1-8f06-8726c61de56c",
+      "name": "Code in JavaScript"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Select rows from a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select rows from a table": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Update rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "49fdc840-46f0-45d1-9b06-422da345ad8b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "939a3ba0cbd0a303689224bc2521013425c4788043aad303ab17c0b91285e62d"
+  },
+  "id": "98lKlvCUIeuWsNBf",
+  "tags": []
+}

@@ -1,0 +1,1625 @@
+basePath: /
+definitions:
+  github_com_h-varmazyar_gatec_internal_models.AccessRule:
+    properties:
+      client_id:
+        description: ClientID identifies the Telegram client/account that can be used
+        type: string
+      createdAt:
+        type: string
+      deletedAt:
+        $ref: '#/definitions/gorm.DeletedAt'
+      expires_at:
+        description: ExpiresAt is when the access rule expires (null for no expiration)
+        type: string
+      granted_at:
+        description: GrantedAt is when the access was granted
+        type: string
+      granted_by:
+        description: GrantedBy identifies who granted the access
+        type: string
+      id:
+        description: ID is the unique identifier for the access rule (UUID)
+        type: string
+      permissions:
+        allOf:
+        - $ref: '#/definitions/github_com_h-varmazyar_gatec_internal_models.PermissionSet'
+        description: Permissions contains the granted permissions for this rule
+      reason:
+        description: Reason explains why access was granted
+        type: string
+      sender_id:
+        description: SenderID identifies the service/worker granted access
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  github_com_h-varmazyar_gatec_internal_models.PermissionSet:
+    properties:
+      allowed_chat_ids:
+        description: AllowedChatIDs contains specific chat IDs the sender can message
+        items:
+          type: integer
+        type: array
+      can_schedule_messages:
+        description: CanScheduleMessages indicates if sender can schedule future messages
+        type: boolean
+      can_send_messages:
+        description: CanSendMessages indicates if sender can send messages
+        type: boolean
+      can_send_to_all_chats:
+        description: CanSendToAllChats indicates if sender can send to any chat without
+          restriction
+        type: boolean
+      max_messages_per_minute:
+        description: MaxMessagesPerMinute defines rate limit for the sender
+        type: integer
+    type: object
+  github_com_h-varmazyar_gatec_internal_models.Proxy:
+    properties:
+      assigned_accounts:
+        description: Usage tracking
+        type: integer
+      consecutive_fails:
+        type: integer
+      createdAt:
+        type: string
+      deletedAt:
+        $ref: '#/definitions/gorm.DeletedAt'
+      fail_count:
+        type: integer
+      http_only:
+        description: HTTP specific
+        type: boolean
+      id:
+        type: integer
+      is_enable:
+        type: boolean
+      last_checked_at:
+        description: Health tracking
+        type: string
+      last_success_at:
+        type: string
+      password:
+        type: string
+      port:
+        type: integer
+      secret:
+        description: MTProto specific
+        type: string
+      server:
+        type: string
+      status:
+        $ref: '#/definitions/github_com_h-varmazyar_gatec_internal_models.ProxyStatus'
+      type:
+        $ref: '#/definitions/github_com_h-varmazyar_gatec_internal_models.ProxyType'
+      updatedAt:
+        type: string
+      username:
+        description: SOCKS5/HTTP specific
+        type: string
+    type: object
+  github_com_h-varmazyar_gatec_internal_models.ProxyStatus:
+    enum:
+    - active
+    - inactive
+    - unknown
+    type: string
+    x-enum-varnames:
+    - ProxyStatusActive
+    - ProxyStatusInactive
+    - ProxyStatusUnknown
+  github_com_h-varmazyar_gatec_internal_models.ProxyType:
+    enum:
+    - mtproto
+    - socks5
+    - http
+    type: string
+    x-enum-varnames:
+    - ProxyTypeMTProto
+    - ProxyTypeSocks5
+    - ProxyTypeHTTP
+  github_com_h-varmazyar_gatec_internal_models.SendResult:
+    properties:
+      error:
+        description: Error contains error message if the send operation failed
+        type: string
+      message_id:
+        description: MessageID is the Telegram message ID if successfully sent (0
+          if failed)
+        type: integer
+      sent_at:
+        description: SentAt is the timestamp when the message was sent (or attempted)
+        type: string
+      success:
+        description: Success indicates whether the message was sent successfully
+        type: boolean
+    type: object
+  github_com_h-varmazyar_gatec_pkg_paginator.Response:
+    properties:
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total_items:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  gorm.DeletedAt:
+    properties:
+      time:
+        type: string
+      valid:
+        description: Valid is true if Time is not NULL
+        type: boolean
+    type: object
+  internal_api_rest_handlers_v1_airdrop.CreateRouteReq:
+    properties:
+      phrase:
+        type: string
+      route:
+        type: string
+    type: object
+  internal_api_rest_handlers_v1_applog.errorResponse:
+    properties:
+      error:
+        example: failed to read application logs
+        type: string
+    type: object
+  internal_api_rest_handlers_v1_applog.listResponse:
+    properties:
+      data:
+        items:
+          additionalProperties: {}
+          type: object
+        type: array
+      pagination:
+        $ref: '#/definitions/github_com_h-varmazyar_gatec_pkg_paginator.Response'
+    type: object
+  internal_api_rest_handlers_v1_auth.LoginByPasswordReq:
+    properties:
+      mobile:
+        type: string
+      password:
+        type: string
+    required:
+    - mobile
+    - password
+    type: object
+  internal_api_rest_handlers_v1_auth.RegisterReq:
+    properties:
+      first_name:
+        type: string
+      last_name:
+        type: string
+      mobile:
+        type: string
+      password:
+        minLength: 8
+        type: string
+      username:
+        type: string
+    required:
+    - first_name
+    - last_name
+    - mobile
+    - password
+    - username
+    type: object
+  internal_api_rest_handlers_v1_messaging.errorResp:
+    properties:
+      error:
+        type: string
+    type: object
+  internal_api_rest_handlers_v1_messaging.grantAccessReq:
+    properties:
+      client_id:
+        type: string
+      expires_at_unix:
+        description: 0 = no expiration
+        type: integer
+      granted_by:
+        type: string
+      permission:
+        description: send, schedule, send_to_all_chats
+        type: string
+      reason:
+        type: string
+      sender_id:
+        type: string
+    required:
+    - client_id
+    - granted_by
+    - permission
+    - sender_id
+    type: object
+  internal_api_rest_handlers_v1_messaging.scheduleMessageReq:
+    properties:
+      chat_id:
+        type: integer
+      client_id:
+        type: string
+      content:
+        type: string
+      content_type:
+        type: string
+      scheduled_at_unix:
+        type: integer
+      sender_id:
+        type: string
+    required:
+    - chat_id
+    - client_id
+    - content
+    - scheduled_at_unix
+    - sender_id
+    type: object
+  internal_api_rest_handlers_v1_messaging.sendMessageReq:
+    properties:
+      chat_id:
+        type: integer
+      client_id:
+        type: string
+      content:
+        type: string
+      content_type:
+        description: text, photo, document
+        type: string
+      sender_id:
+        type: string
+    required:
+    - chat_id
+    - client_id
+    - content
+    - sender_id
+    type: object
+  internal_api_rest_handlers_v1_proxy.createProxyReq:
+    properties:
+      http_only:
+        example: false
+        type: boolean
+      is_enable:
+        example: true
+        type: boolean
+      password:
+        example: proxypass
+        type: string
+      port:
+        example: 443
+        maximum: 65535
+        minimum: 1
+        type: integer
+      secret:
+        example: ee1603010200010001fc030386e24c3add626973636f7474692e79656b74616e65742e636f6d
+        type: string
+      server:
+        example: tanzibjf.club
+        type: string
+      type:
+        allOf:
+        - $ref: '#/definitions/github_com_h-varmazyar_gatec_internal_models.ProxyType'
+        example: mtproto
+      username:
+        example: proxyuser
+        type: string
+    required:
+    - port
+    - server
+    - type
+    type: object
+  internal_api_rest_handlers_v1_proxy.errorResp:
+    properties:
+      error:
+        example: server is required
+        type: string
+    type: object
+  internal_api_rest_handlers_v1_proxy.proxyStatsResp:
+    properties:
+      active:
+        example: 6
+        type: integer
+      assignments:
+        example: 15
+        type: integer
+      enabled:
+        example: 8
+        type: integer
+      total:
+        example: 10
+        type: integer
+    type: object
+  internal_api_rest_handlers_v1_proxy.toggleProxyReq:
+    properties:
+      enable:
+        example: true
+        type: boolean
+    required:
+    - enable
+    type: object
+  internal_api_rest_handlers_v1_proxy.updateProxyReq:
+    properties:
+      http_only:
+        example: false
+        type: boolean
+      is_enable:
+        example: true
+        type: boolean
+      password:
+        example: proxypass
+        type: string
+      port:
+        example: 443
+        maximum: 65535
+        minimum: 1
+        type: integer
+      secret:
+        example: ee1603010200010001fc030386e24c3add626973636f7474692e79656b74616e65742e636f6d
+        type: string
+      server:
+        example: tanzibjf.club
+        type: string
+      type:
+        allOf:
+        - $ref: '#/definitions/github_com_h-varmazyar_gatec_internal_models.ProxyType'
+        example: mtproto
+      username:
+        example: proxyuser
+        type: string
+    required:
+    - port
+    - server
+    - type
+    type: object
+  internal_api_rest_handlers_v1_tabdeal.UpdateAuthTokenReq:
+    properties:
+      token:
+        type: string
+    required:
+    - token
+    type: object
+  internal_api_rest_handlers_v1_tgaccount.createAccountReq:
+    properties:
+      session_type:
+        example: client
+        type: string
+    required:
+    - session_type
+    type: object
+  internal_api_rest_handlers_v1_tgaccount.createAccountResp:
+    properties:
+      next_step:
+        example: wait_phone
+        type: string
+      session_id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+    type: object
+  internal_api_rest_handlers_v1_tgaccount.createFilterReq:
+    properties:
+      account_id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      chat_id:
+        example: -1003944858901
+        type: integer
+    required:
+    - account_id
+    - chat_id
+    type: object
+  internal_api_rest_handlers_v1_tgaccount.errorResp:
+    properties:
+      error:
+        example: session not found
+        type: string
+    type: object
+  internal_api_rest_handlers_v1_tgaccount.reAuthReq:
+    properties:
+      account_id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+    required:
+    - account_id
+    type: object
+  internal_api_rest_handlers_v1_tgaccount.stateResp:
+    properties:
+      next_step:
+        example: wait_code
+        type: string
+      session_id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+    type: object
+  internal_api_rest_handlers_v1_tgaccount.submitCodeReq:
+    properties:
+      code:
+        example: "12345"
+        type: string
+      session_id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+    required:
+    - code
+    - session_id
+    type: object
+  internal_api_rest_handlers_v1_tgaccount.submitPasswordReq:
+    properties:
+      password:
+        example: my2fapassword
+        type: string
+      session_id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+    required:
+    - password
+    - session_id
+    type: object
+  internal_api_rest_handlers_v1_tgaccount.submitPhoneReq:
+    properties:
+      phone_number:
+        example: "+989123456789"
+        type: string
+      session_id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+    required:
+    - phone_number
+    - session_id
+    type: object
+host: localhost:8575
+info:
+  contact: {}
+  title: gatec API collection
+  version: 1.0.0
+paths:
+  /v1/airdrops/gifts:
+    get:
+      description: Get paginated list of airdrop gifts
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerTokenAuth: []
+      summary: List airdrop gifts
+      tags:
+      - Airdrop
+  /v1/airdrops/gifts/{id}:
+    get:
+      description: Get a specific airdrop gift by its ID
+      parameters:
+      - description: Gift ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerTokenAuth: []
+      summary: Get airdrop gift by ID
+      tags:
+      - Airdrop
+  /v1/airdrops/routes:
+    get:
+      description: Get paginated list of airdrop routes
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerTokenAuth: []
+      summary: List airdrop routes
+      tags:
+      - Airdrop
+    post:
+      consumes:
+      - application/json
+      description: Create a new airdrop route with phrase and route
+      parameters:
+      - description: Route info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_rest_handlers_v1_airdrop.CreateRouteReq'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerTokenAuth: []
+      summary: Create airdrop route
+      tags:
+      - Airdrop
+  /v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user with mobile and password
+      parameters:
+      - description: Login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_rest_handlers_v1_auth.LoginByPasswordReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Login by password
+      tags:
+      - Auth
+  /v1/auth/logout:
+    delete:
+      description: Invalidate user session
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerTokenAuth: []
+      summary: Logout user
+      tags:
+      - Auth
+  /v1/auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user account
+      parameters:
+      - description: Registration info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_rest_handlers_v1_auth.RegisterReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Register new user
+      tags:
+      - Auth
+  /v1/logs/{component}:
+    get:
+      description: Returns matching JSON log entries from newest to oldest
+      parameters:
+      - description: Component, worker, or adapter name
+        example: tse-market-history-sync
+        in: path
+        name: component
+        required: true
+        type: string
+      - default: 1
+        description: Reverse page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        maximum: 100
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_applog.listResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_applog.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_applog.errorResponse'
+      security:
+      - BearerTokenAuth: []
+      summary: List application logs by component
+      tags:
+      - Logs
+  /v1/messaging/access/check:
+    get:
+      description: Check if a sender has permission to use a specific client
+      parameters:
+      - description: Sender ID
+        in: query
+        name: sender_id
+        required: true
+        type: string
+      - description: Client ID
+        in: query
+        name: client_id
+        required: true
+        type: string
+      - default: send
+        description: Permission type
+        in: query
+        name: permission
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_messaging.errorResp'
+      summary: Check access
+      tags:
+      - Messaging
+  /v1/messaging/access/rules:
+    get:
+      description: Get all active access control rules
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List access rules
+      tags:
+      - Messaging
+    post:
+      consumes:
+      - application/json
+      description: Grant a sender access to use a specific Telegram client
+      parameters:
+      - description: Access grant request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_rest_handlers_v1_messaging.grantAccessReq'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_h-varmazyar_gatec_internal_models.AccessRule'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_messaging.errorResp'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_messaging.errorResp'
+      summary: Grant access
+      tags:
+      - Messaging
+  /v1/messaging/access/rules/{id}:
+    delete:
+      description: Revoke an access rule by its ID
+      parameters:
+      - description: Rule ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_messaging.errorResp'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_messaging.errorResp'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_messaging.errorResp'
+      summary: Revoke access
+      tags:
+      - Messaging
+  /v1/messaging/schedule:
+    post:
+      consumes:
+      - application/json
+      description: Schedule a message for future delivery
+      parameters:
+      - description: Scheduled message
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_rest_handlers_v1_messaging.scheduleMessageReq'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_messaging.errorResp'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_messaging.errorResp'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_messaging.errorResp'
+      summary: Schedule a message
+      tags:
+      - Messaging
+  /v1/messaging/schedule/{id}:
+    delete:
+      description: Cancel a message that was scheduled for future delivery
+      parameters:
+      - description: Message ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_messaging.errorResp'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_messaging.errorResp'
+      summary: Cancel a scheduled message
+      tags:
+      - Messaging
+  /v1/messaging/send:
+    post:
+      consumes:
+      - application/json
+      description: Send a message through a registered sender
+      parameters:
+      - description: Message to send
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_rest_handlers_v1_messaging.sendMessageReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_h-varmazyar_gatec_internal_models.SendResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_messaging.errorResp'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_messaging.errorResp'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_messaging.errorResp'
+      summary: Send a message
+      tags:
+      - Messaging
+  /v1/messaging/senders:
+    get:
+      description: Get all registered message senders
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List registered senders
+      tags:
+      - Messaging
+  /v1/proxies:
+    get:
+      description: Get paginated list of all proxies
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_proxy.errorResp'
+      summary: List proxies
+      tags:
+      - Proxy
+    post:
+      consumes:
+      - application/json
+      description: Add a new proxy server to the system
+      parameters:
+      - description: Proxy configuration
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_rest_handlers_v1_proxy.createProxyReq'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_h-varmazyar_gatec_internal_models.Proxy'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_proxy.errorResp'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_proxy.errorResp'
+      summary: Create a new proxy
+      tags:
+      - Proxy
+  /v1/proxies/{id}:
+    delete:
+      description: Delete a proxy (soft delete - marks as disabled)
+      parameters:
+      - description: Proxy ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_proxy.errorResp'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_proxy.errorResp'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_proxy.errorResp'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_proxy.errorResp'
+      summary: Delete a proxy
+      tags:
+      - Proxy
+    get:
+      description: Get detailed information about a proxy
+      parameters:
+      - description: Proxy ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_h-varmazyar_gatec_internal_models.Proxy'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_proxy.errorResp'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_proxy.errorResp'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_proxy.errorResp'
+      summary: Get proxy details
+      tags:
+      - Proxy
+    put:
+      consumes:
+      - application/json
+      description: Update an existing proxy configuration
+      parameters:
+      - description: Proxy ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated proxy configuration
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_rest_handlers_v1_proxy.updateProxyReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_h-varmazyar_gatec_internal_models.Proxy'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_proxy.errorResp'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_proxy.errorResp'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_proxy.errorResp'
+      summary: Update a proxy
+      tags:
+      - Proxy
+  /v1/proxies/{id}/force-check:
+    post:
+      description: Trigger an immediate health check for a proxy
+      parameters:
+      - description: Proxy ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_proxy.errorResp'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_proxy.errorResp'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_proxy.errorResp'
+      summary: Force health check
+      tags:
+      - Proxy
+  /v1/proxies/{id}/toggle:
+    patch:
+      consumes:
+      - application/json
+      description: Enable or disable a proxy
+      parameters:
+      - description: Proxy ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Enable/disable flag
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_rest_handlers_v1_proxy.toggleProxyReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_h-varmazyar_gatec_internal_models.Proxy'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_proxy.errorResp'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_proxy.errorResp'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_proxy.errorResp'
+      summary: Toggle proxy status
+      tags:
+      - Proxy
+  /v1/proxies/active:
+    get:
+      description: Get list of all active (enabled + active status) proxies
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_proxy.errorResp'
+      summary: List active proxies
+      tags:
+      - Proxy
+  /v1/proxies/enabled:
+    get:
+      description: Get list of all enabled proxies (regardless of status)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_proxy.errorResp'
+      summary: List enabled proxies
+      tags:
+      - Proxy
+  /v1/proxies/stats:
+    get:
+      description: Get statistics about proxies (total, active, assignments, etc.)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_proxy.proxyStatsResp'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_proxy.errorResp'
+      summary: Get proxy statistics
+      tags:
+      - Proxy
+  /v1/tabdeal/auth-token:
+    patch:
+      consumes:
+      - application/json
+      description: Persist and apply the Tabdeal auth token at runtime
+      parameters:
+      - description: New auth token
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_rest_handlers_v1_tabdeal.UpdateAuthTokenReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerTokenAuth: []
+      summary: Update Tabdeal auth token
+      tags:
+      - Tabdeal
+  /v1/user/info:
+    get:
+      description: Get current authenticated user information
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerTokenAuth: []
+      summary: Get user info
+      tags:
+      - User
+  /v2/telegram/accounts:
+    get:
+      description: Get paginated list of telegram accounts from database
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp'
+      summary: List telegram accounts
+      tags:
+      - TelegramV2
+  /v2/telegram/sessions:
+    post:
+      consumes:
+      - application/json
+      description: Start a new telegram account authentication session
+      parameters:
+      - description: Session type
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.createAccountReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.createAccountResp'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp'
+        "408":
+          description: Request Timeout
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp'
+      summary: Create telegram account session
+      tags:
+      - TelegramV2
+  /v2/telegram/sessions/{session_id}/state:
+    get:
+      description: Get the current state of a telegram session
+      parameters:
+      - description: Session ID
+        in: path
+        name: session_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.stateResp'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp'
+      summary: Get session state
+      tags:
+      - TelegramV2
+  /v2/telegram/sessions/code:
+    post:
+      consumes:
+      - application/json
+      description: Submit verification code for an active telegram session
+      parameters:
+      - description: OTP code
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.submitCodeReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.stateResp'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp'
+        "408":
+          description: Request Timeout
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp'
+      summary: Submit OTP code
+      tags:
+      - TelegramV2
+  /v2/telegram/sessions/password:
+    post:
+      consumes:
+      - application/json
+      description: Submit two-factor authentication password for an active telegram
+        session
+      parameters:
+      - description: Password
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.submitPasswordReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.stateResp'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp'
+        "408":
+          description: Request Timeout
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp'
+      summary: Submit 2FA password
+      tags:
+      - TelegramV2
+  /v2/telegram/sessions/phone:
+    post:
+      consumes:
+      - application/json
+      description: Submit phone number for an active telegram session
+      parameters:
+      - description: Phone number
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.submitPhoneReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.stateResp'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp'
+        "408":
+          description: Request Timeout
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp'
+      summary: Submit phone number
+      tags:
+      - TelegramV2
+  /v2/telegram/sessions/re-auth:
+    post:
+      consumes:
+      - application/json
+      description: Start re-authentication for an account that needs login. Automatically
+        submits the stored phone number and returns the next state.
+      parameters:
+      - description: Account ID
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.reAuthReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.stateResp'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp'
+        "408":
+          description: Request Timeout
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp'
+      summary: Re-authenticate an existing account
+      tags:
+      - TelegramV2
+  /v2/telegram/subscription-filters:
+    get:
+      description: Get paginated list of telegram subscription filters
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp'
+      summary: List subscription filters
+      tags:
+      - TelegramV2
+    post:
+      consumes:
+      - application/json
+      description: Create a new subscription filter for telegram updates
+      parameters:
+      - description: Filter info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.createFilterReq'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp'
+      summary: Create subscription filter
+      tags:
+      - TelegramV2
+  /v2/telegram/subscription-filters/{id}:
+    delete:
+      description: Delete a telegram subscription filter by ID
+      parameters:
+      - description: Filter ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api_rest_handlers_v1_tgaccount.errorResp'
+      summary: Delete subscription filter
+      tags:
+      - TelegramV2
+schemes:
+- http
+securityDefinitions:
+  APIKeyAuth:
+    in: header
+    name: X-API-Key
+    type: apiKey
+  BearerTokenAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
