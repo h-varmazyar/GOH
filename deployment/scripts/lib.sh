@@ -24,6 +24,7 @@ source "$CONFIG_FILE"
 [[ -n "${PROJECT:-}" ]] || die "PROJECT is not set in $CONFIG_FILE"
 declare -p IMAGES >/dev/null 2>&1 || IMAGES=()
 declare -p TARGETS >/dev/null 2>&1 || TARGETS=()
+declare -p TOOLS >/dev/null 2>&1 || TOOLS=()
 
 NGINX_TEMPLATE="$NGINX_DIR/$PROJECT.conf.template"
 NGINX_DEST="${NGINX_DEST:-/etc/nginx/conf.d/$PROJECT.conf}"
@@ -95,7 +96,7 @@ is_true() {
 }
 
 # --- deploy.conf rows -------------------------------------------------------
-# IMAGES / TARGETS rows are "a | b | c"; fields are trimmed, the first is the name.
+# IMAGES / TARGETS / TOOLS rows are "a | b | c"; fields are trimmed, the first is the name.
 
 _trim() {
 	local s="$1"
@@ -129,11 +130,14 @@ _config_names() {
 
 image_names()  { _config_names IMAGES; }
 target_names() { _config_names TARGETS; }
+tool_names()   { _config_names TOOLS; }
 
 # image_field NAME N: 1=repo 2=dockerfile 3=build args
 image_field()  { _config_field IMAGES "$1" "$2"; }
 # target_field NAME N: 1=images 2=services 3=dirs
 target_field() { _config_field TARGETS "$1" "$2"; }
+# tool_field NAME N: 1=image 2=dirs
+tool_field()   { _config_field TOOLS "$1" "$2"; }
 
 # Unique repos referenced by IMAGES, in order.
 image_repos() {
@@ -147,7 +151,7 @@ image_repos() {
 	printf '%s' "${out[*]}"
 }
 
-# Env var prefix for a name: gategah-worker → GATEGAH_WORKER.
+# Env var prefix for a name: gozargah-worker → GOZARGAH_WORKER.
 var_prefix() {
 	local v="${1^^}"
 	v="${v//-/_}"
