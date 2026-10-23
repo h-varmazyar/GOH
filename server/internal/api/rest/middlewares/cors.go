@@ -13,6 +13,7 @@ func CORSMiddleware() gin.HandlerFunc {
 			"http://127.0.0.1",
 			"http://localhost",
 			"http://localhost:5173",
+			"http://192.168.1.10:8080",
 			"https://gatec.ir",
 		}
 
