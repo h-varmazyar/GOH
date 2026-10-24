@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand/v2"
 	"regexp"
 	"strings"
 
@@ -22,7 +23,7 @@ const (
 	GiftStatusRouteNotFound = "route_not_found"
 )
 
-var SupportedCurrencies = []string{"XRP", "SHIB", "ETH", "DOGE", "TRX", "USDT"}
+// var SupportedCurrencies = []string{"BTC", "XRP", "SHIB", "FLOKI", "NOT", "TRX"}
 
 type AdminNotifier interface {
 	NotifyAdmin(ctx context.Context, text string)
@@ -106,7 +107,7 @@ func (s *Service) ProcessTelegramMessage(ctx context.Context, chatID, messageID 
 		RawMessage:        raw,
 		SearchPhrase:      phrase,
 		GiftCode:          code,
-		Currency:          SupportedCurrencies[0],
+		Currency:          selectGiftCurrency(),
 	}
 	if err != nil {
 		gift.Status = GiftStatusFailed
@@ -133,7 +134,6 @@ func (s *Service) ProcessTelegramMessage(ctx context.Context, chatID, messageID 
 		gift.Status = GiftStatusRouteNotFound
 		gift.ErrorMessage = gorm.ErrRecordNotFound.Error()
 		_ = s.repo.CreateGift(ctx, gift)
-		fmt.Println(s.notifyAdmin(fmt.Sprintf("airdrop search phrase not found: %s\ncode: %s", strings.Join(phrases, ", "), code)))
 		return gift, gorm.ErrRecordNotFound
 	}
 	gift.Route = route.Route
@@ -150,7 +150,6 @@ func (s *Service) ProcessTelegramMessage(ctx context.Context, chatID, messageID 
 	resp, err := s.wallex.SubmitAirdrop(ctx, req)
 	if err != nil {
 		gift.ErrorMessage = err.Error()
-		fmt.Println(s.notifyAdmin(fmt.Sprintf("wallex authorization failed while submitting airdrop\nphrase: %s\nroute: %s\ncode: %s\nerror: %s", phrase, route.Route, code, err.Error())))
 		_ = s.repo.UpdateGift(ctx, gift)
 		return gift, err
 	}
@@ -161,24 +160,6 @@ func (s *Service) ProcessTelegramMessage(ctx context.Context, chatID, messageID 
 		gift.Currency = resp.Currency
 	}
 	return gift, s.repo.UpdateGift(ctx, gift)
-}
-
-func (s *Service) notifyAdmin(text string) error {
-	return nil
-	// accountManager := s.tgAccountService.GetManager()
-
-	// tgClient, err := accountManager.GetClient("b02eef38-c89d-4227-a07a-2c12b9757307")
-	// if err != nil {
-	// 	return err
-	// }
-
-	// req := &client.SendMessageRequest{
-	// 	ChatId:              1689926,
-	// 	InputMessageContent: &client.InputMessageText{Text: &client.FormattedText{Text: text}},
-	// }
-	// _, err = tgClient.SendMessage(req)
-
-	// return err
 }
 
 func parseMessageCandidates(raw string) ([]string, string, error) {
@@ -205,4 +186,30 @@ func parseMessageCandidates(raw string) ([]string, string, error) {
 	}
 
 	return phrases, code, nil
+}
+
+func selectGiftCurrency() string {
+	cryptos := []struct {
+		Name   string
+		Weight int
+	}{
+		{"BTC", 60},
+		{"TRX", 15},
+		{"XRP", 12},
+		{"SHIB", 6},
+		{"FLOKI", 4},
+		{"NOT", 2},
+		{"BABYDOGE", 1},
+	}
+
+	n := rand.IntN(100)
+
+	for _, crypto := range cryptos {
+		if n < crypto.Weight {
+			return crypto.Name
+		}
+		n -= crypto.Weight
+	}
+
+	return "BTC"
 }

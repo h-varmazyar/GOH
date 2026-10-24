@@ -1,5 +1,20 @@
 # React + TypeScript + Vite
 
+## Docker
+
+Build and run the production image from this directory:
+
+```bash
+docker build \
+  --build-arg NEXT_PUBLIC_API_BASE_URL=https://api.example.com \
+  -t gate-ui .
+docker run --rm -p 3000:3000 gate-ui
+```
+
+The API URL is embedded in the frontend bundle at build time. The container
+serves the SPA on port `3000` and falls back to `index.html` for client-side
+routes.
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:
