@@ -13,6 +13,7 @@ type SubmitAirdropRequest struct {
 	URL             string `json:"url"`
 	SocialMediaCode string `json:"social_media_code"`
 	CurrencySymbol  string `json:"currency_symbol"`
+	AuthToken       string `json:"auth_token"`
 }
 
 type SubmitAirdropResponse struct {
@@ -37,7 +38,7 @@ func (a *Adapter) SubmitAirdrop(ctx context.Context, req SubmitAirdropRequest) (
 		return nil, err
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
-	if authToken := a.getAuthToken(); authToken != "" {
+	if authToken := req.AuthToken; authToken != "" {
 		httpReq.Header.Set("Authorization", authToken)
 	}
 

@@ -55,11 +55,15 @@ func main() {
 	telegramRepo := repositories.NewTelegramAccountRepository(db)
 	filterRepo := repositories.NewTelegramSubscriptionFilterRepository(db)
 	airdropRepo := repositories.NewWallexAirdropRepository(db)
+	giftAllocationRepo := repositories.NewTabdealAllocationRepository(db)
+	userRepo := repositories.NewUserRepository(db)
 	proxyRepo := repositories.NewProxyRepository(db)
 	telegramService := tgAccountService.NewService(cfg.Services.TgAccount, telegramRepo, filterRepo, proxyRepo)
 	service := airdropService.NewService(
 		cfg.Services.AirdropService,
 		airdropRepo,
+		giftAllocationRepo,
+		userRepo,
 		tabdeal.NewAdapter(&cfg.Adapters.Tabdeal),
 		telegramService,
 	)

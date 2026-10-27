@@ -3,7 +3,7 @@ package tabdeal
 import (
 	"fmt"
 	"net/http"
-	"sync/atomic"
+	// "sync/atomic"
 	"time"
 
 	"github.com/h-varmazyar/gatec/configs"
@@ -12,7 +12,7 @@ import (
 type Adapter struct {
 	httpClient *http.Client
 	cfg        *configs.Tabdeal
-	authToken  atomic.Value
+	// authToken  atomic.Value
 }
 
 type AuthError struct {
@@ -31,15 +31,15 @@ func NewAdapter(cfg *configs.Tabdeal) *Adapter {
 			Timeout: 15 * time.Second,
 		},
 	}
-	adapter.authToken.Store(cfg.AuthToken)
+	// adapter.authToken.Store(cfg.AuthToken)
 	return adapter
 }
 
-func (a *Adapter) SetAuthToken(token string) {
-	a.authToken.Store(token)
-}
+// func (a *Adapter) SetAuthToken(token string) {
+// 	a.authToken.Store(token)
+// }
 
-func (a *Adapter) getAuthToken() string {
-	token, _ := a.authToken.Load().(string)
-	return token
-}
+// func (a *Adapter) getAuthToken() string {
+// 	token, _ := a.authToken.Load().(string)
+// 	return token
+// }

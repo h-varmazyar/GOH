@@ -48,7 +48,11 @@ func (r *TabdealAirdropRepository) ListRoutes(ctx context.Context, pg paginator.
 }
 
 func (r *TabdealAirdropRepository) CreateGift(ctx context.Context, gift *models.TabdealAirdropGift) error {
-	return r.db.WithContext(ctx).Create(gift).Error
+	err := r.db.WithContext(ctx).Create(gift).Error
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (r *TabdealAirdropRepository) UpdateGift(ctx context.Context, gift *models.TabdealAirdropGift) error {
@@ -57,7 +61,7 @@ func (r *TabdealAirdropRepository) UpdateGift(ctx context.Context, gift *models.
 
 func (r *TabdealAirdropRepository) GetGift(ctx context.Context, id uint) (*models.TabdealAirdropGift, error) {
 	var gift models.TabdealAirdropGift
-	if err := r.db.WithContext(ctx).First(&gift, id).Error; err != nil {
+	if err := r.db.WithContext(ctx).Preload("Allocations").First(&gift, id).Error; err != nil {
 		return nil, err
 	}
 	return &gift, nil
@@ -69,6 +73,6 @@ func (r *TabdealAirdropRepository) ListGifts(ctx context.Context, pg paginator.P
 
 	r.db.WithContext(ctx).Model(&models.TabdealAirdropGift{}).Count(&total)
 
-	err := pg.Apply(r.db.WithContext(ctx).Order("created_at desc")).Find(&gifts).Error
+	err := pg.Apply(r.db.WithContext(ctx).Order("created_at desc")).Preload("Allocations").Find(&gifts).Error
 	return gifts, total, err
 }

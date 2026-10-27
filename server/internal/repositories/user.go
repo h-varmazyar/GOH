@@ -20,6 +20,15 @@ func (r *UserRepository) FindByMobile(ctx context.Context, mobile string) (*mode
 	return user, r.db.WithContext(ctx).Model(&models.User{}).Where("mobile = ?", mobile).First(user).Error
 }
 
+func (r *UserRepository) List(ctx context.Context, conditions map[string]any) ([]*models.User, error) {
+	users := make([]*models.User, 0)
+	tx := r.db.WithContext(ctx).Model(&models.User{})
+	for condition, value := range conditions {
+		tx = tx.Where(condition, value)
+	}
+	return users, tx.Find(&users).Error
+}
+
 func (r *UserRepository) GetByID(ctx context.Context, id uint) (*models.User, error) {
 	user := new(models.User)
 	return user, r.db.WithContext(ctx).Model(&models.User{}).Where("id = ?", id).First(user).Error

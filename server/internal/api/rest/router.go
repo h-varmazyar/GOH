@@ -49,9 +49,10 @@ func (s *Server) setupAPIRoutes() {
 		airdropHandlerV1.Use(middlewares.NewPublicAuthMiddleware().Handle)
 		airdropHandlerV1.GET("/gifts", s.airdropHandler.ListGifts)
 		airdropHandlerV1.GET("/gifts/:id", s.airdropHandler.GetGift)
-		airdropHandlerV1.POST("/gifts/:id/retry", s.airdropHandler.RetryCollectGift)
 		airdropHandlerV1.GET("/routes", s.airdropHandler.ListRoutes)
 		airdropHandlerV1.POST("/routes", s.airdropHandler.CreateRoute)
+
+		airdropHandlerV1.POST("/gift-allocation/:id/retry", s.airdropHandler.RetryCollectGiftAllocation)
 	}
 
 	if s.applicationLogHandler.HasService() {

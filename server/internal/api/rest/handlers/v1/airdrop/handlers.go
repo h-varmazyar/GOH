@@ -117,13 +117,13 @@ func (h Handler) GetGift(ctx *gin.Context) {
 // @Failure      400 {object} map[string]interface{}
 // @Failure      404 {object} map[string]interface{}
 // @Router       /v1/airdrops/gifts/{id} [get]
-func (h Handler) RetryCollectGift(ctx *gin.Context) {
+func (h Handler) RetryCollectGiftAllocation(ctx *gin.Context) {
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 64)
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	item, err := h.service.RetryCollectGift(ctx, uint(id))
+	item, err := h.service.RetryCollectGiftAllocation(ctx, uint(id))
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
