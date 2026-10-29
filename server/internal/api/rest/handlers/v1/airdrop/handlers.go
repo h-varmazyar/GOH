@@ -117,6 +117,31 @@ func (h Handler) GetGift(ctx *gin.Context) {
 // @Failure      400 {object} map[string]interface{}
 // @Failure      404 {object} map[string]interface{}
 // @Router       /v1/airdrops/gifts/{id} [get]
+func (h Handler) RetryCollectGift(ctx *gin.Context) {
+	id, err := strconv.ParseUint(ctx.Param("id"), 10, 64)
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	item, err := h.service.RetryCollectGift(ctx, uint(id))
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusOK, item)
+}
+
+// GetGift godoc
+// @Summary      Get airdrop gift by ID
+// @Description  Get a specific airdrop gift by its ID
+// @Tags         Airdrop
+// @Produce      json
+// @Security     BearerTokenAuth
+// @Param        id path int true "Gift ID"
+// @Success      200 {object} map[string]interface{}
+// @Failure      400 {object} map[string]interface{}
+// @Failure      404 {object} map[string]interface{}
+// @Router       /v1/airdrops/gifts/{id} [get]
 func (h Handler) RetryCollectGiftAllocation(ctx *gin.Context) {
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 64)
 	if err != nil {

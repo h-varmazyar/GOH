@@ -123,7 +123,7 @@ type depencencies struct {
 	}
 	Adapters struct {
 		Nobitex *nobitex.Adapter
-		Wallex  *tabdeal.Adapter
+		tabdeal *tabdeal.Adapter
 	}
 	DB             *gorm.DB
 	CandleChan     chan crypto.Candle
@@ -215,7 +215,7 @@ func initializeRepositories(_ context.Context, dep *depencencies, logFile string
 	dep.Repositories.Indicator = repositories.NewIndicatorDefinitionRepository(dep.DB)
 	dep.Repositories.User = repositories.NewUserRepository(dep.DB)
 	dep.Repositories.Strategy = repositories.NewStrategyRepository(dep.DB)
-	dep.Repositories.TabdealAirdrop = repositories.NewWallexAirdropRepository(dep.DB)
+	dep.Repositories.TabdealAirdrop = repositories.NewTabdealAirdropRepository(dep.DB)
 	dep.Repositories.GiftAllocaitionRepo = repositories.NewTabdealAllocationRepository(dep.DB)
 	dep.Repositories.Telegram = repositories.NewTelegramAccountRepository(dep.DB)
 	dep.Repositories.TelegramSubscriptionFilter = repositories.NewTelegramSubscriptionFilterRepository(dep.DB)
@@ -231,7 +231,7 @@ func initializeRepositories(_ context.Context, dep *depencencies, logFile string
 }
 
 func initializeAdapters(ctx context.Context, dep *depencencies, cfg configs.Adapters) error {
-	dep.Adapters.Wallex = tabdeal.NewAdapter(&cfg.Tabdeal)
+	dep.Adapters.tabdeal = tabdeal.NewAdapter(&cfg.Tabdeal)
 
 	activeStockProviders, err := dep.Repositories.Provider.ActiveStock(ctx)
 	if err != nil {
@@ -259,6 +259,6 @@ func initializeServices(_ context.Context, dep *depencencies, cfg configs.Servic
 	dep.Service.User = userService.NewService(dep.Repositories.User)
 	dep.Service.Proxy = proxyService.NewService(dep.Repositories.Proxy, dep.Repositories.ProxyAssignment)
 	dep.Service.TgAccount = tgAccountService.NewService(cfg.TgAccount, dep.Repositories.Telegram, dep.Repositories.TelegramSubscriptionFilter, dep.Repositories.Proxy)
-	dep.Service.Airdrop = airdropService.NewService(cfg.AirdropService, dep.Repositories.TabdealAirdrop, dep.Repositories.GiftAllocaitionRepo, dep.Adapters.Wallex, dep.Service.TgAccount)
+	dep.Service.Airdrop = airdropService.NewService(cfg.AirdropService, dep.Repositories.TabdealAirdrop, dep.Repositories.GiftAllocaitionRepo, dep.Repositories.User, dep.Adapters.tabdeal, dep.Service.TgAccount)
 	dep.Service.Messaging = messagingService.NewService(dep.Repositories.Message, dep.Repositories.BotUser, dep.Repositories.AccessRule)
 }

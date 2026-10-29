@@ -43,7 +43,9 @@ func main() {
 	defer sqlDB.Close()
 
 	if err := db.AutoMigrate(
+		&models.User{},
 		&models.TabdealAirdrop{},
+		&models.TabdealGitAllocation{},
 		&models.TabdealAirdropGift{},
 		&models.TelegramAccount{},
 		&models.TelegramSubscriptionFilter{},
@@ -54,7 +56,7 @@ func main() {
 
 	telegramRepo := repositories.NewTelegramAccountRepository(db)
 	filterRepo := repositories.NewTelegramSubscriptionFilterRepository(db)
-	airdropRepo := repositories.NewWallexAirdropRepository(db)
+	airdropRepo := repositories.NewTabdealAirdropRepository(db)
 	giftAllocationRepo := repositories.NewTabdealAllocationRepository(db)
 	userRepo := repositories.NewUserRepository(db)
 	proxyRepo := repositories.NewProxyRepository(db)

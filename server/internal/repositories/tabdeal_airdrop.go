@@ -12,7 +12,7 @@ type TabdealAirdropRepository struct {
 	db *gorm.DB
 }
 
-func NewWallexAirdropRepository(db *gorm.DB) *TabdealAirdropRepository {
+func NewTabdealAirdropRepository(db *gorm.DB) *TabdealAirdropRepository {
 	return &TabdealAirdropRepository{db: db}
 }
 

@@ -28,7 +28,7 @@ func (r *TabdealAllocationRepository) ReturnByID(ctx context.Context, id uint) (
 	return allocation, r.db.
 		WithContext(ctx).
 		Model(&models.TabdealGitAllocation{}).
-		Where("id = ?", allocation.ID).
+		Where("id = ?", id).
 		Preload("Gift").
 		First(allocation).
 		Error

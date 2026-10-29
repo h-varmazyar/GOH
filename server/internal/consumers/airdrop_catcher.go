@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"math/rand/v2"
-	"time"
+	// "math/rand/v2"
+	// "time"
 
 	"github.com/h-varmazyar/gatec/internal/services/airdrop"
 	"github.com/h-varmazyar/gatec/internal/services/tgaccount"
@@ -101,8 +101,8 @@ func (c *AirdropCatcher) handleMessage(ctx context.Context, message *client.Mess
 	case client.TypeMessageText:
 		text = message.Content.(*client.MessageText).Text.Text
 	}
-	delay := time.Minute * time.Duration(rand.Int64N(16)+1)
-	time.Sleep(delay)
+	// delay := time.Minute * time.Duration(rand.Int64N(16)+1)
+	// time.Sleep(delay)
 
 	if _, err := c.service.ProcessTelegramMessage(ctx, message.ChatId, message.Id, text); err != nil {
 		log.Printf("failed to process telegram airdrop message: %v", err)

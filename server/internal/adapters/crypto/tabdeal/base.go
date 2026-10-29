@@ -21,7 +21,7 @@ type AuthError struct {
 }
 
 func (e *AuthError) Error() string {
-	return fmt.Sprintf("wallex auth error: status=%d body=%s", e.StatusCode, e.Body)
+	return fmt.Sprintf("tabdeal auth error: status=%d body=%s", e.StatusCode, e.Body)
 }
 
 func NewAdapter(cfg *configs.Tabdeal) *Adapter {

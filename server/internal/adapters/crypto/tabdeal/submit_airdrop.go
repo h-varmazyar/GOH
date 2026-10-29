@@ -25,7 +25,7 @@ type SubmitAirdropResponse struct {
 func (a *Adapter) SubmitAirdrop(ctx context.Context, req SubmitAirdropRequest) (*SubmitAirdropResponse, error) {
 	baseURL := strings.TrimRight(a.cfg.APIBaseURL, "/")
 	if baseURL == "" {
-		return nil, fmt.Errorf("wallex api base url is empty")
+		return nil, fmt.Errorf("tabdeal api base url is empty")
 	}
 
 	body, err := json.Marshal(req)
@@ -57,7 +57,7 @@ func (a *Adapter) SubmitAirdrop(ctx context.Context, req SubmitAirdropRequest) (
 		return nil, &AuthError{StatusCode: resp.StatusCode, Body: result.Error}
 	}
 	if resp.StatusCode >= http.StatusBadRequest {
-		return nil, fmt.Errorf("wallex airdrop submit failed: status=%d message=%s", resp.StatusCode, result.Error)
+		return nil, fmt.Errorf("tabdeal airdrop submit failed: status=%d message=%s", resp.StatusCode, result.Error)
 	}
 	if result.Currency == "" {
 		result.Currency = req.CurrencySymbol

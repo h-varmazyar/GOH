@@ -19,12 +19,12 @@ import (
 )
 
 const (
-	GiftStatusReceived      = "received"
-	GiftStatusFailed        = "failed"
-	GiftStatusRouteNotFound = "route_not_found"
+	GiftStatusInitiated        = "initiated"
+	GiftStatusReceived         = "received"
+	GiftStatusPartialyReceived = "partialy_received"
+	GiftStatusFailed           = "failed"
+	GiftStatusRouteNotFound    = "route_not_found"
 )
-
-// var SupportedCurrencies = []string{"BTC", "XRP", "SHIB", "FLOKI", "NOT", "TRX"}
 
 type AdminNotifier interface {
 	NotifyAdmin(ctx context.Context, text string)
@@ -34,7 +34,7 @@ type Service struct {
 	tabdealAirdropRepo    *repositories.TabdealAirdropRepository
 	tabdealAllocationRepo *repositories.TabdealAllocationRepository
 	UserRepo              *repositories.UserRepository
-	wallex                *tabdeal.Adapter
+	tabdeal               *tabdeal.Adapter
 	tgAccountService      *tgaccount.Service
 }
 
@@ -43,14 +43,14 @@ func NewService(
 	tabdealAirdropRepo *repositories.TabdealAirdropRepository,
 	tabdealAllocationRepo *repositories.TabdealAllocationRepository,
 	userRepo *repositories.UserRepository,
-	wallexAdapter *tabdeal.Adapter,
+	tabdealAdapter *tabdeal.Adapter,
 	tgAccountService *tgaccount.Service,
 ) *Service {
 	return &Service{
 		tabdealAirdropRepo:    tabdealAirdropRepo,
 		tabdealAllocationRepo: tabdealAllocationRepo,
 		UserRepo:              userRepo,
-		wallex:                wallexAdapter,
+		tabdeal:               tabdealAdapter,
 		tgAccountService:      tgAccountService,
 	}
 }
@@ -87,23 +87,80 @@ func (s *Service) RetryCollectGiftAllocation(ctx context.Context, id uint) (*mod
 		allocation.Gift.Route = route.Route
 	}
 
+	return s.reSubmitAllocation(ctx, allocation)
+}
+
+func (s *Service) reSubmitAllocation(ctx context.Context, allocation *models.TabdealGitAllocation) (*models.TabdealGitAllocation, error) {
+	user, err := s.UserRepo.GetByID(ctx, allocation.UserID)
+	if err != nil {
+		return nil, err
+	}
 	req := tabdeal.SubmitAirdropRequest{
 		URL:             allocation.Gift.Route,
 		SocialMediaCode: allocation.Gift.GiftCode,
 		CurrencySymbol:  allocation.Currency,
+		AuthToken:       user.TabdealEncryptedToken,
 	}
-	resp, err := s.wallex.SubmitAirdrop(ctx, req)
+	resp, err := s.tabdeal.SubmitAirdrop(ctx, req)
 	if err != nil {
-		allocation.Gift.ErrorMessage = err.Error()
-		_ = s.tabdealAllocationRepo.Update(ctx, allocation)
-		return allocation, err
+		allocation.ErrorMessage = err.Error()
+		allocation.Status = GiftStatusFailed
+	} else {
+		allocation.Status = GiftStatusReceived
+		allocation.ErrorMessage = ""
+		if resp.Currency != "" {
+			allocation.Currency = resp.Currency
+		}
 	}
 
-	allocation.Gift.ErrorMessage = ""
-	if resp.Currency != "" {
-		allocation.Currency = resp.Currency
-	}
 	return allocation, s.tabdealAllocationRepo.Update(ctx, allocation)
+}
+
+func (s *Service) RetryCollectGift(ctx context.Context, id uint) (*models.TabdealAirdropGift, error) {
+	gift, err := s.tabdealAirdropRepo.GetGift(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	if gift.Route == "" {
+		route, err := s.tabdealAirdropRepo.FindRouteByPhrase(ctx, gift.SearchPhrase)
+		if err != nil {
+			return nil, err
+		}
+		gift.Route = route.Route
+	}
+
+	if len(gift.Allocations) == 0 {
+		if completelyCoolected, err := s.collectGift(ctx, gift); err != nil {
+			gift.Status = GiftStatusFailed
+			gift.ErrorMessage = err.Error()
+		} else if completelyCoolected {
+			gift.Status = GiftStatusReceived
+		} else {
+			gift.Status = GiftStatusPartialyReceived
+		}
+		return gift, s.tabdealAirdropRepo.UpdateGift(ctx, gift)
+	}
+
+	collectedCount := 0
+	for i, allocation := range gift.Allocations {
+		if allocation.Status == GiftStatusFailed {
+			alloc, err := s.reSubmitAllocation(ctx, allocation)
+			if err == nil {
+				gift.Allocations[i] = alloc
+				collectedCount++
+			}
+		} else {
+			collectedCount++
+		}
+	}
+	if collectedCount == len(gift.Allocations) {
+		gift.Status = GiftStatusReceived
+		gift.ErrorMessage = ""
+		return gift, s.tabdealAirdropRepo.UpdateGift(ctx, gift)
+	}
+
+	return gift, nil
 }
 
 func (s *Service) ProcessTelegramMessage(ctx context.Context, chatID, messageID int64, raw string) (*models.TabdealAirdropGift, error) {
@@ -147,51 +204,69 @@ func (s *Service) ProcessTelegramMessage(ctx context.Context, chatID, messageID 
 		return gift, gorm.ErrRecordNotFound
 	}
 	gift.Route = route.Route
-	gift.Status = GiftStatusFailed
+	gift.Status = GiftStatusInitiated
 	if err := s.tabdealAirdropRepo.CreateGift(ctx, gift); err != nil {
 		return gift, err
 	}
 
-	if err = s.collectGift(ctx, code, gift); err != nil {
+	if completelyCoolected, err := s.collectGift(ctx, gift); err != nil {
 		gift.Status = GiftStatusFailed
-	} else {
+		gift.ErrorMessage = err.Error()
+	} else if completelyCoolected {
 		gift.Status = GiftStatusReceived
+	} else {
+		gift.Status = GiftStatusPartialyReceived
 	}
 	return gift, s.tabdealAirdropRepo.UpdateGift(ctx, gift)
 }
 
-func (s *Service) collectGift(ctx context.Context, code string, gift *models.TabdealAirdropGift) error {
+func (s *Service) collectGift(ctx context.Context, gift *models.TabdealAirdropGift) (bool, error) {
 	users, err := s.UserRepo.List(ctx, map[string]any{
-		"tabdeal_soken_status = ?": consts.TabdealStatusEnable,
+		"tabdeal_token_status = ?": consts.TabdealStatusEnable,
 	})
 	if err != nil {
-		return err
+		return false, err
 	}
-	allocation := models.TabdealGitAllocation{
-		GiftID:   gift.ID,
-		Currency: selectGiftCurrency(),
+	if len(users) == 0 {
+		return false, fmt.Errorf("no active user found")
 	}
 
+	collectCount := 0
 	for _, user := range users {
-		allocation.UserID = user.ID
+		allocation := models.TabdealGitAllocation{
+			GiftID:   gift.ID,
+			Currency: selectGiftCurrency(),
+			UserID:   user.ID,
+		}
+
 		req := tabdeal.SubmitAirdropRequest{
 			URL:             gift.Route,
-			SocialMediaCode: code,
+			SocialMediaCode: gift.GiftCode,
 			CurrencySymbol:  allocation.Currency,
-			AuthToken:       "",
+			AuthToken:       user.TabdealEncryptedToken,
 		}
-		_, err := s.wallex.SubmitAirdrop(ctx, req)
-		if err != nil {
-			allocation.ErrorMessage = err.Error()
+		if user.TabdealEncryptedToken == "" {
+			allocation.ErrorMessage = "tabdeal token not found"
 			allocation.Status = GiftStatusFailed
 		} else {
-			allocation.Status = GiftStatusReceived
-			allocation.ErrorMessage = ""
+			_, err := s.tabdeal.SubmitAirdrop(ctx, req)
+			if err != nil {
+				allocation.ErrorMessage = err.Error()
+				allocation.Status = GiftStatusFailed
+			} else {
+				allocation.Status = GiftStatusReceived
+				allocation.ErrorMessage = ""
+				collectCount++
+			}
 		}
 		_ = s.tabdealAllocationRepo.Create(ctx, &allocation)
 
 	}
-	return nil
+
+	if collectCount == len(users) {
+		return true, nil
+	}
+	return false, nil
 }
 
 func parseMessageCandidates(raw string) ([]string, string, error) {

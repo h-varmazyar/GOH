@@ -67,7 +67,6 @@ func Load() (*Config, error) {
 			},
 			Tabdeal: Tabdeal{
 				APIBaseURL: loadString("ADAPTER_TABDEAL_API_BASE_URL"),
-				AuthToken:  loadFile(loadString("ADAPTER_TABDEAL_AUTH_TOKEN")),
 			},
 		},
 
