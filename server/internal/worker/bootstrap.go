@@ -13,6 +13,7 @@ import (
 	"github.com/h-varmazyar/gatec/internal/repositories"
 	tgAccountService "github.com/h-varmazyar/gatec/internal/services/tgaccount"
 	"github.com/h-varmazyar/gatec/internal/worker/events"
+	clickhouseClient "github.com/h-varmazyar/gatec/pkg/clickhouse"
 	gormext "github.com/h-varmazyar/gatec/pkg/gormOld"
 	"github.com/h-varmazyar/gatec/pkg/tgclient"
 	"gorm.io/gorm"
@@ -31,12 +32,13 @@ type dependencyPlan struct {
 	stockDailyData       bool
 	tseMarket            bool
 	tseDailyClosingPrice bool
+	tseTradeHistory      bool
 	signalWorker         bool
 	cryptoProviders      bool
 	stockProviders       bool
 }
 
-func dependencyNeeds(names []string) dependencyPlan {
+func dependencyNeeds(names []string, cfg *configs.Config) dependencyPlan {
 	var needs dependencyPlan
 	for _, name := range names {
 		switch name {
@@ -76,12 +78,28 @@ func dependencyNeeds(names []string) dependencyPlan {
 			needs.asset = true
 			needs.tseMarket = true
 			needs.stockProviders = true
-		case "tse-market-history-sync", "tse-market-data-sync":
+		case "tse-market-history-sync":
 			needs.market = true
 			needs.candle = true
 			needs.tseMarket = true
 			needs.tseDailyClosingPrice = true
 			needs.stockProviders = true
+		case "tse-market-data-sync":
+			needs.market = true
+			needs.candle = true
+			needs.tseMarket = true
+			needs.tseDailyClosingPrice = true
+			needs.stockProviders = true
+			if cfg == nil ||
+				cfg.Workers.TSEMarketDataSync == nil ||
+				cfg.Workers.TSEMarketDataSync.Mode == "" ||
+				cfg.Workers.TSEMarketDataSync.Mode == consts.TSEMarketDataToday {
+				needs.tseTradeHistory = true
+			}
+		case "tse-trade-history":
+			needs.tseMarket = true
+			needs.stockProviders = true
+			needs.tseTradeHistory = true
 		case "tse-market-watch":
 			needs.market = true
 			needs.tseMarket = true
@@ -94,7 +112,7 @@ func dependencyNeeds(names []string) dependencyPlan {
 
 // StandaloneFactory opens the dependencies required by worker processes and
 // returns a factory that can create only the workers selected by the caller.
-func StandaloneFactory(ctx context.Context, cfg *configs.Config, names ...string) (*WorkerFactory, func(), error) {
+func StandaloneFactory(ctx context.Context, cfg *configs.Config, ch *clickhouseClient.Client, names ...string) (*WorkerFactory, func(), error) {
 	db, err := gormext.Open(cfg.Postgres)
 	if err != nil {
 		return nil, nil, err
@@ -106,7 +124,7 @@ func StandaloneFactory(ctx context.Context, cfg *configs.Config, names ...string
 		}
 	}
 
-	needs := dependencyNeeds(names)
+	needs := dependencyNeeds(names, cfg)
 	if err := migrateWorkerModels(db, needs); err != nil {
 		closeDB()
 		return nil, nil, fmt.Errorf("worker migration failed: %w", err)
@@ -181,6 +199,22 @@ func StandaloneFactory(ctx context.Context, cfg *configs.Config, names ...string
 	if needs.tseDailyClosingPrice {
 		dailyClosingRepo = repositories.NewTSEDailyClosingPriceRepository(db)
 	}
+	var tradeHistoryRepo *repositories.TradeHistoryRepository
+	if needs.tseTradeHistory {
+		if ch == nil {
+			closeDB()
+			return nil, nil, fmt.Errorf("ClickHouse client is required for TSE trade history")
+		}
+		tradeHistoryRepo, err = repositories.NewTradeHistoryRepository(ch)
+		if err != nil {
+			closeDB()
+			return nil, nil, err
+		}
+		if err := tradeHistoryRepo.EnsureSchema(ctx); err != nil {
+			closeDB()
+			return nil, nil, err
+		}
+	}
 
 	var cryptoProviders []crypto.Crypto
 	if needs.cryptoProviders {
@@ -217,6 +251,7 @@ func StandaloneFactory(ctx context.Context, cfg *configs.Config, names ...string
 			StockDailyData:       stockDailyRepo,
 			TSEMarket:            tseMarketRepo,
 			TSEDailyClosingPrice: dailyClosingRepo,
+			TSETradeHistory:      tradeHistoryRepo,
 			StrategyDefinition:   strategyDefinitionRepo,
 			Signal:               signalRepo,
 		},

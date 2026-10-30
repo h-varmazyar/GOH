@@ -28,6 +28,7 @@ var workerNames = []string{
 	"tse-market-history-sync",
 	// "tse-market-daily-sync",
 	"tse-market-data-sync",
+	"tse-trade-history",
 	"tse-market-watch",
 }
 
@@ -78,6 +79,7 @@ type RepositoriesBundle struct {
 	StockDailyData       *repositories.StockDailyDataRepository
 	TSEMarket            *repositories.TSEMarketRepository
 	TSEDailyClosingPrice *repositories.TSEDailyClosingPriceRepository
+	TSETradeHistory      *repositories.TradeHistoryRepository
 	TSEIndicatorSnapshot *repositories.TSEIndicatorSnapshotRepository
 	StrategyDefinition   *repositories.StrategyDefinitionRepository
 	Signal               *repositories.SignalRepository
@@ -303,6 +305,17 @@ func (f *WorkerFactory) createWorkerLocked(name string) (Worker, error) {
 			f.bundles.Repositories.TSEMarket,
 			f.bundles.Repositories.TSEDailyClosingPrice,
 			f.bundles.EventBus,
+			f.bundles.Repositories.TSETradeHistory,
+		), nil
+	case "tse-trade-history":
+		if f.cfg.TSETradeHistory == nil || len(f.bundles.Adapters.StockProviders) == 0 {
+			return nil, fmt.Errorf("tse-trade-history dependencies are missing")
+		}
+		return workers.NewTSETradeHistory(
+			f.bundles.Adapters.StockProviders[0],
+			f.cfg.TSETradeHistory,
+			f.bundles.Repositories.TSEMarket,
+			f.bundles.Repositories.TSETradeHistory,
 		), nil
 	case "tse-market-watch":
 		if f.cfg.TSEMarketWatch == nil || len(f.bundles.Adapters.StockProviders) == 0 {

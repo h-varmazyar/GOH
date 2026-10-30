@@ -10,12 +10,14 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/h-varmazyar/gatec/configs"
+	"github.com/h-varmazyar/gatec/internal/consts"
 	"github.com/h-varmazyar/gatec/internal/worker"
+	clickhouseClient "github.com/h-varmazyar/gatec/pkg/clickhouse"
 	"github.com/h-varmazyar/gatec/pkg/logger"
 	"github.com/sirupsen/logrus"
 )
@@ -43,7 +45,10 @@ func main() {
 	if err != nil {
 		logrus.WithError(err).Fatal("parse worker arguments")
 	}
-	if len(names) == 0 { printUsage(); os.Exit(1) }
+	if len(names) == 0 {
+		printUsage()
+		os.Exit(1)
+	}
 	if collectionMethod != "" {
 		cfg.Workers.TSEMarketDataSync.CollectionMethod = collectionMethod
 	}
@@ -53,7 +58,25 @@ func main() {
 	if cfg.Workers.TSEMarketDataSync.CollectionMethod == "ins_codes" && len(cfg.Workers.TSEMarketDataSync.InsCodes) == 0 {
 		logrus.Fatal("--ins-codes is required when --collection-method=ins_codes")
 	}
-	factory, closeDependencies, err := worker.StandaloneFactory(ctx, cfg, names...)
+	var ch *clickhouseClient.Client
+	needsTradeHistory := false
+	for _, name := range names {
+		if name == "tse-trade-history" ||
+			(name == "tse-market-data-sync" &&
+				(cfg.Workers.TSEMarketDataSync.Mode == "" || cfg.Workers.TSEMarketDataSync.Mode == consts.TSEMarketDataToday)) {
+			needsTradeHistory = true
+			break
+		}
+	}
+	if needsTradeHistory {
+		ch, err = clickhouseClient.New(cfg.ClickHouse)
+		if err != nil {
+			logrus.WithError(err).Fatal("initialize ClickHouse client")
+		}
+		defer ch.Close()
+	}
+
+	factory, closeDependencies, err := worker.StandaloneFactory(ctx, cfg, ch, names...)
 	if err != nil {
 		logrus.WithError(err).Fatal("initialize worker dependencies")
 	}
@@ -67,7 +90,7 @@ func main() {
 			logrus.WithError(err).WithField("worker", name).Fatal("start worker")
 		}
 	}
-	if len(names) == 1 && names[0] == "tse-market-data-sync" && cfg.Workers.TSEMarketDataSync.Mode != "today" {
+	if len(names) == 1 && (names[0] == "tse-trade-history" || (names[0] == "tse-market-data-sync" && cfg.Workers.TSEMarketDataSync.Mode != "today")) {
 		if err := factory.WaitWorker(ctx, names[0]); err != nil && ctx.Err() == nil {
 			logrus.WithError(err).Error("one-shot worker failed")
 		}
@@ -89,25 +112,39 @@ func parseWorkerArgs(args []string) ([]string, string, string, error) {
 		case strings.HasPrefix(arg, "--collection-method="):
 			method = strings.TrimPrefix(arg, "--collection-method=")
 		case arg == "--collection-method":
-			if i+1 == len(args) { return nil, "", "", fmt.Errorf("--collection-method requires a value") }
-			i++; method = args[i]
+			if i+1 == len(args) {
+				return nil, "", "", fmt.Errorf("--collection-method requires a value")
+			}
+			i++
+			method = args[i]
 		case strings.HasPrefix(arg, "--ins-codes="):
 			codes = strings.TrimPrefix(arg, "--ins-codes=")
 		case arg == "--ins-codes":
-			if i+1 == len(args) { return nil, "", "", fmt.Errorf("--ins-codes requires a comma-separated value") }
-			i++; codes = args[i]
+			if i+1 == len(args) {
+				return nil, "", "", fmt.Errorf("--ins-codes requires a comma-separated value")
+			}
+			i++
+			codes = args[i]
 		default:
-			if strings.HasPrefix(arg, "-") { return nil, "", "", fmt.Errorf("unknown option %q", arg) }
+			if strings.HasPrefix(arg, "-") {
+				return nil, "", "", fmt.Errorf("unknown option %q", arg)
+			}
 			names = append(names, arg)
 		}
 	}
-	if method != "" && method != "all" && method != "missed" && method != "ins_codes" { return nil, "", "", fmt.Errorf("invalid collection method %q", method) }
+	if method != "" && method != "all" && method != "missed" && method != "ins_codes" {
+		return nil, "", "", fmt.Errorf("invalid collection method %q", method)
+	}
 	return names, method, codes, nil
 }
 
 func splitInsCodes(value string) []string {
 	items := []string{}
-	for _, item := range strings.Split(value, ",") { if item = strings.TrimSpace(item); item != "" { items = append(items, item) } }
+	for _, item := range strings.Split(value, ",") {
+		if item = strings.TrimSpace(item); item != "" {
+			items = append(items, item)
+		}
+	}
 	return items
 }
 

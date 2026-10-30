@@ -29,10 +29,18 @@ type Config struct {
 	// Environment
 	Environment string
 
-	Adapters Adapters
-	Workers  Workers
-	Services Services
-	NATS     NATS
+	Adapters   Adapters
+	Workers    Workers
+	Services   Services
+	NATS       NATS
+	ClickHouse ClickHouse
+}
+
+type ClickHouse struct {
+	URL      string
+	Database string
+	Username string
+	Password string
 }
 
 type NATS struct {
@@ -87,6 +95,7 @@ type Workers struct {
 	TSEMarketDailySync   *TSEMarketDailySync
 	TSEMarketWatch       *TSEMarketWatch
 	TSEMarketDataSync    *TSEMarketDataSync
+	TSETradeHistory      *TSETradeHistory
 }
 
 type TSEMarketHistorySync struct {
@@ -112,6 +121,8 @@ type TSEMarketWatch struct {
 	EndMin       int
 	PollInterval time.Duration
 }
+
+type TSETradeHistory struct{}
 
 type TSEMarketDataSync struct {
 	Mode             consts.TSEMarketDataMode

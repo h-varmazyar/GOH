@@ -28,6 +28,7 @@ import (
 	tgAccountService "github.com/h-varmazyar/gatec/internal/services/tgaccount"
 	userService "github.com/h-varmazyar/gatec/internal/services/user"
 
+	clickhouseClient "github.com/h-varmazyar/gatec/pkg/clickhouse"
 	gormext "github.com/h-varmazyar/gatec/pkg/gormOld"
 	"github.com/h-varmazyar/gatec/pkg/logger"
 	jwtPkg "github.com/h-varmazyar/gopack/jwt"
@@ -51,6 +52,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	defer dep.ClickHouse.Close()
 
 	if err := jwtPkg.Load(cfg.Jwt); err != nil {
 		panic("failed to load jwt config:" + err.Error())
@@ -104,6 +106,7 @@ type depencencies struct {
 		TSEMarket                  *repositories.TSEMarketRepository
 		TSEDailyClosingPrice       *repositories.TSEDailyClosingPriceRepository
 		TSEIndicatorSnapshot       *repositories.TSEIndicatorSnapshotRepository
+		TSETradeHistory            *repositories.TradeHistoryRepository
 		BotUser                    *repositories.BotUserRepository
 		Message                    *repositories.MessageRepository
 		AccessRule                 *repositories.AccessRuleRepository
@@ -126,6 +129,7 @@ type depencencies struct {
 		tabdeal *tabdeal.Adapter
 	}
 	DB             *gorm.DB
+	ClickHouse     *clickhouseClient.Client
 	CandleChan     chan crypto.Candle
 	Providers      []crypto.Crypto
 	StockProviders []*tse.Adapter
@@ -138,6 +142,27 @@ func initializeDependencies(ctx context.Context, cfg *configs.Config) (*depencen
 
 	dep.DB, err = gormext.Open(cfg.Postgres)
 	if err != nil {
+		return nil, err
+	}
+	dep.ClickHouse, err = clickhouseClient.New(cfg.ClickHouse)
+	if err != nil {
+		sqlDB, closeErr := dep.DB.DB()
+		if closeErr == nil {
+			_ = sqlDB.Close()
+		}
+		return nil, fmt.Errorf("initialize ClickHouse client: %w", err)
+	}
+	clickHouseReady := false
+	defer func() {
+		if !clickHouseReady {
+			dep.ClickHouse.Close()
+		}
+	}()
+	if err = dep.ClickHouse.Ping(ctx); err != nil {
+		sqlDB, closeErr := dep.DB.DB()
+		if closeErr == nil {
+			_ = sqlDB.Close()
+		}
 		return nil, err
 	}
 	if dep.DB.Migrator().HasIndex("dynamic_configs", "idx_dynamic_configs_key") {
@@ -176,6 +201,13 @@ func initializeDependencies(ctx context.Context, cfg *configs.Config) (*depencen
 	dep.CandleChan = make(chan crypto.Candle, 1000)
 
 	initializeRepositories(ctx, dep, cfg.LogFile)
+	dep.Repositories.TSETradeHistory, err = repositories.NewTradeHistoryRepository(dep.ClickHouse)
+	if err != nil {
+		return nil, err
+	}
+	if err = dep.Repositories.TSETradeHistory.EnsureSchema(ctx); err != nil {
+		return nil, fmt.Errorf("initialize TSE trade history repository: %w", err)
+	}
 	if err = initializeAdapters(ctx, dep, cfg.Adapters); err != nil {
 		return nil, err
 	}
@@ -202,6 +234,7 @@ func initializeDependencies(ctx context.Context, cfg *configs.Config) (*depencen
 
 	initializeServices(ctx, dep, cfg.Services)
 
+	clickHouseReady = true
 	return dep, nil
 }
 

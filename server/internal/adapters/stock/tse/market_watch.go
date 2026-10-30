@@ -9,8 +9,6 @@ import (
 	"strings"
 )
 
-const marketWatchURL = "https://old.tsetmc.com/tsev2/data/MarketWatchInit.aspx"
-
 type MarketWatchRecord struct {
 	InsCode        string `json:"ins_code"`         //ins_code
 	Code12         string `json:"code_12"`          //isin

@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 type TSEMarket struct {
 	ID                  uint    `gorm:"primaryKey"`
 	MarketID            uint    `gorm:"not null;index"`
@@ -13,6 +15,7 @@ type TSEMarket struct {
 	SymbolType          string
 	IndustryGroupCode   string
 	IndustrySubCode     string
+	IPODate             time.Time
 }
 
 func (TSEMarket) TableName() string { return "tse_markets" }

@@ -2,6 +2,7 @@ package workers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"sync/atomic"
@@ -18,22 +19,23 @@ import (
 )
 
 type TSEMarketDataSync struct {
-	adapter         *tse.Adapter
-	marketRepo      *repositories.TSEMarketRepository
-	dailyRepo       *repositories.TSEDailyClosingPriceRepository
-	candleRepo      *repositories.CandleRepository
-	requestInterval time.Duration
-	config          *configs.TSEMarketDataSync
-	logger          *logrus.Entry
-	eventBus        events.CandleBus
-	receivedData    atomic.Int64
+	adapter          *tse.Adapter
+	marketRepo       *repositories.TSEMarketRepository
+	dailyRepo        *repositories.TSEDailyClosingPriceRepository
+	tradeHistoryRepo *repositories.TradeHistoryRepository
+	candleRepo       *repositories.CandleRepository
+	requestInterval  time.Duration
+	config           *configs.TSEMarketDataSync
+	logger           *logrus.Entry
+	eventBus         events.CandleBus
+	receivedData     atomic.Int64
 }
 
-func NewTSEMarketDataSync(adapter *tse.Adapter, cfg *configs.TSEMarketDataSync, marketRepo *repositories.TSEMarketRepository, dailyRepo *repositories.TSEDailyClosingPriceRepository) *TSEMarketDataSync {
-	return NewTSEMarketDataSyncWithBus(adapter, cfg, marketRepo, dailyRepo, nil)
+func NewTSEMarketDataSync(adapter *tse.Adapter, cfg *configs.TSEMarketDataSync, marketRepo *repositories.TSEMarketRepository, dailyRepo *repositories.TSEDailyClosingPriceRepository, tradeHistoryRepo *repositories.TradeHistoryRepository) *TSEMarketDataSync {
+	return NewTSEMarketDataSyncWithBus(adapter, cfg, marketRepo, dailyRepo, nil, tradeHistoryRepo)
 }
 
-func NewTSEMarketDataSyncWithBus(adapter *tse.Adapter, cfg *configs.TSEMarketDataSync, marketRepo *repositories.TSEMarketRepository, dailyRepo *repositories.TSEDailyClosingPriceRepository, eventBus events.CandleBus) *TSEMarketDataSync {
+func NewTSEMarketDataSyncWithBus(adapter *tse.Adapter, cfg *configs.TSEMarketDataSync, marketRepo *repositories.TSEMarketRepository, dailyRepo *repositories.TSEDailyClosingPriceRepository, eventBus events.CandleBus, tradeHistoryRepo *repositories.TradeHistoryRepository) *TSEMarketDataSync {
 	if cfg.Mode == "" {
 		cfg.Mode = consts.TSEMarketDataToday
 	}
@@ -41,13 +43,14 @@ func NewTSEMarketDataSyncWithBus(adapter *tse.Adapter, cfg *configs.TSEMarketDat
 		cfg.RequestInterval = 0
 	}
 	return &TSEMarketDataSync{
-		adapter:         adapter,
-		marketRepo:      marketRepo,
-		dailyRepo:       dailyRepo,
-		requestInterval: cfg.RequestInterval,
-		config:          cfg,
-		logger:          logrus.WithField("worker", "tse-market-data-sync"),
-		eventBus:        eventBus,
+		adapter:          adapter,
+		marketRepo:       marketRepo,
+		dailyRepo:        dailyRepo,
+		requestInterval:  cfg.RequestInterval,
+		config:           cfg,
+		logger:           logrus.WithField("worker", "tse-market-data-sync"),
+		eventBus:         eventBus,
+		tradeHistoryRepo: tradeHistoryRepo,
 	}
 }
 
@@ -86,7 +89,8 @@ func (w *TSEMarketDataSync) syncAllMarkets(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("list TSE markets: %w", err)
 	}
-	if w.config.CollectionMethod == "ins_codes" {
+	switch w.config.CollectionMethod {
+	case "ins_codes":
 		wanted := make(map[string]bool, len(w.config.InsCodes))
 		for _, code := range w.config.InsCodes {
 			wanted[strings.TrimSpace(code)] = true
@@ -98,7 +102,7 @@ func (w *TSEMarketDataSync) syncAllMarkets(ctx context.Context) error {
 			}
 		}
 		markets = filtered
-	} else if w.config.CollectionMethod == "missed" {
+	case "missed":
 		from, to := w.collectionBounds()
 		known, err := w.dailyRepo.MarketsWithPrices(ctx, from, to)
 		if err != nil {
@@ -115,6 +119,8 @@ func (w *TSEMarketDataSync) syncAllMarkets(ctx context.Context) error {
 			}
 		}
 		markets = filtered
+	default:
+		return fmt.Errorf("please set collection method")
 	}
 	for index, market := range markets {
 		if err := ctx.Err(); err != nil {
@@ -186,36 +192,42 @@ func (w *TSEMarketDataSync) syncMarket(ctx context.Context, market *models.TSEMa
 	market.Nav = info.Nav
 	market.EPS = info.EPS
 
-	states, err := w.adapter.FetchInstrumentStateHistory(ctx, info.InsCode)
-	if err != nil {
-		return fmt.Errorf("fetch instrument state history: %w", err)
-	}
-	if len(states) > 0 {
-		market.InstrumentStateCode = states[0].Code
-		market.Market.StateUpdatedAt = &states[0].Date
-	}
+	// states, err := w.adapter.FetchInstrumentStateHistory(ctx, info.InsCode)
+	// if err != nil {
+	// 	return fmt.Errorf("fetch instrument state history: %w", err)
+	// }
+	// if len(states) > 0 {
+	// 	market.InstrumentStateCode = states[0].Code
+	// 	market.Market.StateUpdatedAt = &states[0].Date
+	// }
 
 	if w.config.Mode == consts.TSEMarketDataToday {
-		return w.syncToday(ctx, market, info.InsCode)
+		return errors.Join(
+			w.syncToday(ctx, market),
+			w.syncTodayTradeHistory(ctx, market),
+		)
 	}
+
 	prices, err := w.adapter.FetchClosingPriceHistory(ctx, info.InsCode)
 	if err != nil {
 		return fmt.Errorf("fetch closing price history: %w", err)
 	}
+
 	participants, err := w.adapter.FetchClientTypeHistory(ctx, info.InsCode)
 	if err != nil {
 		return fmt.Errorf("fetch client type history: %w", err)
 	}
+
 	return w.syncHistory(ctx, market, prices, participants)
 }
 
-func (w *TSEMarketDataSync) syncToday(ctx context.Context, market *models.TSEMarket, insCode string) error {
+func (w *TSEMarketDataSync) syncToday(ctx context.Context, market *models.TSEMarket) error {
 	logrus.Info("sync today market")
-	todayPrice, err := w.adapter.FetchCurrentClosingPrice(ctx, insCode)
+	todayPrice, err := w.adapter.FetchCurrentClosingPrice(ctx, market.InsCode)
 	if err != nil {
 		return fmt.Errorf("fetch current closing price: %w", err)
 	}
-	participant, err := w.adapter.FetchCurrentClientType(ctx, insCode)
+	participant, err := w.adapter.FetchCurrentClientType(ctx, market.InsCode)
 	if err != nil {
 		return fmt.Errorf("fetch current client type: %w", err)
 	}
@@ -231,7 +243,74 @@ func (w *TSEMarketDataSync) syncToday(ctx context.Context, market *models.TSEMar
 	return w.syncRows(ctx, prices)
 }
 
-func (w *TSEMarketDataSync) syncHistory(ctx context.Context, market *models.TSEMarket, prices []tse.ClosingPriceHistory, participants []tse.ClientType) error {
+func (w *TSEMarketDataSync) syncTodayTradeHistory(ctx context.Context, market *models.TSEMarket) error {
+	if w.tradeHistoryRepo == nil {
+		return fmt.Errorf("TSE trade history repository is required in today mode")
+	}
+	location, err := time.LoadLocation("Asia/Tehran")
+	if err != nil {
+		return fmt.Errorf("load Asia/Tehran timezone: %w", err)
+	}
+	today := time.Now().In(location)
+	tradeDate := today.Format("2006-01-02")
+	var trades []tse.TradeHistory
+	for attempt := 1; attempt <= tradeHistoryMaxAttempts; attempt++ {
+		trades, err = w.adapter.FetchTradeHistory(ctx, market.InsCode, today.Format("20060102"))
+		if err == nil {
+			break
+		}
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		if attempt == tradeHistoryMaxAttempts {
+			return fmt.Errorf("fetch trade history after %d attempts: %w", attempt, err)
+		}
+		w.logger.WithError(err).WithFields(logrus.Fields{
+			"market_id": market.MarketID,
+			"ins_code":  market.InsCode,
+			"date":      tradeDate,
+			"attempt":   attempt,
+		}).Warn("retrying TSE trade history fetch")
+		if !w.waitDuration(ctx, tradeHistoryRetryDelay) {
+			return ctx.Err()
+		}
+	}
+	if len(trades) == 0 {
+		return nil
+	}
+	rows := make([]models.TSETradeHistory, len(trades))
+	version := uint64(time.Now().UnixNano())
+	for index, trade := range trades {
+		rows[index] = models.TSETradeHistory{
+			MarketID:   uint64(market.MarketID),
+			InsCode:    market.InsCode,
+			TradeDate:  tradeDate,
+			TradeIndex: uint32(index),
+			Canceled:   trade.Canceled,
+			TradeTime:  int64(trade.TradeTime),
+			Price:      int64(trade.Price),
+			Quantity:   int64(trade.Quantity),
+			Version:    version,
+		}
+	}
+	if err := w.tradeHistoryRepo.Insert(ctx, rows); err != nil {
+		return fmt.Errorf("save trade history: %w", err)
+	}
+	w.logger.WithFields(logrus.Fields{
+		"market_id": market.MarketID,
+		"ins_code":  market.InsCode,
+		"date":      tradeDate,
+		"count":     len(rows),
+	}).Info("TSE trade history synced")
+	return nil
+}
+
+func (w *TSEMarketDataSync) syncHistory(
+	ctx context.Context,
+	market *models.TSEMarket,
+	prices []tse.ClosingPriceHistory,
+	participants []tse.ClientType,
+) error {
 	from, to := w.bounds()
 	pricesMap := make(map[int64]models.TSEDailyClosingPrice)
 	for _, item := range prices {

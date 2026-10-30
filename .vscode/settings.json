@@ -3,6 +3,14 @@
         "/^git --no-pager diff -- deployment/deploy\\.conf && printf '\\\\n--- tooling ---\\\\n' && \\(docker --version \\|\\| true\\) && \\(node --version \\|\\| true\\) && test -d frontend/node_modules && echo 'frontend/node_modules present' \\|\\| true$/": {
             "approve": true,
             "matchCommandLine": true
+        },
+        "/^gofmt -w server/internal/worker/workers/tse_trade_history\\.go && cd server && go test \\./internal/worker/workers$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^gofmt -d server/internal/worker/workers/tse_trade_history\\.go && git status --short -- server/internal/worker/workers/tse_trade_history\\.go server/internal/repositories/trade_history\\.go$/": {
+            "approve": true,
+            "matchCommandLine": true
         }
     }
 }

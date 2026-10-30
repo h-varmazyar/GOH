@@ -82,6 +82,7 @@ func Load() (*Config, error) {
 			// TSEMarketDataSyncEnabled:    loadBool("WORKER_TSE_MARKET_DATA_SYNC_ENABLED"),
 			// TSEMarketDailySyncEnabled:   loadOptionalBool("WORKER_TSE_MARKET_DAILY_SYNC_ENABLED", false),
 			TSEMarketWatchEnabled: loadOptionalBool("WORKER_TSE_MARKET_WATCH_ENABLED", false),
+			TSETradeHistory:       &TSETradeHistory{},
 			IndicatorCalculator: &IndicatorCalculator{
 				ExecutionIttrationDuration: loadDuration("WORKER_INDICATOR_CALCULATOR_EXECUTION_ITTRATION_DURATION"),
 				SignalPipelineCount:        1,
@@ -145,6 +146,12 @@ func Load() (*Config, error) {
 			CandleSubject:   loadOptionalString("NATS_CANDLE_SUBJECT", "market.candle.updated"),
 			SnapshotSubject: loadOptionalString("NATS_CANDLE_SNAPSHOT_SUBJECT", "market.candle.indicators"),
 			ConsumerPrefix:  loadOptionalString("NATS_WORKER_CONSUMER_PREFIX", "gatec-indicator"),
+		},
+		ClickHouse: ClickHouse{
+			URL:      loadOptionalString("CLICKHOUSE_URL", "http://localhost:8123"),
+			Database: loadOptionalString("CLICKHOUSE_DATABASE", "gatec"),
+			Username: loadOptionalString("CLICKHOUSE_USER", "gatec"),
+			Password: loadOptionalString("CLICKHOUSE_PASSWORD", "gatec-dev-password"),
 		},
 	}
 	if !cfg.Workers.TSEInstrumentSync.SingleCheck && (cfg.Workers.TSEInstrumentSync.ScheduleHour < 0 || cfg.Workers.TSEInstrumentSync.ScheduleHour > 23) {

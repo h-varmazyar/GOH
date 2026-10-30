@@ -51,6 +51,29 @@ services:
       gate:
         ipv4_address: 10.72.0.20
 
+  clickhouse:
+    image: clickhouse/clickhouse-server:25.3-alpine
+    environment:
+      CLICKHOUSE_DB: ${CLICKHOUSE_DATABASE:-gatec}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-gatec}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-gatec-dev-password}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
+    ports:
+      - "${CLICKHOUSE_PUBLISH_PORT:-8123}:8123"
+      - "${CLICKHOUSE_NATIVE_PUBLISH_PORT:-9000}:9000"
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+    healthcheck:
+      test: ["CMD", "clickhouse-client", "--user", "${CLICKHOUSE_USER:-gatec}", "--password", "${CLICKHOUSE_PASSWORD:-gatec-dev-password}", "--query", "SELECT 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      gate:
+        ipv4_address: 10.72.0.21
+
   gate:
     # build:
     #   context: ..
@@ -62,6 +85,7 @@ services:
     image: ${GATE_IMAGE:?set GATE_IMAGE in .env}
     environment:
       LOG_FILE: /app/logs/gate.log
+      CLICKHOUSE_URL: http://clickhouse:8123
     env_file:
       - ./.env
     ports:
@@ -74,6 +98,8 @@ services:
       postgres:
         condition: service_healthy
       nats:
+        condition: service_healthy
+      clickhouse:
         condition: service_healthy
     restart: unless-stopped
     networks:
@@ -158,6 +184,27 @@ services:
     networks:
       gate:
         ipv4_address: 10.72.20.2
+
+  tse-trade-history:
+    image: ${GATE_WORKER_IMAGE:?set GATE_WORKER_IMAGE in .env}
+    command: ["tse-trade-history"]
+    environment:
+      LOG_FILE: /app/logs/tse-trade-history.log
+      CLICKHOUSE_URL: http://clickhouse:8123
+    env_file:
+      - ./.env
+    volumes:
+      - ./gatec/logs:/app/logs
+      - ./gatec/secrets:/app/configs/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+    restart: on-failure
+    networks:
+      gate:
+        ipv4_address: 10.72.20.9
 
   indicator-watch:
     image: ${GATE_WORKER_IMAGE:?set GATE_WORKER_IMAGE in .env}
@@ -272,6 +319,7 @@ services:
 
 volumes:
   postgres-data:
+  clickhouse-data:
   nats-data:
   gatec-logs:
   tdlib-data:
