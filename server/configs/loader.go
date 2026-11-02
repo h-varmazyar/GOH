@@ -71,18 +71,7 @@ func Load() (*Config, error) {
 		},
 
 		Workers: Workers{
-			// CandlePollingEnabled:        loadBool("WORKER_CANDLE_POLLING_ENABLED"),
-			// MarketSyncEnabled:           loadBool("WORKER_MARKET_SYNC_ENABLED"),
-			// ProxyHealthCheckerEnabled:   loadBool("WORKER_PROXY_HEALTH_CHECKER_ENABLED"),
-			// ConnectionMonitorEnabled:    loadBool("WORKER_CONNECTION_MONITOR_ENABLED"),
-			// IndicatorCalculatorEnabled:  loadBool("WORKER_INDICATOR_CALCULATOR_ENABLED"),
-			// StockMarketSyncEnabled:      loadBool("WORKER_STOCK_MARKET_SYNC_ENABLED"),
-			// StockInstrumentSyncEnabled:  loadOptionalBool("WORKER_STOCK_INSTRUMENT_SYNC_ENABLED", false),
-			// TSEMarketHistorySyncEnabled: loadOptionalBool("WORKER_TSE_MARKET_HISTORY_SYNC_ENABLED", false),
-			// TSEMarketDataSyncEnabled:    loadBool("WORKER_TSE_MARKET_DATA_SYNC_ENABLED"),
-			// TSEMarketDailySyncEnabled:   loadOptionalBool("WORKER_TSE_MARKET_DAILY_SYNC_ENABLED", false),
-			TSEMarketWatchEnabled: loadOptionalBool("WORKER_TSE_MARKET_WATCH_ENABLED", false),
-			TSETradeHistory:       &TSETradeHistory{},
+			TSETradeHistory: &TSETradeHistory{},
 			IndicatorCalculator: &IndicatorCalculator{
 				ExecutionIttrationDuration: loadDuration("WORKER_INDICATOR_CALCULATOR_EXECUTION_ITTRATION_DURATION"),
 				SignalPipelineCount:        1,
@@ -100,6 +89,7 @@ func Load() (*Config, error) {
 			},
 			TSEInstrumentSync: &TSEInstrumentSync{
 				SingleCheck:  loadBool("WORKER_TSE_INSTRUMENT_SYNC_SINGLE_CHECK"),
+				IntervalDays: loadOptionalInt("WORKER_TSE_INSTRUMENT_SYNC_INTERVAL_DAYS", 7),
 				ScheduleHour: loadOptionalInt("WORKER_TSE_INSTRUMENT_SYNC_SCHEDULE_HOUR", 8),
 				ScheduleMin:  loadOptionalInt("WORKER_TSE_INSTRUMENT_SYNC_SCHEDULE_MIN", 0),
 			},
@@ -159,6 +149,9 @@ func Load() (*Config, error) {
 	}
 	if !cfg.Workers.TSEInstrumentSync.SingleCheck && (cfg.Workers.TSEInstrumentSync.ScheduleMin < 0 || cfg.Workers.TSEInstrumentSync.ScheduleMin > 59) {
 		return nil, fmt.Errorf("WORKER_TSE_INSTRUMENT_SYNC_SCHEDULE_MIN must be between 0 and 59")
+	}
+	if !cfg.Workers.TSEInstrumentSync.SingleCheck && cfg.Workers.TSEInstrumentSync.IntervalDays < 1 {
+		return nil, fmt.Errorf("WORKER_TSE_INSTRUMENT_SYNC_INTERVAL_DAYS must be at least 1")
 	}
 
 	// if cfg.Workers.TSEMarketHistorySyncEnabled {

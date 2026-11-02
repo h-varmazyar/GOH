@@ -46,16 +46,16 @@ func (w *TSETradeHistory) Stop() error { return nil }
 
 func (w *TSETradeHistory) Start(ctx context.Context) error {
 	logrus.Info("starting tse trade history collector")
-	markets, err := w.marketRepo.List(ctx, nil)
+	markets, err := w.marketRepo.ListDataCollection(ctx)
 	if err != nil {
 		return fmt.Errorf("list TSE markets: %w", err)
 	}
 	now := time.Now()
 	for _, market := range markets {
-		if market.InsCode == "" || market.IPODate.IsZero() {
+		if market.InsCode == "" || market.IPODate == nil || market.IPODate.IsZero() {
 			continue
 		}
-		for t := market.IPODate; t.Before(now); t = t.AddDate(0, 0, 1) {
+		for t := *market.IPODate; t.Before(now); t = t.AddDate(0, 0, 1) {
 			date := t.Format("20060102")
 			var history []tse.TradeHistory
 			for attempt := 1; attempt <= tradeHistoryMaxAttempts; attempt++ {

@@ -22,6 +22,7 @@ import {
   Newspaper,
   Activity,
   LineChart,
+  ShieldAlert,
   Star,
   CalendarDays,
   BrainCircuit,
@@ -40,6 +41,8 @@ interface NavItem {
   to: string;
   icon: React.ComponentType<{ className?: string }>;
   label: string;
+  /** Active only on this exact path, not on its sub-paths. */
+  end?: boolean;
 }
 
 interface NavGroup {
@@ -101,7 +104,8 @@ const navEntries: NavEntry[] = [
       { to: '/tse', icon: Eye, label: 'نمای کلی بازار' },
       { to: '/tse/analysis', icon: Newspaper, label: 'تحلیل روزانه' },
       { to: '/tse/indicators', icon: Activity, label: 'اندیکاتورها' },
-      { to: '/tse/markets', icon: LineChart, label: 'لیست بازارها' },
+      { to: '/tse/markets', icon: LineChart, label: 'لیست بازارها', end: true },
+      { to: '/tse/markets/issues', icon: ShieldAlert, label: 'بررسی نمادها' },
       { to: '/tse/watchlist', icon: Star, label: 'دیده‌بان بازار' },
       { to: '/tse/calendar', icon: CalendarDays, label: 'تقویم بازار' },
     ],
@@ -218,7 +222,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                           <NavLink
                             key={child.to}
                             to={child.to}
-                            end={child.to === entry.basePath}
+                            end={child.end || child.to === entry.basePath}
                             onClick={onClose}
                             className={({ isActive }) =>
                               `flex items-center gap-2 px-3 py-2 pr-4 rounded-lg text-sm transition-colors

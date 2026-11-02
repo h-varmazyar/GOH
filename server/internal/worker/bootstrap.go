@@ -312,7 +312,7 @@ func migrateWorkerModels(db *gorm.DB, needs dependencyPlan) error {
 		modelsToMigrate = append(modelsToMigrate, &models.StockDailyData{})
 	}
 	if needs.tseMarket {
-		modelsToMigrate = append(modelsToMigrate, &models.TSEMarket{})
+		modelsToMigrate = append(modelsToMigrate, &models.TSEMarket{}, &models.TSEMarketIssue{})
 	}
 	if needs.tseDailyClosingPrice {
 		modelsToMigrate = append(modelsToMigrate, &models.TSEDailyClosingPrice{})

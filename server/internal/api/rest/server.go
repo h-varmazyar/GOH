@@ -18,6 +18,7 @@ import (
 	proxyHandlerV1 "github.com/h-varmazyar/gatec/internal/api/rest/handlers/v1/proxy"
 	tabdealHandlerV1 "github.com/h-varmazyar/gatec/internal/api/rest/handlers/v1/tabdeal"
 	tgAccountHandlerV1 "github.com/h-varmazyar/gatec/internal/api/rest/handlers/v1/tgaccount"
+	tseMarketHandlerV1 "github.com/h-varmazyar/gatec/internal/api/rest/handlers/v1/tsemarket"
 	userHandlerV1 "github.com/h-varmazyar/gatec/internal/api/rest/handlers/v1/user"
 	"github.com/h-varmazyar/gatec/internal/api/rest/middlewares"
 	"github.com/h-varmazyar/gatec/internal/consts"
@@ -28,6 +29,7 @@ import (
 	messagingService "github.com/h-varmazyar/gatec/internal/services/messaging"
 	proxyService "github.com/h-varmazyar/gatec/internal/services/proxy"
 	tgAccountService "github.com/h-varmazyar/gatec/internal/services/tgaccount"
+	tseMarketService "github.com/h-varmazyar/gatec/internal/services/tsemarket"
 	userService "github.com/h-varmazyar/gatec/internal/services/user"
 	"github.com/h-varmazyar/gatec/pkg/logger"
 )
@@ -44,6 +46,7 @@ type Server struct {
 	configurationHandler  configurationHandlerV1.Handler
 	tgAccountHandler      tgAccountHandlerV1.Handler
 	messagingHandler      messagingHandlerV1.Handler
+	tseMarketHandler      tseMarketHandlerV1.Handler
 }
 
 func NewServer(
@@ -56,6 +59,7 @@ func NewServer(
 	tgAccountService *tgAccountService.Service,
 	messagingService *messagingService.Service,
 	dynamicConfigService *dynamicConfigService.Service,
+	tseMarketService *tseMarketService.Service,
 ) *Server {
 	r := gin.New()
 	r.ContextWithFallback = true
@@ -85,6 +89,7 @@ func NewServer(
 		configurationHandler:  configurationHandlerV1.New(dynamicConfigService),
 		tgAccountHandler:      *tgAccountHandlerV1.New(tgAccountService),
 		messagingHandler:      messagingHandlerV1.New(messagingService),
+		tseMarketHandler:      tseMarketHandlerV1.New(tseMarketService),
 		engine:                r,
 	}
 	return server

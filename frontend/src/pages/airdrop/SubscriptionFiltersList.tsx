@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Plus, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
+import { confirmDialog } from '../../components/ui/dialogs';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
@@ -87,7 +88,7 @@ export function SubscriptionFiltersList() {
   };
 
   const handleDelete = async (filterId: string) => {
-    if (!confirm('آیا از حذف این فیلتر اطمینان دارید؟')) return;
+    if (!(await confirmDialog({ title: 'حذف فیلتر', message: 'آیا از حذف این فیلتر اطمینان دارید؟', confirmLabel: 'حذف', tone: 'danger' }))) return;
     setIsDeleting(filterId);
     try {
       await subscriptionFilterService.delete(filterId);

@@ -22,14 +22,32 @@ type Candle struct {
 	Volume decimal.Decimal `json:"volume"`
 }
 
+// Instrument is a stock, fund or right of the Tehran Stock Exchange or Iran Fara
+// Bourse, including delisted ones.
 type Instrument struct {
-	Name     string                  `json:"name"`
-	Label    string                  `json:"label"`
-	Type     string                  `json:"type"`
-	ID       string                  `json:"id"`
-	Group    string                  `json:"group"`
-	SubGroup string                  `json:"sub_group"`
-	Status   consts.InstrumentStatus `json:"status"`
+	// InsCode is the TSETMC internal code used by the market data endpoints.
+	InsCode string `json:"ins_code"`
+	// InstrumentID is the ISIN that starts with "IR".
+	InstrumentID   string                   `json:"instrument_id"`
+	Symbol         string                   `json:"symbol"`
+	Name           string                   `json:"name"`
+	MarketType     consts.TSEMarketType     `json:"market_type"`
+	Kind           consts.TSEInstrumentKind `json:"kind"`
+	InstrumentType int                      `json:"instrument_type"`
+	Group          string                   `json:"group"`
+	GroupName      string                   `json:"group_name"`
+	SubGroup       string                   `json:"sub_group"`
+	// Delisted is true when TSETMC no longer lists the instrument.
+	Delisted bool `json:"delisted"`
+	// InsertDate is the date the symbol was inserted on the trading board (تاریخ درج).
+	InsertDate *time.Time `json:"insert_date,omitempty"`
+	// ReleaseDate is the initial public offering date (تاریخ عرضه).
+	ReleaseDate *time.Time `json:"release_date,omitempty"`
+	// AcceptanceDate is the listing acceptance date (تاریخ پذیرش).
+	AcceptanceDate *time.Time `json:"acceptance_date,omitempty"`
+	// Info is the TSETMC instrument info when it was fetched while building the
+	// instrument list; it is nil for instruments whose ID was already known.
+	Info *InstrumentInfo `json:"-"`
 }
 
 type Adapter struct {

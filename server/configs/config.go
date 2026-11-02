@@ -66,22 +66,9 @@ type TSE struct {
 
 type Tabdeal struct {
 	APIBaseURL string
-	AuthToken  string
 }
 
 type Workers struct {
-	// CandlePollingEnabled        bool
-	// MarketSyncEnabled           bool
-	// ProxyHealthCheckerEnabled   bool
-	// ConnectionMonitorEnabled    bool
-	// IndicatorCalculatorEnabled  bool
-	// StockMarketSyncEnabled      bool
-	// StockInstrumentSyncEnabled  bool
-	// TSEMarketDataSyncEnabled    bool
-	// TSEMarketHistorySyncEnabled bool
-	// TSEMarketDailySyncEnabled   bool
-	TSEMarketWatchEnabled bool
-
 	CandlePolling        *CandlePolling
 	MarketSync           *MarketSync
 	ProxyHealthChecker   *ProxyHealthChecker
@@ -147,7 +134,9 @@ type StockMarketSync struct {
 }
 
 type TSEInstrumentSync struct {
-	SingleCheck  bool
+	SingleCheck bool
+	// IntervalDays is the number of days between the verification runs.
+	IntervalDays int
 	ScheduleHour int
 	ScheduleMin  int
 }

@@ -85,7 +85,7 @@ func (w *TSEMarketDataSync) Start(ctx context.Context) error {
 
 func (w *TSEMarketDataSync) syncAllMarkets(ctx context.Context) error {
 	logrus.Info("starting tse market data sync")
-	markets, err := w.marketRepo.List(ctx, nil)
+	markets, err := w.marketRepo.ListDataCollection(ctx)
 	if err != nil {
 		return fmt.Errorf("list TSE markets: %w", err)
 	}
@@ -185,22 +185,6 @@ func (w *TSEMarketDataSync) waitDuration(ctx context.Context, duration time.Dura
 }
 
 func (w *TSEMarketDataSync) syncMarket(ctx context.Context, market *models.TSEMarket) error {
-	info, err := w.adapter.FetchInstrumentInfo(ctx, market.InsCode)
-	if err != nil {
-		return fmt.Errorf("fetch instrument info: %w", err)
-	}
-	market.Nav = info.Nav
-	market.EPS = info.EPS
-
-	// states, err := w.adapter.FetchInstrumentStateHistory(ctx, info.InsCode)
-	// if err != nil {
-	// 	return fmt.Errorf("fetch instrument state history: %w", err)
-	// }
-	// if len(states) > 0 {
-	// 	market.InstrumentStateCode = states[0].Code
-	// 	market.Market.StateUpdatedAt = &states[0].Date
-	// }
-
 	if w.config.Mode == consts.TSEMarketDataToday {
 		return errors.Join(
 			w.syncToday(ctx, market),
@@ -208,17 +192,50 @@ func (w *TSEMarketDataSync) syncMarket(ctx context.Context, market *models.TSEMa
 		)
 	}
 
-	prices, err := w.adapter.FetchClosingPriceHistory(ctx, info.InsCode)
+	prices, err := w.adapter.FetchClosingPriceHistory(ctx, market.InsCode)
 	if err != nil {
 		return fmt.Errorf("fetch closing price history: %w", err)
 	}
 
-	participants, err := w.adapter.FetchClientTypeHistory(ctx, info.InsCode)
+	participants, err := w.adapter.FetchClientTypeHistory(ctx, market.InsCode)
 	if err != nil {
 		return fmt.Errorf("fetch client type history: %w", err)
 	}
 
-	return w.syncHistory(ctx, market, prices, participants)
+	return errors.Join(
+		w.syncReleaseDate(ctx, market, prices),
+		w.syncHistory(ctx, market, prices, participants),
+	)
+}
+
+// syncReleaseDate takes the oldest trading day as the release date of markets
+// whose listing sources do not provide one. The full history is used whatever
+// the collection bounds are.
+func (w *TSEMarketDataSync) syncReleaseDate(ctx context.Context, market *models.TSEMarket, prices []tse.ClosingPriceHistory) error {
+	var oldest time.Time
+	for _, item := range prices {
+		if !item.Date.IsZero() && (oldest.IsZero() || item.Date.Before(oldest)) {
+			oldest = item.Date
+		}
+	}
+	if oldest.IsZero() {
+		return nil
+	}
+	oldest = dateOnly(oldest)
+	if market.IPODate != nil && (market.IPODateSource != models.TSEIPODateSourcePriceHistory || !oldest.Before(*market.IPODate)) {
+		return nil
+	}
+	if err := w.marketRepo.Update(ctx, market.ID, map[string]any{
+		"ipo_date":        oldest,
+		"ipo_date_source": models.TSEIPODateSourcePriceHistory,
+	}); err != nil {
+		return fmt.Errorf("save release date: %w", err)
+	}
+	w.logger.WithFields(logrus.Fields{"ins_code": market.InsCode, "symbol": market.Label, "release_date": oldest.Format(time.DateOnly)}).
+		Info("took the oldest trading day as the release date")
+	market.IPODate = &oldest
+	market.IPODateSource = models.TSEIPODateSourcePriceHistory
+	return nil
 }
 
 func (w *TSEMarketDataSync) syncToday(ctx context.Context, market *models.TSEMarket) error {

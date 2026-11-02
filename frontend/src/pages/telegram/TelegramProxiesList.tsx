@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Plus, ChevronLeft, ChevronRight, Trash2, X, Info, Loader2, Clipboard, Upload, Check } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
+import { confirmDialog } from '../../components/ui/dialogs';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
@@ -192,7 +193,7 @@ export function TelegramProxiesList() {
 
   const handleDelete = async (proxyId: number, e?: React.MouseEvent) => {
     e?.stopPropagation();
-    if (!confirm('آیا از حذف این پراکسی اطمینان دارید؟')) return;
+    if (!(await confirmDialog({ title: 'حذف پراکسی', message: 'آیا از حذف این پراکسی اطمینان دارید؟', confirmLabel: 'حذف', tone: 'danger' }))) return;
     setIsDeleting(proxyId);
     try {
       await proxyService.delete(String(proxyId));

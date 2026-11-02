@@ -26,6 +26,7 @@ import (
 	proxyService "github.com/h-varmazyar/gatec/internal/services/proxy"
 	strategyService "github.com/h-varmazyar/gatec/internal/services/strategy"
 	tgAccountService "github.com/h-varmazyar/gatec/internal/services/tgaccount"
+	tseMarketService "github.com/h-varmazyar/gatec/internal/services/tsemarket"
 	userService "github.com/h-varmazyar/gatec/internal/services/user"
 
 	clickhouseClient "github.com/h-varmazyar/gatec/pkg/clickhouse"
@@ -77,6 +78,7 @@ func main() {
 			dep.Service.TgAccount,
 			dep.Service.Messaging,
 			dep.Service.DynamicConfig,
+			dep.Service.TSEMarket,
 		).Serve(ctx, serverAddress)
 		if err != nil {
 			panic(err)
@@ -123,6 +125,7 @@ type depencencies struct {
 		TgAccount      *tgAccountService.Service
 		Messaging      *messagingService.Service
 		DynamicConfig  *dynamicConfigService.Service
+		TSEMarket      *tseMarketService.Service
 	}
 	Adapters struct {
 		Nobitex *nobitex.Adapter
@@ -192,6 +195,7 @@ func initializeDependencies(ctx context.Context, cfg *configs.Config) (*depencen
 		&models.SendRecord{},
 		&models.StockDailyData{},
 		&models.TSEMarket{},
+		&models.TSEMarketIssue{},
 		&models.TSEDailyClosingPrice{},
 		&models.TSEIndicatorSnapshot{},
 		&models.DynamicConfig{},
@@ -294,4 +298,9 @@ func initializeServices(_ context.Context, dep *depencencies, cfg configs.Servic
 	dep.Service.TgAccount = tgAccountService.NewService(cfg.TgAccount, dep.Repositories.Telegram, dep.Repositories.TelegramSubscriptionFilter, dep.Repositories.Proxy)
 	dep.Service.Airdrop = airdropService.NewService(cfg.AirdropService, dep.Repositories.TabdealAirdrop, dep.Repositories.GiftAllocaitionRepo, dep.Repositories.User, dep.Adapters.tabdeal, dep.Service.TgAccount)
 	dep.Service.Messaging = messagingService.NewService(dep.Repositories.Message, dep.Repositories.BotUser, dep.Repositories.AccessRule)
+	var tseAdapter *tse.Adapter
+	if len(dep.StockProviders) > 0 {
+		tseAdapter = dep.StockProviders[0]
+	}
+	dep.Service.TSEMarket = tseMarketService.NewService(dep.Repositories.TSEMarket, dep.Repositories.Market, dep.Repositories.Asset, tseAdapter)
 }

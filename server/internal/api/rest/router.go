@@ -74,6 +74,28 @@ func (s *Server) setupAPIRoutes() {
 		// workerGroup.PUT("/:name/enabled", s.configurationHandler.SetWorkerEnabled)
 	}
 
+	if s.tseMarketHandler.HasService() {
+		tseMarketGroup := v1.Group("/tse/markets")
+		tseMarketGroup.Use(middlewares.NewPublicAuthMiddleware().Handle)
+		tseMarketGroup.GET("", s.tseMarketHandler.ListMarkets)
+		tseMarketGroup.GET("/industry-groups", s.tseMarketHandler.ListIndustryGroups)
+		tseMarketGroup.POST("", s.tseMarketHandler.CreateMarket)
+		tseMarketGroup.PATCH("/flags", s.tseMarketHandler.BulkUpdateFlags)
+		tseMarketGroup.PATCH("/:id/flags", s.tseMarketHandler.UpdateFlags)
+		tseMarketGroup.PATCH("/:id/delisted", s.tseMarketHandler.UpdateDelisted)
+		tseMarketGroup.PATCH("/:id/market", s.tseMarketHandler.LinkMarket)
+		tseMarketGroup.POST("/:id/refresh", s.tseMarketHandler.RefreshMarket)
+		tseMarketGroup.GET("/:id", s.tseMarketHandler.GetMarket)
+		tseMarketGroup.DELETE("/:id", s.tseMarketHandler.DeleteMarket)
+
+		tseIssueGroup := v1.Group("/tse/market-issues")
+		tseIssueGroup.Use(middlewares.NewPublicAuthMiddleware().Handle)
+		tseIssueGroup.GET("", s.tseMarketHandler.ListIssues)
+		tseIssueGroup.GET("/summary", s.tseMarketHandler.IssueSummary)
+		tseIssueGroup.POST("/detect", s.tseMarketHandler.DetectIssues)
+		tseIssueGroup.PATCH("/status", s.tseMarketHandler.UpdateIssueStatus)
+	}
+
 	if s.tabdealHandler.HasService() {
 		// tabdealHandlerV1 := v1.Group("/tabdeal")
 		// tabdealHandlerV1.Use(middlewares.NewPublicAuthMiddleware().Handle)

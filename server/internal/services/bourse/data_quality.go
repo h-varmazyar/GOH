@@ -314,8 +314,8 @@ func mapDailyBar(row *models.TSEDailyClosingPrice, market *models.TSEMarket, dat
 	candle := row.Candle
 	return &DailyBar{
 		Date: date, MarketID: row.MarketID, TSEMarketID: row.TSEMarketID,
-		InsCode: market.InsCode, Symbol: market.Label, MarketType: market.MarketType,
-		SymbolType: market.SymbolType, InstrumentStateCode: row.InstrumentStateCode,
+		InsCode: market.InsCode, Symbol: market.Label, MarketType: string(market.MarketType),
+		SymbolType: string(market.Kind), InstrumentStateCode: row.InstrumentStateCode,
 		Open: candle.Open.InexactFloat64(), High: candle.High.InexactFloat64(), Low: candle.Low.InexactFloat64(),
 		Close: candle.Close.InexactFloat64(), Volume: candle.Volume.InexactFloat64(),
 		ReferencePrice: float64(row.Yesterday), OfficialClose: row.Closing,
@@ -354,23 +354,10 @@ func eligibleMarket(market *models.TSEMarket) bool {
 }
 
 func instrumentType(market *models.TSEMarket) string {
-	value := strings.ToLower(strings.TrimSpace(market.SymbolType + " " + market.MarketType))
-	for _, excluded := range []string{"حق تقدم", "حق‌تقدم", "صندوق", "اوراق", "اختیار", "fund", "bond", "option", "etf"} {
-		if strings.Contains(value, excluded) {
-			return "excluded"
-		}
-	}
-	if strings.Contains(value, "سهام") || strings.Contains(value, "stock") || strings.Contains(value, "common") {
+	switch market.Kind {
+	case consts.TSEInstrumentKindStock:
 		return "stock"
-	}
-	code := strings.TrimSpace(market.SymbolType)
-	if code == "" {
-		code = strings.TrimSpace(market.MarketType)
-	}
-	switch code {
-	case "300", "303", "307", "309", "313":
-		return "stock"
-	case "208", "305", "306", "400", "401", "402", "403", "404", "706", "903":
+	case consts.TSEInstrumentKindFund, consts.TSEInstrumentKindRight:
 		return "excluded"
 	}
 	return "unknown"

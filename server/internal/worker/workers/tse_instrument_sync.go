@@ -2,17 +2,14 @@ package workers
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
 	"github.com/h-varmazyar/gatec/configs"
 	"github.com/h-varmazyar/gatec/internal/adapters/stock/tse"
-	"github.com/h-varmazyar/gatec/internal/consts"
-	"github.com/h-varmazyar/gatec/internal/models"
 	"github.com/h-varmazyar/gatec/internal/repositories"
+	"github.com/h-varmazyar/gatec/internal/services/tsemarket"
 	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 const tseInstrumentSyncWorkerName = "tse-instrument-sync"
@@ -50,30 +47,56 @@ func NewTSEInstrumentSync(
 
 func (w *TseInstrumentSync) Name() string { return tseInstrumentSyncWorkerName }
 
+// Start runs the catalog sync once in single check mode. Otherwise it runs it right
+// away when no TSE market is stored, and then every IntervalDays days at the
+// scheduled time to verify the stored markets.
 func (w *TseInstrumentSync) Start(ctx context.Context) error {
 	ctx, w.cancel = context.WithCancel(ctx)
+	logger := w.logger()
+	logger.WithFields(logrus.Fields{
+		"single_check": w.cfg.SingleCheck, "interval_days": max(w.cfg.IntervalDays, 1),
+		"schedule": fmt.Sprintf("%02d:%02d", w.cfg.ScheduleHour, w.cfg.ScheduleMin), "providers": len(w.adapters),
+	}).Info("starting tse instrument sync worker")
 	if w.cfg.SingleCheck {
 		if err := w.sync(ctx); err != nil {
-			logrus.WithError(err).Error("tse instrument sync failed")
+			logger.WithError(err).Error("tse instrument sync failed")
 			return err
 		}
 		w.Stop()
-		logrus.WithContext(ctx).Info("tse instrument sync done")
+		logger.Info("tse instrument sync done; single check mode, the worker stops")
 		return nil
 	}
+	if count, err := w.tseRepo.Count(ctx); err != nil {
+		logger.WithError(err).Error("count tse markets; the first sync waits for its scheduled time")
+	} else if count == 0 {
+		logger.Info("no TSE market is stored; syncing the instrument catalog now")
+		if err := w.sync(ctx); err != nil {
+			logger.WithError(err).Error("tse instrument sync failed")
+		}
+	} else {
+		logger.WithField("tse_markets", count).Info("TSE markets are stored; the catalog is verified at the scheduled time")
+	}
+	next := w.firstRunTime()
 	for {
-		next := w.nextRunTime()
+		logger.WithFields(logrus.Fields{"next_run": next.Format(time.DateTime), "in": time.Until(next).Round(time.Minute)}).
+			Info("next tse instrument sync scheduled")
 		timer := time.NewTimer(time.Until(next))
 		select {
 		case <-timer.C:
 			if err := w.sync(ctx); err != nil {
-				logrus.WithError(err).Error("tse instrument sync failed")
+				logger.WithError(err).Error("tse instrument sync failed")
 			}
+			next = next.AddDate(0, 0, max(w.cfg.IntervalDays, 1))
 		case <-ctx.Done():
 			timer.Stop()
+			logger.Info("tse instrument sync worker stopped")
 			return nil
 		}
 	}
+}
+
+func (w *TseInstrumentSync) logger() *logrus.Entry {
+	return logrus.WithField("worker", tseInstrumentSyncWorkerName)
 }
 
 func (w *TseInstrumentSync) Stop() error {
@@ -83,178 +106,36 @@ func (w *TseInstrumentSync) Stop() error {
 	return nil
 }
 
-func (w *TseInstrumentSync) nextRunTime() time.Time {
+// firstRunTime is the scheduled time IntervalDays days from today.
+func (w *TseInstrumentSync) firstRunTime() time.Time {
 	now := time.Now().In(w.location)
-	next := time.Date(now.Year(), now.Month(), now.Day(), w.cfg.ScheduleHour, w.cfg.ScheduleMin, 0, 0, w.location)
-	if !now.Before(next) {
-		next = next.AddDate(0, 0, 1)
-	}
-	return next
+	return time.Date(now.Year(), now.Month(), now.Day(), w.cfg.ScheduleHour, w.cfg.ScheduleMin, 0, 0, w.location).
+		AddDate(0, 0, max(w.cfg.IntervalDays, 1))
 }
 
 func (w *TseInstrumentSync) sync(ctx context.Context) error {
-	destination, err := w.ensureAsset(ctx, "IRI", "ریال ایران")
-	if err != nil {
-		return fmt.Errorf("ensure destination asset: %w", err)
-	}
-	for _, adapter := range w.adapters {
-		if err := w.syncProvider(ctx, adapter, destination); err != nil {
-			logrus.WithError(err).WithField("provider", adapter.GetID()).Error("failed to sync tse provider")
-		}
-	}
-	return nil
-}
-
-func (w *TseInstrumentSync) syncProvider(ctx context.Context, adapter *tse.Adapter, destination *models.Asset) error {
-	instruments, err := adapter.UpdateInstruments(ctx)
-	if err != nil {
-		return fmt.Errorf("fetch instruments: %w", err)
-	}
-	localMarkets, err := w.marketRepo.List(ctx, map[string]any{"provider_id = ?": adapter.GetID()})
-	if err != nil {
-		return fmt.Errorf("list markets: %w", err)
-	}
-
-	localTSEMarkets, err := w.tseRepo.List(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("list TSE markets: %w", err)
-	}
-
-	marketsByLabel := make(map[string]*models.Market, len(localMarkets))
-	for _, market := range localMarkets {
-		marketsByLabel[market.Label] = market
-	}
-	marketsByInsCode := make(map[string]*models.TSEMarket, len(localTSEMarkets))
-	for _, market := range localTSEMarkets {
-		marketsByInsCode[market.InsCode] = market
-	}
-
-	for _, instrument := range instruments {
-		if err := w.syncInstrument(ctx, instrument, adapter.GetID(), destination, marketsByLabel, marketsByInsCode); err != nil {
-			logrus.WithError(err).WithField("instrument", instrument.ID).Error("failed to sync tse instrument")
-		}
-	}
-	return nil
-}
-
-func (w *TseInstrumentSync) syncInstrument(
-	ctx context.Context,
-	instrument tse.Instrument,
-	providerID uint,
-	destination *models.Asset,
-	marketsByLabel map[string]*models.Market,
-	marketsByInsCode map[string]*models.TSEMarket,
-) error {
-	logrus.WithFields(logrus.Fields{
-		"instrument": instrument.ID,
-		"label":      instrument.Label,
-		"name":       instrument.Name,
-	}).Info("syncing tse instrument")
-	status := instrumentMarketStatus(instrument.Status)
-	tseMarket := marketsByInsCode[instrument.ID]
-	market := marketsByLabel[instrument.Label]
-
-	if market != nil && tseMarket != nil && tseMarket.MarketID == market.ID {
+	if len(w.adapters) == 0 {
+		w.logger().Warn("no TSE provider is active; nothing to sync")
 		return nil
 	}
-
-	trading, err := w.ensureAsset(ctx, instrument.Label, instrument.Name)
-	if err != nil {
-		return fmt.Errorf("ensure trading asset: %w", err)
-	}
-
-	if market == nil {
-		market = &models.Market{
-			ProviderID:     providerID,
-			PricingAssetID: destination.ID,
-			TradingAssetID: trading.ID,
-			Name:           instrument.Name,
-			Label:          instrument.Label,
-			Status:         status,
-		}
-		if tseMarket != nil {
-			if err := w.marketRepo.Create(ctx, market); err != nil {
-				return fmt.Errorf("create market %q: %w", instrument.Label, err)
+	for _, adapter := range w.adapters {
+		service := tsemarket.NewService(w.tseRepo, w.marketRepo, w.assetRepo, adapter)
+		logger := w.logger().WithField("provider", adapter.GetID())
+		logger.Info("syncing TSE instrument catalog")
+		start := time.Now()
+		result, err := service.SyncCatalog(ctx)
+		if err != nil {
+			if ctx.Err() != nil {
+				logger.WithError(ctx.Err()).Warn("tse instrument sync canceled")
+				return ctx.Err()
 			}
-		} else {
-			tseMarket = &models.TSEMarket{
-				InsCode:           instrument.ID,
-				Label:             instrument.Label,
-				MarketType:        instrument.Type,
-				IndustryGroupCode: instrument.Group,
-				IndustrySubCode:   instrument.SubGroup,
-			}
-			if err := w.tseRepo.CreateWithMarket(ctx, market, tseMarket); err != nil {
-				return fmt.Errorf("create market %q: %w", instrument.Label, err)
-			}
+			logger.WithError(err).WithField("duration", time.Since(start).Round(time.Second)).Error("failed to sync tse provider")
+			continue
 		}
-		marketsByLabel[market.Label] = market
+		logger.WithFields(logrus.Fields{
+			"instruments": result.Instruments, "created": result.Created, "updated": result.Updated, "failed": result.Failed,
+			"markets_created": result.Markets, "issues": result.Issues, "duration": time.Since(start).Round(time.Second),
+		}).Info("stored TSE instrument catalog; review the issues in the panel before collecting data")
 	}
-
-	if err := w.marketRepo.Update(ctx, market.ID, map[string]any{
-		"pricing_asset_id": destination.ID,
-		"trading_asset_id": trading.ID,
-		"name":             instrument.Name,
-		"label":            instrument.Label,
-		"status":           status,
-	}); err != nil {
-		return fmt.Errorf("update market %d: %w", market.ID, err)
-	}
-	market.PricingAssetID = destination.ID
-	market.TradingAssetID = trading.ID
-	market.Name = instrument.Name
-	market.Label = instrument.Label
-	market.Status = status
-
-	if tseMarket == nil {
-		tseMarket = &models.TSEMarket{
-			MarketID:          market.ID,
-			InsCode:           instrument.ID,
-			Label:             instrument.Label,
-			MarketType:        instrument.Type,
-			IndustryGroupCode: instrument.Group,
-			IndustrySubCode:   instrument.SubGroup,
-		}
-		if err := w.tseRepo.Create(ctx, tseMarket); err != nil {
-			return fmt.Errorf("create TSE market for %d: %w", market.ID, err)
-		}
-	} else if tseMarket.MarketID != market.ID || tseMarket.Label != market.Label {
-		if err := w.tseRepo.Update(ctx, tseMarket.ID, map[string]any{
-			"market_id": market.ID,
-			"label":     instrument.Label,
-		}); err != nil {
-			return fmt.Errorf("associate TSE market %d with market %d: %w", tseMarket.ID, market.ID, err)
-		}
-		tseMarket.MarketID = market.ID
-		tseMarket.Label = instrument.Label
-	}
-	tseMarket.Market = market
-	tseMarket.Label = instrument.Label
-	tseMarket.MarketType = instrument.Type
-	tseMarket.IndustryGroupCode = instrument.Group
-	tseMarket.IndustrySubCode = instrument.SubGroup
-	marketsByInsCode[instrument.ID] = tseMarket
 	return nil
-}
-
-func (w *TseInstrumentSync) ensureAsset(ctx context.Context, label, name string) (*models.Asset, error) {
-	asset, err := w.assetRepo.ReturnByLabel(ctx, label)
-	if err == nil {
-		return asset, nil
-	}
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, err
-	}
-	asset = &models.Asset{Label: label, Name: name, Type: consts.AssetStock}
-	if err := w.assetRepo.Create(ctx, asset); err != nil {
-		return nil, err
-	}
-	return asset, nil
-}
-
-func instrumentMarketStatus(status consts.InstrumentStatus) consts.MarketStatus {
-	if status == consts.InstrumentStatusEnable {
-		return consts.MarketStatusOpen
-	}
-	return consts.MarketStatusClose
 }

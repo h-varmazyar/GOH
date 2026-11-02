@@ -68,7 +68,7 @@ func (w *TSEMarketWatch) Name() string { return tseMarketWatchWorkerName }
 
 func (w *TSEMarketWatch) Start(ctx context.Context) error {
 	logrus.Info("starting tse market watch worker")
-	markets, err := w.marketRepo.List(ctx, nil)
+	markets, err := w.marketRepo.ListDataCollection(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to load TSE markets: %w", err)
 	}

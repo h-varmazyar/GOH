@@ -12,11 +12,20 @@ client پیش‌فرض timeout سی‌ثانیه دارد. پارامتر `candl
 
 ## فهرست نمادها
 
-`UpdateInstruments` ابتدا endpoint صفحه‌بندی‌شده‌ی زیر را صدا می‌زند:
+`UpdateInstruments` سهام بورس تهران، صندوق‌های ETF بورس و سهام بازار اول و دوم فرابورس را برمی‌گرداند. نمادهای اختیار معامله، حق تقدم، اوراق، بازار پایه و نمادهای لغو پذیرش‌شده حذف می‌شوند.
 
-`GET https://cdn.tsetmc.com/api/Instrument/GetInstrumentSearch?pageSize=100&pageNumber=N`
+| منبع | کاربرد |
+| --- | --- |
+| `https://webgw.tse.ir/cmssite/api/v1/EDataListingCashMarket/List/fa` | سهام بورس (فقط `IRO1…`)، `instrumentId`، تاریخ درج و تاریخ عرضه |
+| `https://webgw.tse.ir/InstrumentProvider/api/v1/ArchiveMarket/ETFMarket` | صندوق‌های ETF (`IRT1…`)، تاریخ شروع پذیره‌نویسی به‌عنوان تاریخ عرضه |
+| `https://www.ifb.ir/markets.aspx?id=1` و `id=2` | فهرست نمادهای بازار اول و دوم فرابورس و وضعیت (مجاز / ممنوع-متوقف) |
+| `https://www.ifb.ir/omidnameh.aspx` | تاریخ درج، عرضه و پذیرش نمادهای فرابورس (شمسی، به میلادی تبدیل می‌شود) |
+| فایل‌های `assets/tse/instruments/*.json` | `insCode` و کد گروه و زیرگروه صنعت |
+| `cdn.tsetmc.com/api/StaticData/GetStaticData` | نام گروه صنعت |
 
-خروجی به `[]Instrument` تبدیل می‌شود. اگر سرویس در دسترس نباشد، فایل‌های JSON موجود در `assets/tse/instruments` به‌عنوان cache خوانده می‌شوند.
+تطبیق: هر نماد با نماد نرمال‌شده (ی/ک عربی، نیم‌فاصله، فاصله، ارقام فارسی)، نوع ابزار TSETMC (`300` سهام بورس، `303` سهام فرابورس، `305` صندوق) و فعال‌بودن با فایل‌های JSON تطبیق داده می‌شود و نامزدها بر اساس وضعیت معاملاتی و شباهت نام مرتب می‌شوند. اگر بیش از یک نامزد باشد، `instrumentID` برگشتی از `GetInstrumentInfo` با `instrumentId` منبع مقایسه می‌شود. صفحات فرابورس `instrumentId` ندارند؛ برای آن‌ها مقدار از `GetInstrumentInfo` گرفته می‌شود. نمادی که در فایل‌ها نباشد با `GetInstrumentSearch` جست‌وجو می‌شود. عدم تطابق نام و نماد در لاگ هشدار داده می‌شود.
+
+`MarketType` یکی از `BOURSE`، `ETF`، `IFB_FIRST` و `IFB_SECOND` است. تاریخ‌ها (`InsertDate`، `ReleaseDate`، `AcceptanceDate`) می‌توانند خالی باشند.
 
 ## Market Watch
 

@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { useAuthStore } from './store/authStore';
 import { useThemeStore } from './store/themeStore';
 import { AppLayout } from './components/layout/AppLayout';
+import { DialogHost } from './components/ui/Dialog';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
@@ -29,6 +30,8 @@ import { DailyAnalysisListPage } from './pages/tse/DailyAnalysisListPage';
 import { DailyAnalysisDetailPage } from './pages/tse/DailyAnalysisDetailPage';
 import { IndicatorsPage } from './pages/tse/IndicatorsPage';
 import { MarketsPage } from './pages/tse/MarketsPage';
+import { MarketIssuesPage } from './pages/tse/MarketIssuesPage';
+import { MarketDetailPage } from './pages/tse/MarketDetailPage';
 import { WatchlistsPage } from './pages/tse/WatchlistsPage';
 import { MarketCalendarPage } from './pages/tse/MarketCalendarPage';
 
@@ -61,6 +64,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <DialogHost />
       <Routes>
         {/* Auth Routes */}
         <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
@@ -97,6 +101,8 @@ export default function App() {
           <Route path="tse/analysis/:analysisId" element={<DailyAnalysisDetailPage />} />
           <Route path="tse/indicators" element={<IndicatorsPage />} />
           <Route path="tse/markets" element={<MarketsPage />} />
+          <Route path="tse/markets/issues" element={<MarketIssuesPage />} />
+          <Route path="tse/markets/:marketId" element={<MarketDetailPage />} />
           <Route path="tse/watchlist" element={<WatchlistsPage />} />
           <Route path="tse/calendar" element={<MarketCalendarPage />} />
 

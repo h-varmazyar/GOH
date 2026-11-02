@@ -2,24 +2,35 @@ package tse
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/url"
-	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/h-varmazyar/gatec/internal/consts"
+	"github.com/sirupsen/logrus"
 )
 
+// InstrumentInfo is the TSETMC instrument info. Identification and classification
+// fields rarely change; Nav, EPS, SectorPE, PSR, TotalShares and BaseVolume do.
 type InstrumentInfo struct {
-	InsCode string
-	Symbol  string
-	Name    string
-	Nav     *float64
-	EPS     *float64
+	InsCode      string
+	InstrumentID string
+	CompanyISIN  string
+	Symbol       string
+	Name         string
+	EnglishName  string
+	Type         int
+	Flow         int
+	BoardCode    string
+	SectorCode   string
+	SectorName   string
+	TotalShares  *float64
+	BaseVolume   *float64
+	Nav          *float64
+	EPS          *float64
+	SectorPE     *float64
+	PSR          *float64
 }
 
 type InstrumentStateHistory struct {
@@ -37,12 +48,26 @@ type InstrumentStateHistory struct {
 
 type instrumentInfoResponse struct {
 	InstrumentInfo struct {
-		InsCode string   `json:"insCode"`
-		Symbol  string   `json:"lVal18AFC"`
-		Name    string   `json:"lVal30"`
-		Nav     *float64 `json:"nav"`
-		EPS     *struct {
-			EstimatedEPS *string `json:"estimatedEPS"`
+		InsCode      string   `json:"insCode"`
+		InstrumentID string   `json:"instrumentID"`
+		CompanyISIN  *string  `json:"cIsin"`
+		Symbol       string   `json:"lVal18AFC"`
+		Name         string   `json:"lVal30"`
+		EnglishName  string   `json:"lVal18"`
+		Type         string   `json:"yVal"`
+		Flow         int      `json:"flow"`
+		BoardCode    string   `json:"cgrValCot"`
+		TotalShares  *float64 `json:"zTitad"`
+		BaseVolume   *float64 `json:"baseVol"`
+		Nav          *float64 `json:"nav"`
+		Sector       *struct {
+			Code string `json:"cSecVal"`
+			Name string `json:"lSecVal"`
+		} `json:"sector"`
+		EPS *struct {
+			EstimatedEPS *string  `json:"estimatedEPS"`
+			SectorPE     *float64 `json:"sectorPE"`
+			PSR          *float64 `json:"psr"`
 		} `json:"eps"`
 	} `json:"instrumentInfo"`
 }
@@ -62,70 +87,91 @@ type instrumentStateResponse struct {
 	} `json:"instrumentState"`
 }
 
-type instrumentCompareResponse struct {
-	Items []struct {
-		Instruments []struct {
-			ID       string `json:"insCode"`
-			Symbol   string `json:"smallSymbolName"`
-			Name     string `json:"symbolFullName"`
-			Group    string `json:"industryGroupCode"`
-			SubGroup string `json:"industrySubCode"`
-			Type     int    `json:"type"`
-			Status   int    `json:"status"`
-		} `json:"instruments"`
-	} `json:"items"`
+// UpdateInstruments returns every stock, fund and right of the Tehran Stock
+// Exchange and Iran Fara Bourse found in the TSETMC instrument files, including
+// delisted ones, plus listed instruments that are missing from the files.
+//
+// Problems that need a decision of the user are returned in Catalog.Problems.
+// The TSETMC instrument info of every instrument is fetched to verify its type,
+// symbol and instrument ID (IR...), and is returned in Instrument.Info. Listing
+// dates and names are joined by instrument ID; IFB pages carry no instrument ID,
+// so their board is matched by symbol, type and name.
+func (n *Adapter) UpdateInstruments(ctx context.Context) (*Catalog, error) {
+	logger := catalogLogger(n)
+	start := time.Now()
+	local, err := loadLocalInstruments(ctx, instrumentsAssetsDir)
+	if err != nil {
+		return nil, err
+	}
+	logger.WithFields(logrus.Fields{"dir": instrumentsAssetsDir, "instruments": len(local)}).Info("loaded TSE instrument files")
+	logger.Info("fetching TSE and IFB listing sources")
+	sources, err := n.fetchCatalogSources(ctx)
+	if err != nil {
+		return nil, err
+	}
+	catalog, err := newCatalogBuilder(n, sources).build(ctx, local)
+	if err != nil {
+		return nil, err
+	}
+	logger.WithFields(logrus.Fields{
+		"instruments": len(catalog.Instruments), "problems": len(catalog.Problems), "duration": time.Since(start).Round(time.Second),
+	}).Info("built TSE instrument catalog")
+	return catalog, nil
 }
 
-func (n *Adapter) UpdateInstruments(ctx context.Context) (markets []Instrument, err error) {
-	entries, err := os.ReadDir("./assets/tse/instruments")
+func catalogLogger(adapter *Adapter) *logrus.Entry {
+	return logrus.WithFields(logrus.Fields{"component": "tse-catalog", "provider": adapter.GetID()})
+}
+
+// ResolveInstrument builds the instrument of a single insCode, for symbols that are
+// added or refreshed by hand. A non-empty symbol must equal the TSETMC symbol of the
+// insCode. The instrument files provide the delisted state and the subgroup of
+// known insCodes; other insCodes are taken as active.
+func (n *Adapter) ResolveInstrument(ctx context.Context, insCode, symbol string) (Instrument, error) {
+	insCode = strings.TrimSpace(insCode)
+	info, err := n.FetchInstrumentInfo(ctx, insCode)
 	if err != nil {
-		return nil, fmt.Errorf("read TSE instruments directory: %w", err)
+		return Instrument{}, fmt.Errorf("fetch TSETMC instrument info: %w", err)
 	}
-
-	instruments := make([]Instrument, 0)
-	for _, entry := range entries {
-		if entry.IsDir() || strings.ToLower(filepath.Ext(entry.Name())) != ".json" {
-			continue
-		}
-
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		default:
-		}
-
-		path := filepath.Join("./assets/tse/instruments", entry.Name())
-		contents, err := os.ReadFile(path)
-		if err != nil {
-			return nil, fmt.Errorf("read TSE instruments file %q: %w", path, err)
-		}
-
-		var response instrumentCompareResponse
-		if err := json.Unmarshal(contents, &response); err != nil {
-			return nil, fmt.Errorf("decode TSE instruments file %q: %w", path, err)
-		}
-
-		for _, item := range response.Items {
-			for _, instrument := range item.Instruments {
-				status := consts.InstrumentStatusDisable
-				if instrument.Status == 1 {
-					status = consts.InstrumentStatusEnable
-				}
-
-				instruments = append(instruments, Instrument{
-					Name:     instrument.Name,
-					Label:    instrument.Symbol,
-					Type:     strconv.Itoa(instrument.Type),
-					ID:       instrument.ID,
-					Group:    strings.TrimSpace(instrument.Group),
-					SubGroup: strings.TrimSpace(instrument.SubGroup),
-					Status:   status,
-				})
-			}
+	if symbol != "" && matchKey(info.Symbol) != matchKey(symbol) {
+		return Instrument{}, fmt.Errorf("symbol %q does not match TSETMC symbol %q of insCode %s", symbol, cleanText(info.Symbol), insCode)
+	}
+	if _, ok := catalogTypes[info.Type]; !ok {
+		return Instrument{}, fmt.Errorf("TSETMC instrument type %d of insCode %s is not a stock, fund or right", info.Type, insCode)
+	}
+	local, err := loadLocalInstruments(ctx, instrumentsAssetsDir)
+	if err != nil {
+		return Instrument{}, err
+	}
+	entry := &catalogEntry{localInstrument: localInstrument{
+		InsCode:      insCode,
+		Symbol:       cleanText(info.Symbol),
+		Name:         info.Name,
+		Group:        info.SectorCode,
+		Type:         info.Type,
+		SymbolStatus: "A",
+		Active:       true,
+	}}
+	for _, item := range local {
+		if item.InsCode == insCode {
+			entry.localInstrument = item
+			break
 		}
 	}
-
-	return instruments, nil
+	if err := entry.applyInfo(info); err != nil {
+		return Instrument{}, fmt.Errorf("insCode %s: %w", insCode, err)
+	}
+	sources, err := n.fetchCatalogSources(ctx)
+	if err != nil {
+		return Instrument{}, err
+	}
+	// Problems of the IFB board rows of other symbols are not about this insCode.
+	instrument := newCatalogBuilder(n, sources).classify([]*catalogEntry{entry})[0]
+	catalogLogger(n).WithFields(logrus.Fields{
+		"ins_code": instrument.InsCode, "symbol": instrument.Symbol, "instrument_id": instrument.InstrumentID,
+		"market_type": instrument.MarketType, "kind": instrument.Kind, "delisted": instrument.Delisted,
+	}).Info("resolved TSE instrument")
+	return instrument, nil
 }
 
 func (a *Adapter) FetchInstrumentStateHistory(ctx context.Context, insCode string) ([]InstrumentStateHistory, error) {
@@ -162,69 +208,40 @@ func (a *Adapter) FetchInstrumentInfo(ctx context.Context, insCode string) (*Ins
 	if err := a.fetchJSON(ctx, fmt.Sprintf(fetchInstrumentInfoURL, url.PathEscape(insCode)), &r); err != nil {
 		return nil, err
 	}
-	if r.InstrumentInfo.InsCode == "" {
+	item := r.InstrumentInfo
+	if item.InsCode == "" {
 		return nil, fmt.Errorf("instrument info response has no insCode")
 	}
 	result := &InstrumentInfo{
-		InsCode: r.InstrumentInfo.InsCode,
-		Symbol:  strings.TrimSpace(r.InstrumentInfo.Symbol),
-		Name:    strings.TrimSpace(r.InstrumentInfo.Name),
-		Nav:     r.InstrumentInfo.Nav,
+		InsCode:      strings.TrimSpace(item.InsCode),
+		InstrumentID: strings.TrimSpace(item.InstrumentID),
+		Symbol:       strings.TrimSpace(item.Symbol),
+		Name:         strings.TrimSpace(item.Name),
+		EnglishName:  strings.TrimSpace(item.EnglishName),
+		Flow:         item.Flow,
+		BoardCode:    strings.TrimSpace(item.BoardCode),
+		TotalShares:  item.TotalShares,
+		BaseVolume:   item.BaseVolume,
+		Nav:          item.Nav,
 	}
-	if r.InstrumentInfo.EPS != nil && r.InstrumentInfo.EPS.EstimatedEPS != nil {
-		if value, err := strconv.ParseFloat(strings.TrimSpace(*r.InstrumentInfo.EPS.EstimatedEPS), 64); err == nil {
-			result.EPS = &value
+	if item.CompanyISIN != nil {
+		result.CompanyISIN = strings.TrimSpace(*item.CompanyISIN)
+	}
+	if value, err := strconv.Atoi(strings.TrimSpace(item.Type)); err == nil {
+		result.Type = value
+	}
+	if item.Sector != nil {
+		result.SectorCode = strings.TrimSpace(item.Sector.Code)
+		result.SectorName = cleanText(item.Sector.Name)
+	}
+	if item.EPS != nil {
+		if item.EPS.EstimatedEPS != nil {
+			if value, err := strconv.ParseFloat(strings.TrimSpace(*item.EPS.EstimatedEPS), 64); err == nil {
+				result.EPS = &value
+			}
 		}
+		result.SectorPE = item.EPS.SectorPE
+		result.PSR = item.EPS.PSR
 	}
 	return result, nil
 }
-
-// func (n *Adapter) fetchInstruments(ctx context.Context) ([]Instrument, error) {
-// 	pageSize := 100
-// 	result := make([]Instrument, 0)
-// 	for page := 1; ; page++ {
-// 		endpoint, err := url.Parse(instrumentSearchURL)
-// 		if err != nil {
-// 			return nil, fmt.Errorf("parse TSE instrument search URL: %w", err)
-// 		}
-// 		query := endpoint.Query()
-// 		query.Set("pageSize", strconv.Itoa(pageSize))
-// 		query.Set("pageNumber", strconv.Itoa(page))
-// 		endpoint.RawQuery = query.Encode()
-// 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.String(), nil)
-// 		if err != nil {
-// 			return nil, fmt.Errorf("create TSE instrument search request: %w", err)
-// 		}
-// 		resp, err := n.httlClient.Do(req)
-// 		if err != nil {
-// 			return nil, fmt.Errorf("request TSE instrument search: %w", err)
-// 		}
-// 		body, readErr := io.ReadAll(resp.Body)
-// 		resp.Body.Close()
-// 		if readErr != nil {
-// 			return nil, fmt.Errorf("read TSE instrument search response: %w", readErr)
-// 		}
-// 		if resp.StatusCode != http.StatusOK {
-// 			return nil, fmt.Errorf("TSE instrument search returned status %d", resp.StatusCode)
-// 		}
-// 		var response instrumentCompareResponse
-// 		if err := json.Unmarshal(body, &response); err != nil {
-// 			return nil, fmt.Errorf("decode TSE instrument search response: %w", err)
-// 		}
-// 		pageItems := 0
-// 		for _, item := range response.Items {
-// 			for _, instrument := range item.Instruments {
-// 				status := consts.InstrumentStatusDisable
-// 				if instrument.Status == 1 {
-// 					status = consts.InstrumentStatusEnable
-// 				}
-// 				result = append(result, Instrument{Name: instrument.Name, Label: instrument.Symbol, Type: strconv.Itoa(instrument.Type), ID: instrument.ID, Group: strings.TrimSpace(instrument.Group), SubGroup: strings.TrimSpace(instrument.SubGroup), Status: status})
-// 				pageItems++
-// 			}
-// 		}
-// 		if pageItems == 0 || pageItems < pageSize {
-// 			break
-// 		}
-// 	}
-// 	return result, nil
-// }
