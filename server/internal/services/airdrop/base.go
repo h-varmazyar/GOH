@@ -66,17 +66,20 @@ func (s *Service) CreateRoute(ctx context.Context, phrase, route string) (*model
 func (s *Service) ListRoutes(ctx context.Context, pg paginator.Params) ([]models.TabdealAirdrop, int64, error) {
 	return s.tabdealAirdropRepo.ListRoutes(ctx, pg)
 }
-func (s *Service) ListGifts(ctx context.Context, pg paginator.Params) ([]models.TabdealAirdropGift, int64, error) {
-	return s.tabdealAirdropRepo.ListGifts(ctx, pg)
+func (s *Service) ListGifts(ctx context.Context, userID uint, pg paginator.Params) ([]models.TabdealAirdropGift, int64, error) {
+	return s.tabdealAirdropRepo.ListGifts(ctx, userID, pg)
 }
-func (s *Service) GetGift(ctx context.Context, id uint) (*models.TabdealAirdropGift, error) {
-	return s.tabdealAirdropRepo.GetGift(ctx, id)
+func (s *Service) GetGift(ctx context.Context, userID, id uint) (*models.TabdealAirdropGift, error) {
+	return s.tabdealAirdropRepo.GetUserGift(ctx, userID, id)
 }
 
-func (s *Service) RetryCollectGiftAllocation(ctx context.Context, id uint) (*models.TabdealGitAllocation, error) {
+func (s *Service) RetryCollectGiftAllocation(ctx context.Context, userID, id uint) (*models.TabdealGitAllocation, error) {
 	allocation, err := s.tabdealAllocationRepo.ReturnByID(ctx, id)
 	if err != nil {
 		return nil, err
+	}
+	if allocation.UserID != userID {
+		return nil, gorm.ErrRecordNotFound
 	}
 
 	if allocation.Gift.Route == "" {
@@ -87,7 +90,30 @@ func (s *Service) RetryCollectGiftAllocation(ctx context.Context, id uint) (*mod
 		allocation.Gift.Route = route.Route
 	}
 
-	return s.reSubmitAllocation(ctx, allocation)
+	allocation, err = s.reSubmitAllocation(ctx, allocation)
+	if err != nil {
+		return nil, err
+	}
+	if allocation.Status == GiftStatusReceived {
+		if err := s.refreshGiftStatus(ctx, allocation.GiftID); err != nil {
+			return nil, err
+		}
+	}
+	return allocation, nil
+}
+
+// refreshGiftStatus marks the gift received once every allocation of it is received.
+func (s *Service) refreshGiftStatus(ctx context.Context, giftID uint) error {
+	gift, err := s.tabdealAirdropRepo.GetGift(ctx, giftID)
+	if err != nil {
+		return err
+	}
+	for _, allocation := range gift.Allocations {
+		if allocation.Status != GiftStatusReceived {
+			return nil
+		}
+	}
+	return s.tabdealAirdropRepo.UpdateGiftStatus(ctx, giftID, GiftStatusReceived, "")
 }
 
 func (s *Service) reSubmitAllocation(ctx context.Context, allocation *models.TabdealGitAllocation) (*models.TabdealGitAllocation, error) {
@@ -116,7 +142,8 @@ func (s *Service) reSubmitAllocation(ctx context.Context, allocation *models.Tab
 	return allocation, s.tabdealAllocationRepo.Update(ctx, allocation)
 }
 
-func (s *Service) RetryCollectGift(ctx context.Context, id uint) (*models.TabdealAirdropGift, error) {
+// RetryCollectGift retries the failed allocations of every user, but returns the gift with only userID's allocations.
+func (s *Service) RetryCollectGift(ctx context.Context, userID, id uint) (*models.TabdealAirdropGift, error) {
 	gift, err := s.tabdealAirdropRepo.GetGift(ctx, id)
 	if err != nil {
 		return nil, err
@@ -139,28 +166,33 @@ func (s *Service) RetryCollectGift(ctx context.Context, id uint) (*models.Tabdea
 		} else {
 			gift.Status = GiftStatusPartialyReceived
 		}
-		return gift, s.tabdealAirdropRepo.UpdateGift(ctx, gift)
+		if err := s.tabdealAirdropRepo.UpdateGift(ctx, gift); err != nil {
+			return nil, err
+		}
+		return s.tabdealAirdropRepo.GetUserGift(ctx, userID, id)
 	}
 
 	collectedCount := 0
-	for i, allocation := range gift.Allocations {
+	for _, allocation := range gift.Allocations {
 		if allocation.Status == GiftStatusFailed {
-			alloc, err := s.reSubmitAllocation(ctx, allocation)
-			if err == nil {
-				gift.Allocations[i] = alloc
-				collectedCount++
+			allocation.Gift = gift
+			if _, err := s.reSubmitAllocation(ctx, allocation); err != nil {
+				continue
 			}
-		} else {
+		}
+		if allocation.Status == GiftStatusReceived {
 			collectedCount++
 		}
 	}
+	status, errorMessage := GiftStatusPartialyReceived, gift.ErrorMessage
 	if collectedCount == len(gift.Allocations) {
-		gift.Status = GiftStatusReceived
-		gift.ErrorMessage = ""
-		return gift, s.tabdealAirdropRepo.UpdateGift(ctx, gift)
+		status, errorMessage = GiftStatusReceived, ""
+	}
+	if err := s.tabdealAirdropRepo.UpdateGiftStatus(ctx, gift.ID, status, errorMessage); err != nil {
+		return nil, err
 	}
 
-	return gift, nil
+	return s.tabdealAirdropRepo.GetUserGift(ctx, userID, id)
 }
 
 func (s *Service) ProcessTelegramMessage(ctx context.Context, chatID, messageID int64, raw string) (*models.TabdealAirdropGift, error) {

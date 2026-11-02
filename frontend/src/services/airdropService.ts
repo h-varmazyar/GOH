@@ -16,6 +16,19 @@ export interface PaginatedResponse<T> {
 
 // --- Gifts (Airdrops) ---
 
+/** One user's share of a gift; the API returns only the current user's allocations. */
+export interface AirdropGiftAllocation {
+  ID: number;
+  CreatedAt: string;
+  UpdatedAt: string;
+  DeletedAt: string | null;
+  GiftID: number;
+  Currency: string;
+  Status: string;
+  ErrorMessage: string;
+  UserID: number;
+}
+
 export interface AirdropGift {
   ID: number;
   CreatedAt: string;
@@ -27,9 +40,9 @@ export interface AirdropGift {
   SearchPhrase: string;
   Route: string;
   GiftCode: string;
-  Currency: string;
   Status: string;
   ErrorMessage: string;
+  Allocations: AirdropGiftAllocation[] | null;
 }
 
 export const airdropService = {
@@ -44,6 +57,10 @@ export const airdropService = {
   /** Retry a failed airdrop gift */
   retryGift: (id: number, giftCode?: string) =>
     api.post<AirdropGift>(`/v1/airdrops/gifts/${id}/retry`, { giftCode }),
+
+  /** Retry a single allocation of the current user */
+  retryAllocation: (id: number) =>
+    api.post<AirdropGiftAllocation>(`/v1/airdrops/gift-allocation/${id}/retry`),
 };
 
 // --- Keyword Routes (کلمات کلیدی تبدیل) ---

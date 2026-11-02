@@ -1,10 +1,15 @@
-import { useEffect, useState } from 'react';
-import { Eye, ChevronLeft, ChevronRight, X, RefreshCw } from 'lucide-react';
+import { Fragment, useEffect, useState, type ReactNode } from 'react';
+import { Eye, ChevronLeft, ChevronRight, ChevronDown, X, RefreshCw } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Input } from '../../components/ui/Input';
-import { airdropService, type AirdropGift, type Pagination } from '../../services/airdropService';
+import { airdropService, type AirdropGift, type AirdropGiftAllocation, type Pagination } from '../../services/airdropService';
+
+const PAGE_SIZE = 20;
+
+/** Shamsi date and time, as fa-IR formats it. */
+const formatDateTime = (value: string) => (value ? new Date(value).toLocaleString('fa-IR') : '—');
 
 export function AirdropGiftsList() {
   const [gifts, setGifts] = useState<AirdropGift[]>([]);
@@ -18,6 +23,9 @@ export function AirdropGiftsList() {
   const [isRetrying, setIsRetrying] = useState(false);
   const [retryError, setRetryError] = useState<string>('');
   const [retrySuccess, setRetrySuccess] = useState<string>('');
+  const [expandedGiftIds, setExpandedGiftIds] = useState<Set<number>>(new Set());
+  const [retryingAllocationId, setRetryingAllocationId] = useState<number | null>(null);
+  const [allocationError, setAllocationError] = useState('');
 
   useEffect(() => {
     fetchGifts();
@@ -27,7 +35,7 @@ export function AirdropGiftsList() {
     setIsLoading(true);
     setError('');
     try {
-      const res = await airdropService.getGifts(page);
+      const res = await airdropService.getGifts(page, PAGE_SIZE);
       setGifts(res.data || []);
       setPagination(res.pagination);
     } catch (e: unknown) {
@@ -51,9 +59,7 @@ export function AirdropGiftsList() {
       setRetrySuccess('درخواست تست مجدد ارسال شد');
       
       // آپدیت gift در لیست
-      setGifts(prev => prev.map(g => 
-        g.ID === gift.ID ? { ...g, Status: res.Status, ErrorMessage: res.ErrorMessage || '', GiftCode: res.GiftCode || gift.GiftCode } : g
-      ));
+      setGifts(prev => prev.map(g => (g.ID === gift.ID ? res : g)));
       
       // آپدیت selected gift اگر باز است
       if (selectedGift?.ID === gift.ID) {
@@ -75,12 +81,51 @@ export function AirdropGiftsList() {
     }
   };
 
+  const handleRetryAllocation = async (allocation: AirdropGiftAllocation) => {
+    if (retryingAllocationId !== null) return;
+
+    setRetryingAllocationId(allocation.ID);
+    setAllocationError('');
+    try {
+      const res = await airdropService.retryAllocation(allocation.ID);
+      const updated: AirdropGiftAllocation = { ...allocation, Currency: res.Currency, Status: res.Status, ErrorMessage: res.ErrorMessage || '' };
+      setGifts(prev => prev.map(g => (g.ID === allocation.GiftID ? replaceAllocation(g, updated) : g)));
+      if (res.Status !== 'received') {
+        setAllocationError(res.ErrorMessage || 'تلاش مجدد ناموفق بود');
+      } else {
+        // وضعیت gift ممکن است در سرور به «دریافت شده» تغییر کرده باشد
+        const gift = await airdropService.getGiftDetail(allocation.GiftID);
+        setGifts(prev => prev.map(g => (g.ID === gift.ID ? gift : g)));
+      }
+    } catch (e: unknown) {
+      setAllocationError(e instanceof Error ? e.message : 'خطا در ارسال درخواست تلاش مجدد');
+    } finally {
+      setRetryingAllocationId(null);
+    }
+  };
+
+  const toggleExpanded = (giftId: number) => {
+    setExpandedGiftIds(prev => {
+      const next = new Set(prev);
+      if (next.has(giftId)) next.delete(giftId);
+      else next.add(giftId);
+      return next;
+    });
+  };
+
+  const rowOffset = ((pagination?.page ?? page) - 1) * (pagination?.page_size ?? PAGE_SIZE);
+
   const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
       case 'success':
       case 'completed':
       case 'claimed':
+      case 'received':
         return <Badge variant="success">موفق</Badge>;
+      case 'partialy_received':
+        return <Badge variant="warning">دریافت ناقص</Badge>;
+      case 'initiated':
+        return <Badge variant="warning">در حال پردازش</Badge>;
       case 'failed':
       case 'error':
         return <Badge variant="danger">ناموفق</Badge>;
@@ -96,7 +141,7 @@ export function AirdropGiftsList() {
 
   // تابع کمکی برای بررسی وضعیت موفق
   const isSuccessfulStatus = (status: string) => {
-    const successStatuses = ['success', 'completed', 'claimed'];
+    const successStatuses = ['success', 'completed', 'claimed', 'received'];
     return successStatuses.includes(status.toLowerCase());
   };
 
@@ -106,6 +151,15 @@ export function AirdropGiftsList() {
         {error && (
           <div className="mb-4 p-3 rounded-lg bg-danger-50 dark:bg-danger-950/20 border border-danger-200 dark:border-danger-800">
             <p className="text-sm text-danger-700 dark:text-danger-300">{error}</p>
+          </div>
+        )}
+
+        {allocationError && (
+          <div className="mb-4 p-3 rounded-lg bg-danger-50 dark:bg-danger-950/20 border border-danger-200 dark:border-danger-800 flex items-start justify-between gap-2">
+            <p className="text-sm text-danger-700 dark:text-danger-300">{allocationError}</p>
+            <button onClick={() => setAllocationError('')} className="p-0.5 rounded hover:bg-danger-100 dark:hover:bg-danger-900/40">
+              <X className="w-4 h-4 text-danger-500" />
+            </button>
           </div>
         )}
 
@@ -121,60 +175,80 @@ export function AirdropGiftsList() {
           <>
             {/* Table */}
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm text-center">
                 <thead>
                   <tr className="border-b border-surface-200 dark:border-surface-700">
-                    <th className="text-right py-3 px-2 font-medium text-surface-600 dark:text-surface-400">
-                      عبارت جستجو
-                    </th>
-                    <th className="text-right py-3 px-2 font-medium text-surface-600 dark:text-surface-400">
-                      کد هدیه
-                    </th>
-                    <th className="text-right py-3 px-2 font-medium text-surface-600 dark:text-surface-400">
-                      ارز
-                    </th>
-                    <th className="text-right py-3 px-2 font-medium text-surface-600 dark:text-surface-400">
-                      وضعیت
-                    </th>
-                    <th className="text-right py-3 px-2 font-medium text-surface-600 dark:text-surface-400">
-                      خطا
-                    </th>
-                    <th className="text-right py-3 px-2 font-medium text-surface-600 dark:text-surface-400">
-                      عملیات
-                    </th>
+                    {['ردیف', 'عبارت جستجو', 'کد هدیه', 'وضعیت', 'خطا', 'تاریخ', 'تخصیص‌ها', 'عملیات'].map((title) => (
+                      <th key={title} className="text-center py-3 px-2 font-medium text-surface-600 dark:text-surface-400">
+                        {title}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {gifts.map((gift) => (
-                    <tr
-                      key={gift.ID}
-                      className="border-b border-surface-100 dark:border-surface-800 hover:bg-surface-50 dark:hover:bg-surface-800/50"
-                    >
-                      <td className="py-3 px-2 text-surface-900 dark:text-surface-100">
-                        {gift.SearchPhrase || '—'}
-                      </td>
-                      <td className="py-3 px-2 text-surface-900 dark:text-surface-100 font-mono text-xs" dir="ltr">
-                        {gift.GiftCode || '—'}
-                      </td>
-                      <td className="py-3 px-2 text-surface-900 dark:text-surface-100">
-                        {gift.Currency || '—'}
-                      </td>
-                      <td className="py-3 px-2">{getStatusBadge(gift.Status)}</td>
-                      <td className="py-3 px-2 text-surface-500 dark:text-surface-400 text-xs max-w-[150px] truncate">
-                        {gift.ErrorMessage || '—'}
-                      </td>
-                      <td className="py-3 px-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setSelectedGift(gift)}
-                          title="مشاهده جزئیات"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
+                  {gifts.map((gift, index) => {
+                    const allocations = gift.Allocations ?? [];
+                    const isExpanded = expandedGiftIds.has(gift.ID);
+                    return (
+                      <Fragment key={gift.ID}>
+                        <tr className="border-b border-surface-100 dark:border-surface-800 hover:bg-surface-50 dark:hover:bg-surface-800/50">
+                          <td className="py-3 px-2 text-surface-500 dark:text-surface-400">
+                            {(rowOffset + index + 1).toLocaleString('fa-IR')}
+                          </td>
+                          <td className="py-3 px-2 text-surface-900 dark:text-surface-100">
+                            {gift.SearchPhrase || '—'}
+                          </td>
+                          <td className="py-3 px-2 text-surface-900 dark:text-surface-100 font-mono text-xs" dir="ltr">
+                            {gift.GiftCode || '—'}
+                          </td>
+                          <td className="py-3 px-2">{getStatusBadge(gift.Status)}</td>
+                          <td className="py-3 px-2 text-surface-500 dark:text-surface-400 text-xs max-w-[150px] truncate" title={gift.ErrorMessage}>
+                            {gift.ErrorMessage || '—'}
+                          </td>
+                          <td className="py-3 px-2 text-surface-700 dark:text-surface-300 text-xs whitespace-nowrap">
+                            {formatDateTime(gift.CreatedAt)}
+                          </td>
+                          <td className="py-3 px-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleExpanded(gift.ID)}
+                              disabled={allocations.length === 0}
+                              title={isExpanded ? 'بستن تخصیص‌ها' : 'نمایش تخصیص‌ها'}
+                            >
+                              {allocations.length.toLocaleString('fa-IR')}
+                              {allocations.length > 0 && (
+                                <ChevronDown className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                              )}
+                            </Button>
+                          </td>
+                          <td className="py-3 px-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setSelectedGift(gift)}
+                              title="مشاهده جزئیات"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                          </td>
+                        </tr>
+                        {isExpanded && allocations.length > 0 && (
+                          <tr className="border-b border-surface-100 dark:border-surface-800 bg-surface-50/60 dark:bg-surface-800/30">
+                            <td colSpan={8} className="py-2 px-4">
+                              <AllocationsTable
+                                allocations={allocations}
+                                retryingAllocationId={retryingAllocationId}
+                                onRetry={handleRetryAllocation}
+                                getStatusBadge={getStatusBadge}
+                                isSuccessfulStatus={isSuccessfulStatus}
+                              />
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -232,7 +306,6 @@ export function AirdropGiftsList() {
             <div className="p-4 space-y-4">
               <DetailRow label="عبارت جستجو" value={selectedGift.SearchPhrase} />
               <DetailRow label="کد هدیه" value={selectedGift.GiftCode} dir="ltr" />
-              <DetailRow label="ارز" value={selectedGift.Currency} />
               <DetailRow label="مسیر" value={selectedGift.Route} dir="ltr" />
               <div>
                 <p className="text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">وضعیت</p>
@@ -245,7 +318,19 @@ export function AirdropGiftsList() {
                   {selectedGift.RawMessage || '—'}
                 </div>
               </div>
-              <DetailRow label="تاریخ ایجاد" value={new Date(selectedGift.CreatedAt).toLocaleString('fa-IR')} />
+              <DetailRow label="تاریخ ایجاد" value={formatDateTime(selectedGift.CreatedAt)} />
+              {(selectedGift.Allocations ?? []).length > 0 && (
+                <div>
+                  <p className="text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">تخصیص‌ها</p>
+                  <AllocationsTable
+                    allocations={selectedGift.Allocations ?? []}
+                    retryingAllocationId={retryingAllocationId}
+                    onRetry={handleRetryAllocation}
+                    getStatusBadge={getStatusBadge}
+                    isSuccessfulStatus={isSuccessfulStatus}
+                  />
+                </div>
+              )}
             </div>
             <div className="p-4 border-t border-surface-200 dark:border-surface-700 flex gap-3">
               <Button variant="secondary" className="flex-1" onClick={() => setSelectedGift(null)}>
@@ -356,6 +441,67 @@ export function AirdropGiftsList() {
         </div>
       )}
     </>
+  );
+}
+
+function replaceAllocation(gift: AirdropGift, allocation: AirdropGiftAllocation): AirdropGift {
+  return { ...gift, Allocations: (gift.Allocations ?? []).map(a => (a.ID === allocation.ID ? allocation : a)) };
+}
+
+function AllocationsTable({
+  allocations,
+  retryingAllocationId,
+  onRetry,
+  getStatusBadge,
+  isSuccessfulStatus,
+}: {
+  allocations: AirdropGiftAllocation[];
+  retryingAllocationId: number | null;
+  onRetry: (allocation: AirdropGiftAllocation) => void;
+  getStatusBadge: (status: string) => ReactNode;
+  isSuccessfulStatus: (status: string) => boolean;
+}) {
+  return (
+    <table className="w-full text-xs text-center">
+      <thead>
+        <tr className="text-surface-500 dark:text-surface-400">
+          {['ردیف', 'ارز', 'وضعیت', 'خطا', 'تاریخ', 'عملیات'].map((title) => (
+            <th key={title} className="text-center py-2 px-2 font-medium">{title}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {allocations.map((allocation, index) => {
+          const isRetrying = retryingAllocationId === allocation.ID;
+          return (
+            <tr key={allocation.ID} className="border-t border-surface-200/70 dark:border-surface-700/70">
+              <td className="py-2 px-2 text-surface-500 dark:text-surface-400">{(index + 1).toLocaleString('fa-IR')}</td>
+              <td className="py-2 px-2 font-mono text-surface-900 dark:text-surface-100" dir="ltr">{allocation.Currency || '—'}</td>
+              <td className="py-2 px-2">{getStatusBadge(allocation.Status)}</td>
+              <td className="py-2 px-2 text-surface-500 dark:text-surface-400 max-w-[200px] truncate" title={allocation.ErrorMessage}>
+                {allocation.ErrorMessage || '—'}
+              </td>
+              <td className="py-2 px-2 text-surface-700 dark:text-surface-300 whitespace-nowrap">{formatDateTime(allocation.CreatedAt)}</td>
+              <td className="py-2 px-2">
+                {isSuccessfulStatus(allocation.Status) ? (
+                  '—'
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onRetry(allocation)}
+                    disabled={retryingAllocationId !== null}
+                    title="تلاش مجدد"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${isRetrying ? 'animate-spin' : ''}`} />
+                  </Button>
+                )}
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
   );
 }
 

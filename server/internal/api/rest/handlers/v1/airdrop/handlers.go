@@ -70,7 +70,7 @@ func (h Handler) ListRoutes(ctx *gin.Context) {
 // @Router       /v1/airdrops/gifts [get]
 func (h Handler) ListGifts(ctx *gin.Context) {
 	pg := paginator.FromContext(ctx)
-	items, total, err := h.service.ListGifts(ctx, pg)
+	items, total, err := h.service.ListGifts(ctx, ctx.GetUint("user_id"), pg)
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -98,7 +98,7 @@ func (h Handler) GetGift(ctx *gin.Context) {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	item, err := h.service.GetGift(ctx, uint(id))
+	item, err := h.service.GetGift(ctx, ctx.GetUint("user_id"), uint(id))
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
@@ -123,7 +123,7 @@ func (h Handler) RetryCollectGift(ctx *gin.Context) {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	item, err := h.service.RetryCollectGift(ctx, uint(id))
+	item, err := h.service.RetryCollectGift(ctx, ctx.GetUint("user_id"), uint(id))
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
@@ -148,7 +148,7 @@ func (h Handler) RetryCollectGiftAllocation(ctx *gin.Context) {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	item, err := h.service.RetryCollectGiftAllocation(ctx, uint(id))
+	item, err := h.service.RetryCollectGiftAllocation(ctx, ctx.GetUint("user_id"), uint(id))
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return

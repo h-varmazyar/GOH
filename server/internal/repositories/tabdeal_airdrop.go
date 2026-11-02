@@ -67,12 +67,36 @@ func (r *TabdealAirdropRepository) GetGift(ctx context.Context, id uint) (*model
 	return &gift, nil
 }
 
-func (r *TabdealAirdropRepository) ListGifts(ctx context.Context, pg paginator.Params) ([]models.TabdealAirdropGift, int64, error) {
+// GetUserGift returns a gift with only the allocations that belong to userID.
+func (r *TabdealAirdropRepository) GetUserGift(ctx context.Context, userID, id uint) (*models.TabdealAirdropGift, error) {
+	var gift models.TabdealAirdropGift
+	if err := r.db.WithContext(ctx).Preload("Allocations", userAllocations(userID)).First(&gift, id).Error; err != nil {
+		return nil, err
+	}
+	return &gift, nil
+}
+
+func (r *TabdealAirdropRepository) UpdateGiftStatus(ctx context.Context, id uint, status, errorMessage string) error {
+	return r.db.WithContext(ctx).
+		Model(&models.TabdealAirdropGift{}).
+		Where("id = ?", id).
+		Updates(map[string]any{"status": status, "error_message": errorMessage}).
+		Error
+}
+
+// ListGifts returns gifts with only the allocations that belong to userID.
+func (r *TabdealAirdropRepository) ListGifts(ctx context.Context, userID uint, pg paginator.Params) ([]models.TabdealAirdropGift, int64, error) {
 	var gifts []models.TabdealAirdropGift
 	var total int64
 
 	r.db.WithContext(ctx).Model(&models.TabdealAirdropGift{}).Count(&total)
 
-	err := pg.Apply(r.db.WithContext(ctx).Order("created_at desc")).Preload("Allocations").Find(&gifts).Error
+	err := pg.Apply(r.db.WithContext(ctx).Order("created_at desc")).Preload("Allocations", userAllocations(userID)).Find(&gifts).Error
 	return gifts, total, err
+}
+
+func userAllocations(userID uint) func(*gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		return db.Where("user_id = ?", userID).Order("id")
+	}
 }
