@@ -31,6 +31,7 @@ import { DailyAnalysisDetailPage } from './pages/tse/DailyAnalysisDetailPage';
 import { IndicatorsPage } from './pages/tse/IndicatorsPage';
 import { MarketsPage } from './pages/tse/MarketsPage';
 import { MarketIssuesPage } from './pages/tse/MarketIssuesPage';
+import { TradeHistoryGapsPage } from './pages/tse/TradeHistoryGapsPage';
 import { MarketDetailPage } from './pages/tse/MarketDetailPage';
 import { WatchlistsPage } from './pages/tse/WatchlistsPage';
 import { MarketCalendarPage } from './pages/tse/MarketCalendarPage';
@@ -102,6 +103,7 @@ export default function App() {
           <Route path="tse/indicators" element={<IndicatorsPage />} />
           <Route path="tse/markets" element={<MarketsPage />} />
           <Route path="tse/markets/issues" element={<MarketIssuesPage />} />
+          <Route path="tse/markets/trade-history" element={<TradeHistoryGapsPage />} />
           <Route path="tse/markets/:marketId" element={<MarketDetailPage />} />
           <Route path="tse/watchlist" element={<WatchlistsPage />} />
           <Route path="tse/calendar" element={<MarketCalendarPage />} />

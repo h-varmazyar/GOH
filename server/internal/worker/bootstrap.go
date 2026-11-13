@@ -12,6 +12,7 @@ import (
 	"github.com/h-varmazyar/gatec/internal/models"
 	"github.com/h-varmazyar/gatec/internal/repositories"
 	tgAccountService "github.com/h-varmazyar/gatec/internal/services/tgaccount"
+	"github.com/h-varmazyar/gatec/internal/services/tradehistory"
 	"github.com/h-varmazyar/gatec/internal/worker/events"
 	clickhouseClient "github.com/h-varmazyar/gatec/pkg/clickhouse"
 	gormext "github.com/h-varmazyar/gatec/pkg/gormOld"
@@ -98,6 +99,8 @@ func dependencyNeeds(names []string, cfg *configs.Config) dependencyPlan {
 			}
 		case "tse-trade-history":
 			needs.tseMarket = true
+			// The trade history is recorded in the daily closing price rows.
+			needs.tseDailyClosingPrice = true
 			needs.stockProviders = true
 			needs.tseTradeHistory = true
 		case "tse-market-watch":
@@ -233,6 +236,21 @@ func StandaloneFactory(ctx context.Context, cfg *configs.Config, ch *clickhouseC
 		}
 	}
 
+	var tradeHistoryService *tradehistory.Service
+	if needs.tseTradeHistory {
+		var adapter *stockTSE.Adapter
+		if len(stockProviders) > 0 {
+			adapter = stockProviders[0]
+		}
+		tradeHistoryService = tradehistory.NewService(
+			cfg.Workers.TSETradeHistory,
+			adapter,
+			tseMarketRepo,
+			repositories.NewTradeHistoryStatusRepository(db),
+			tradeHistoryRepo,
+		)
+	}
+
 	var tgManagerService *tgAccountService.Service
 	if needs.telegram {
 		tgManagerService = tgAccountService.NewService(cfg.Services.TgAccount, telegramRepo, filterRepo, proxyRepo)
@@ -260,7 +278,8 @@ func StandaloneFactory(ctx context.Context, cfg *configs.Config, ch *clickhouseC
 			StockProviders:  stockProviders,
 		},
 		Services: &ServicesBundle{
-			TgAccount: tgManagerService,
+			TgAccount:    tgManagerService,
+			TradeHistory: tradeHistoryService,
 		},
 		Channels: &ChannelsBundle{
 			CandleChan: candleChan,
@@ -319,6 +338,9 @@ func migrateWorkerModels(db *gorm.DB, needs dependencyPlan) error {
 	}
 	if needs.signalWorker {
 		modelsToMigrate = append(modelsToMigrate, &models.SignalRecord{})
+	}
+	if needs.tseTradeHistory {
+		modelsToMigrate = append(modelsToMigrate, &models.TSETradeHistoryJob{})
 	}
 	return db.AutoMigrate(modelsToMigrate...)
 }

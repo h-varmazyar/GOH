@@ -10,6 +10,7 @@ import (
 	"github.com/h-varmazyar/gatec/internal/adapters/crypto"
 	"github.com/h-varmazyar/gatec/internal/adapters/stock/tse"
 	"github.com/h-varmazyar/gatec/internal/repositories"
+	"github.com/h-varmazyar/gatec/internal/services/tradehistory"
 	"github.com/h-varmazyar/gatec/internal/worker/events"
 	"github.com/h-varmazyar/gatec/internal/worker/workers"
 	"github.com/h-varmazyar/gatec/pkg/tgclient"
@@ -91,7 +92,8 @@ type AdaptersBundle struct {
 }
 
 type ServicesBundle struct {
-	TgAccount any
+	TgAccount    any
+	TradeHistory *tradehistory.Service
 }
 
 type ChannelsBundle struct {
@@ -305,18 +307,13 @@ func (f *WorkerFactory) createWorkerLocked(name string) (Worker, error) {
 			f.bundles.Repositories.TSEMarket,
 			f.bundles.Repositories.TSEDailyClosingPrice,
 			f.bundles.EventBus,
-			f.bundles.Repositories.TSETradeHistory,
+			f.bundles.Services.TradeHistory,
 		), nil
 	case "tse-trade-history":
-		if f.cfg.TSETradeHistory == nil || len(f.bundles.Adapters.StockProviders) == 0 {
+		if f.cfg.TSETradeHistory == nil || len(f.bundles.Adapters.StockProviders) == 0 || f.bundles.Services.TradeHistory == nil {
 			return nil, fmt.Errorf("tse-trade-history dependencies are missing")
 		}
-		return workers.NewTSETradeHistory(
-			f.bundles.Adapters.StockProviders[0],
-			f.cfg.TSETradeHistory,
-			f.bundles.Repositories.TSEMarket,
-			f.bundles.Repositories.TSETradeHistory,
-		), nil
+		return workers.NewTSETradeHistory(f.bundles.Services.TradeHistory, f.cfg.TSETradeHistory), nil
 	case "tse-market-watch":
 		if f.cfg.TSEMarketWatch == nil || len(f.bundles.Adapters.StockProviders) == 0 {
 			return nil, fmt.Errorf("tse-market-watch dependencies are missing. %t, %t", f.cfg.TSEMarketWatch == nil, len(f.bundles.Adapters.StockProviders) == 0)

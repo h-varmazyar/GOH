@@ -90,7 +90,8 @@ func main() {
 			logrus.WithError(err).WithField("worker", name).Fatal("start worker")
 		}
 	}
-	if len(names) == 1 && (names[0] == "tse-trade-history" || (names[0] == "tse-market-data-sync" && cfg.Workers.TSEMarketDataSync.Mode != "today")) {
+	// tse-trade-history keeps running and takes the jobs queued from the panel.
+	if len(names) == 1 && names[0] == "tse-market-data-sync" && cfg.Workers.TSEMarketDataSync.Mode != "today" {
 		if err := factory.WaitWorker(ctx, names[0]); err != nil && ctx.Err() == nil {
 			logrus.WithError(err).Error("one-shot worker failed")
 		}

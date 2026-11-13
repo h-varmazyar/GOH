@@ -5,6 +5,7 @@ import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { InstrumentTable } from '../../components/tse/InstrumentTable';
+import { TradeHistoryPanel } from '../../components/tse/TradeHistoryPanel';
 import { deleteMarket } from '../../components/tse/marketActions';
 import { errorMessage, formatDate, formatDateTime, formatNumber } from '../../components/tse/format';
 import {
@@ -177,6 +178,8 @@ export function MarketDetailPage() {
           <Field label="به‌روزرسانی">{formatDateTime(market.info_updated_at)}</Field>
         </Card>
       </div>
+
+      <TradeHistoryPanel key={market.id} tseMarketId={market.id} />
 
       <Card padding="sm">
         <div className="mb-3">

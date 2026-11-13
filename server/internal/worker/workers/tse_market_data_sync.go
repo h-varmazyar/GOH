@@ -13,6 +13,7 @@ import (
 	"github.com/h-varmazyar/gatec/internal/consts"
 	"github.com/h-varmazyar/gatec/internal/models"
 	"github.com/h-varmazyar/gatec/internal/repositories"
+	"github.com/h-varmazyar/gatec/internal/services/tradehistory"
 	"github.com/h-varmazyar/gatec/internal/worker/events"
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
@@ -22,7 +23,7 @@ type TSEMarketDataSync struct {
 	adapter          *tse.Adapter
 	marketRepo       *repositories.TSEMarketRepository
 	dailyRepo        *repositories.TSEDailyClosingPriceRepository
-	tradeHistoryRepo *repositories.TradeHistoryRepository
+	tradeHistory     *tradehistory.Service
 	candleRepo       *repositories.CandleRepository
 	requestInterval  time.Duration
 	config           *configs.TSEMarketDataSync
@@ -31,11 +32,11 @@ type TSEMarketDataSync struct {
 	receivedData     atomic.Int64
 }
 
-func NewTSEMarketDataSync(adapter *tse.Adapter, cfg *configs.TSEMarketDataSync, marketRepo *repositories.TSEMarketRepository, dailyRepo *repositories.TSEDailyClosingPriceRepository, tradeHistoryRepo *repositories.TradeHistoryRepository) *TSEMarketDataSync {
-	return NewTSEMarketDataSyncWithBus(adapter, cfg, marketRepo, dailyRepo, nil, tradeHistoryRepo)
+func NewTSEMarketDataSync(adapter *tse.Adapter, cfg *configs.TSEMarketDataSync, marketRepo *repositories.TSEMarketRepository, dailyRepo *repositories.TSEDailyClosingPriceRepository, tradeHistory *tradehistory.Service) *TSEMarketDataSync {
+	return NewTSEMarketDataSyncWithBus(adapter, cfg, marketRepo, dailyRepo, nil, tradeHistory)
 }
 
-func NewTSEMarketDataSyncWithBus(adapter *tse.Adapter, cfg *configs.TSEMarketDataSync, marketRepo *repositories.TSEMarketRepository, dailyRepo *repositories.TSEDailyClosingPriceRepository, eventBus events.CandleBus, tradeHistoryRepo *repositories.TradeHistoryRepository) *TSEMarketDataSync {
+func NewTSEMarketDataSyncWithBus(adapter *tse.Adapter, cfg *configs.TSEMarketDataSync, marketRepo *repositories.TSEMarketRepository, dailyRepo *repositories.TSEDailyClosingPriceRepository, eventBus events.CandleBus, tradeHistory *tradehistory.Service) *TSEMarketDataSync {
 	if cfg.Mode == "" {
 		cfg.Mode = consts.TSEMarketDataToday
 	}
@@ -50,7 +51,7 @@ func NewTSEMarketDataSyncWithBus(adapter *tse.Adapter, cfg *configs.TSEMarketDat
 		config:           cfg,
 		logger:           logrus.WithField("worker", "tse-market-data-sync"),
 		eventBus:         eventBus,
-		tradeHistoryRepo: tradeHistoryRepo,
+		tradeHistory:     tradeHistory,
 	}
 }
 
@@ -119,6 +120,8 @@ func (w *TSEMarketDataSync) syncAllMarkets(ctx context.Context) error {
 			}
 		}
 		markets = filtered
+	case "all":
+		// continue
 	default:
 		return fmt.Errorf("please set collection method")
 	}
@@ -186,10 +189,11 @@ func (w *TSEMarketDataSync) waitDuration(ctx context.Context, duration time.Dura
 
 func (w *TSEMarketDataSync) syncMarket(ctx context.Context, market *models.TSEMarket) error {
 	if w.config.Mode == consts.TSEMarketDataToday {
-		return errors.Join(
-			w.syncToday(ctx, market),
-			w.syncTodayTradeHistory(ctx, market),
-		)
+		date, err := w.syncToday(ctx, market)
+		if err != nil || date.IsZero() {
+			return err
+		}
+		return w.syncTradeHistory(ctx, market, date)
 	}
 
 	prices, err := w.adapter.FetchClosingPriceHistory(ctx, market.InsCode)
@@ -238,18 +242,20 @@ func (w *TSEMarketDataSync) syncReleaseDate(ctx context.Context, market *models.
 	return nil
 }
 
-func (w *TSEMarketDataSync) syncToday(ctx context.Context, market *models.TSEMarket) error {
+// syncToday stores the current closing price of market and returns its date,
+// which is the last trading day of the market; zero when it has none.
+func (w *TSEMarketDataSync) syncToday(ctx context.Context, market *models.TSEMarket) (time.Time, error) {
 	logrus.Info("sync today market")
 	todayPrice, err := w.adapter.FetchCurrentClosingPrice(ctx, market.InsCode)
 	if err != nil {
-		return fmt.Errorf("fetch current closing price: %w", err)
+		return time.Time{}, fmt.Errorf("fetch current closing price: %w", err)
 	}
 	participant, err := w.adapter.FetchCurrentClientType(ctx, market.InsCode)
 	if err != nil {
-		return fmt.Errorf("fetch current client type: %w", err)
+		return time.Time{}, fmt.Errorf("fetch current client type: %w", err)
 	}
 	if todayPrice.Date.IsZero() {
-		return nil
+		return time.Time{}, nil
 	}
 	priceHistory := tse.ClosingPriceHistory{
 		ClosingPrice: *todayPrice,
@@ -257,67 +263,42 @@ func (w *TSEMarketDataSync) syncToday(ctx context.Context, market *models.TSEMar
 	price := priceRow(priceHistory, market.MarketID, market.ID)
 	prices := []models.TSEDailyClosingPrice{priceRowParticipant(price, *participant)}
 
-	return w.syncRows(ctx, prices)
+	return dateOnly(todayPrice.Date), w.syncRows(ctx, prices)
 }
 
-func (w *TSEMarketDataSync) syncTodayTradeHistory(ctx context.Context, market *models.TSEMarket) error {
-	if w.tradeHistoryRepo == nil {
-		return fmt.Errorf("TSE trade history repository is required in today mode")
+// syncTradeHistory fetches the trades of the trading day just stored and
+// records them in its daily closing price row. An older day whose trades were
+// already fetched is not fetched again.
+func (w *TSEMarketDataSync) syncTradeHistory(ctx context.Context, market *models.TSEMarket, date time.Time) error {
+	if w.tradeHistory == nil {
+		return fmt.Errorf("TSE trade history service is required in today mode")
 	}
-	location, err := time.LoadLocation("Asia/Tehran")
+	day, err := w.tradeHistory.FindDay(ctx, market.ID, date)
 	if err != nil {
-		return fmt.Errorf("load Asia/Tehran timezone: %w", err)
+		return fmt.Errorf("find trading day: %w", err)
 	}
-	today := time.Now().In(location)
-	tradeDate := today.Format("2006-01-02")
-	var trades []tse.TradeHistory
-	for attempt := 1; attempt <= tradeHistoryMaxAttempts; attempt++ {
-		trades, err = w.adapter.FetchTradeHistory(ctx, market.InsCode, today.Format("20060102"))
-		if err == nil {
-			break
-		}
-		if ctx.Err() != nil {
-			return ctx.Err()
-		}
-		if attempt == tradeHistoryMaxAttempts {
-			return fmt.Errorf("fetch trade history after %d attempts: %w", attempt, err)
-		}
-		w.logger.WithError(err).WithFields(logrus.Fields{
-			"market_id": market.MarketID,
-			"ins_code":  market.InsCode,
-			"date":      tradeDate,
-			"attempt":   attempt,
-		}).Warn("retrying TSE trade history fetch")
-		if !w.waitDuration(ctx, tradeHistoryRetryDelay) {
-			return ctx.Err()
-		}
+	if day == nil {
+		return fmt.Errorf("daily closing price of %s was not stored", date.Format("2006-01-02"))
 	}
-	if len(trades) == 0 {
+	if day.HistoryStatus != nil && *day.HistoryStatus == consts.TSETradeDayFetched && date.Before(w.tradeHistory.Today()) {
 		return nil
 	}
-	rows := make([]models.TSETradeHistory, len(trades))
-	version := uint64(time.Now().UnixNano())
-	for index, trade := range trades {
-		rows[index] = models.TSETradeHistory{
-			MarketID:   uint64(market.MarketID),
-			InsCode:    market.InsCode,
-			TradeDate:  tradeDate,
-			TradeIndex: uint32(index),
-			Canceled:   trade.Canceled,
-			TradeTime:  int64(trade.TradeTime),
-			Price:      int64(trade.Price),
-			Quantity:   int64(trade.Quantity),
-			Version:    version,
-		}
+	result, err := w.tradeHistory.CollectDay(ctx, market, *day, tradehistory.CollectOptions{
+		MaxAttempts: tradeHistoryMaxAttempts,
+		RetryDelay:  tradeHistoryRetryDelay,
+	})
+	if err != nil {
+		return fmt.Errorf("collect trade history: %w", err)
 	}
-	if err := w.tradeHistoryRepo.Insert(ctx, rows); err != nil {
-		return fmt.Errorf("save trade history: %w", err)
+	if result.Err != nil {
+		return fmt.Errorf("fetch trade history after %d attempts: %w", result.Attempts, result.Err)
 	}
 	w.logger.WithFields(logrus.Fields{
 		"market_id": market.MarketID,
 		"ins_code":  market.InsCode,
-		"date":      tradeDate,
-		"count":     len(rows),
+		"date":      date.Format("2006-01-02"),
+		"status":    result.Status,
+		"count":     result.TradeCount,
 	}).Info("TSE trade history synced")
 	return nil
 }

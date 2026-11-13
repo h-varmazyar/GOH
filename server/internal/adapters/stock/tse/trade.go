@@ -11,10 +11,10 @@ type tradeHistoryResponse struct {
 }
 
 type TradeHistory struct {
-	Canceled  bool `json:"canceled"`
-	TradeTime int  `json:"hEven"`
-	Price     int  `json:"pTran"`
-	Quantity  int  `json:"qTitTran"`
+	Canceled  int     `json:"canceled"`
+	TradeTime int     `json:"hEven"`
+	Price     float64 `json:"pTran"`
+	Quantity  int     `json:"qTitTran"`
 }
 
 func (a *Adapter) FetchTradeHistory(ctx context.Context, insCode, date string) ([]TradeHistory, error) {

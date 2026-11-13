@@ -109,7 +109,36 @@ type TSEMarketWatch struct {
 	PollInterval time.Duration
 }
 
-type TSETradeHistory struct{}
+// TSETradeHistory configures the tse-trade-history worker, which runs the trade
+// history jobs queued from the panel, and the trade history service. The days
+// of a market are its daily closing price rows.
+type TSETradeHistory struct {
+	// PollInterval is how often the worker looks for queued jobs.
+	PollInterval time.Duration
+	// Instances is the number of worker instances, each on its own goroutine.
+	// Each instance claims queued jobs; an idle instance helps a job that
+	// another instance of the process runs, market by market. Every instance
+	// sends its own requests to TSETMC.
+	Instances int
+	// MaxAttempts and RetryDelay bound the requests of one day. The adapter also
+	// retries network failures and 5xx responses on its own.
+	MaxAttempts int
+	RetryDelay  time.Duration
+	// StaleJobAfter requeues running jobs without a heartbeat for this long,
+	// such as the jobs of a worker that was killed.
+	StaleJobAfter time.Duration
+	// EnqueueAllOnStart queues a job for every market with data collection
+	// enabled when the worker starts, unless such a job is already queued.
+	EnqueueAllOnStart bool
+}
+
+// StaleJobTimeout is StaleJobAfter, or 5 minutes when it is not set.
+func (c *TSETradeHistory) StaleJobTimeout() time.Duration {
+	if c.StaleJobAfter <= 0 {
+		return 5 * time.Minute
+	}
+	return c.StaleJobAfter
+}
 
 type TSEMarketDataSync struct {
 	Mode             consts.TSEMarketDataMode

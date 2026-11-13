@@ -71,7 +71,14 @@ func Load() (*Config, error) {
 		},
 
 		Workers: Workers{
-			TSETradeHistory: &TSETradeHistory{},
+			TSETradeHistory: &TSETradeHistory{
+				PollInterval:      loadOptionalDuration("WORKER_TSE_TRADE_HISTORY_POLL_INTERVAL", 15*time.Second),
+				Instances:         loadOptionalInt("WORKER_TSE_TRADE_HISTORY_INSTANCES", 1),
+				MaxAttempts:       loadOptionalInt("WORKER_TSE_TRADE_HISTORY_MAX_ATTEMPTS", 3),
+				RetryDelay:        loadOptionalDuration("WORKER_TSE_TRADE_HISTORY_RETRY_DELAY", 30*time.Second),
+				StaleJobAfter:     loadOptionalDuration("WORKER_TSE_TRADE_HISTORY_STALE_JOB_AFTER", 5*time.Minute),
+				EnqueueAllOnStart: loadOptionalBool("WORKER_TSE_TRADE_HISTORY_ENQUEUE_ALL_ON_START", false),
+			},
 			IndicatorCalculator: &IndicatorCalculator{
 				ExecutionIttrationDuration: loadDuration("WORKER_INDICATOR_CALCULATOR_EXECUTION_ITTRATION_DURATION"),
 				SignalPipelineCount:        1,

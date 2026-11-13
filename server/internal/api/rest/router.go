@@ -96,6 +96,19 @@ func (s *Server) setupAPIRoutes() {
 		tseIssueGroup.PATCH("/status", s.tseMarketHandler.UpdateIssueStatus)
 	}
 
+	if s.tradeHistoryHandler.HasService() {
+		tradeHistoryGroup := v1.Group("/tse/trade-history")
+		tradeHistoryGroup.Use(middlewares.NewPublicAuthMiddleware().Handle)
+		tradeHistoryGroup.GET("/markets/:id/summary", s.tradeHistoryHandler.MarketSummary)
+		tradeHistoryGroup.GET("/markets/:id/days", s.tradeHistoryHandler.ListDays)
+		tradeHistoryGroup.POST("/markets/:id/days/:date/fetch", s.tradeHistoryHandler.FetchDay)
+		tradeHistoryGroup.GET("/gaps", s.tradeHistoryHandler.ListGaps)
+		tradeHistoryGroup.GET("/jobs", s.tradeHistoryHandler.ListJobs)
+		tradeHistoryGroup.POST("/jobs", s.tradeHistoryHandler.CreateJob)
+		tradeHistoryGroup.GET("/jobs/:id", s.tradeHistoryHandler.GetJob)
+		tradeHistoryGroup.POST("/jobs/:id/cancel", s.tradeHistoryHandler.CancelJob)
+	}
+
 	if s.tabdealHandler.HasService() {
 		// tabdealHandlerV1 := v1.Group("/tabdeal")
 		// tabdealHandlerV1.Use(middlewares.NewPublicAuthMiddleware().Handle)

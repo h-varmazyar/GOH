@@ -27,6 +27,7 @@ import {
   CalendarDays,
   BrainCircuit,
   LayoutTemplate,
+  History,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
@@ -106,6 +107,7 @@ const navEntries: NavEntry[] = [
       { to: '/tse/indicators', icon: Activity, label: 'اندیکاتورها' },
       { to: '/tse/markets', icon: LineChart, label: 'لیست بازارها', end: true },
       { to: '/tse/markets/issues', icon: ShieldAlert, label: 'بررسی نمادها' },
+      { to: '/tse/markets/trade-history', icon: History, label: 'پایش سابقه معاملات' },
       { to: '/tse/watchlist', icon: Star, label: 'دیده‌بان بازار' },
       { to: '/tse/calendar', icon: CalendarDays, label: 'تقویم بازار' },
     ],

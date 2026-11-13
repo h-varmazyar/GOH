@@ -26,6 +26,7 @@ import (
 	proxyService "github.com/h-varmazyar/gatec/internal/services/proxy"
 	strategyService "github.com/h-varmazyar/gatec/internal/services/strategy"
 	tgAccountService "github.com/h-varmazyar/gatec/internal/services/tgaccount"
+	tradeHistoryService "github.com/h-varmazyar/gatec/internal/services/tradehistory"
 	tseMarketService "github.com/h-varmazyar/gatec/internal/services/tsemarket"
 	userService "github.com/h-varmazyar/gatec/internal/services/user"
 
@@ -79,6 +80,7 @@ func main() {
 			dep.Service.Messaging,
 			dep.Service.DynamicConfig,
 			dep.Service.TSEMarket,
+			dep.Service.TradeHistory,
 		).Serve(ctx, serverAddress)
 		if err != nil {
 			panic(err)
@@ -126,6 +128,7 @@ type depencencies struct {
 		Messaging      *messagingService.Service
 		DynamicConfig  *dynamicConfigService.Service
 		TSEMarket      *tseMarketService.Service
+		TradeHistory   *tradeHistoryService.Service
 	}
 	Adapters struct {
 		Nobitex *nobitex.Adapter
@@ -199,6 +202,7 @@ func initializeDependencies(ctx context.Context, cfg *configs.Config) (*depencen
 		&models.TSEDailyClosingPrice{},
 		&models.TSEIndicatorSnapshot{},
 		&models.DynamicConfig{},
+		&models.TSETradeHistoryJob{},
 	); err != nil {
 		return nil, fmt.Errorf("migration failed: %w", err)
 	}
@@ -237,6 +241,17 @@ func initializeDependencies(ctx context.Context, cfg *configs.Config) (*depencen
 	}
 
 	initializeServices(ctx, dep, cfg.Services)
+	var tseAdapter *tse.Adapter
+	if len(dep.StockProviders) > 0 {
+		tseAdapter = dep.StockProviders[0]
+	}
+	dep.Service.TradeHistory = tradeHistoryService.NewService(
+		cfg.Workers.TSETradeHistory,
+		tseAdapter,
+		dep.Repositories.TSEMarket,
+		repositories.NewTradeHistoryStatusRepository(dep.DB),
+		dep.Repositories.TSETradeHistory,
+	)
 
 	clickHouseReady = true
 	return dep, nil
