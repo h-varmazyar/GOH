@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log"
-	// "math/rand/v2"
-	// "time"
+	"time"
+	"unicode/utf16"
+
+	"math/rand/v2"
 
 	"github.com/h-varmazyar/gatec/internal/services/airdrop"
 	"github.com/h-varmazyar/gatec/internal/services/tgaccount"
@@ -94,19 +96,45 @@ func (c *AirdropCatcher) handleUpdate(ctx context.Context, update client.Update)
 }
 
 func (c *AirdropCatcher) handleMessage(ctx context.Context, message *client.Message) {
-	text := ""
+	var formatted *client.FormattedText
 	switch message.Content.MessageContentType() {
 	case client.TypeMessagePhoto:
-		text = message.Content.(*client.MessagePhoto).Caption.Text
+		formatted = message.Content.(*client.MessagePhoto).Caption
 	case client.TypeMessageText:
-		text = message.Content.(*client.MessageText).Text.Text
+		formatted = message.Content.(*client.MessageText).Text
 	}
-	// delay := time.Minute * time.Duration(rand.Int64N(16)+1)
-	// time.Sleep(delay)
+	text, links := "", []string(nil)
+	if formatted != nil {
+		text, links = formatted.Text, extractLinks(formatted)
+	}
+	delay := time.Minute * time.Duration(rand.Int64N(16)+1)
+	time.Sleep(delay)
 
-	if _, err := c.service.ProcessTelegramMessage(ctx, message.ChatId, message.Id, text); err != nil {
+	if _, err := c.service.ProcessTelegramMessage(ctx, message.ChatId, message.Id, text, links); err != nil {
 		log.Printf("failed to process telegram airdrop message: %v", err)
 	}
+}
+
+// extractLinks returns the message links in order: hidden text links and plain URLs.
+func extractLinks(formatted *client.FormattedText) []string {
+	var units []uint16
+	links := []string{}
+	for _, entity := range formatted.Entities {
+		switch t := entity.Type.(type) {
+		case *client.TextEntityTypeTextUrl:
+			links = append(links, t.Url)
+		case *client.TextEntityTypeUrl:
+			// entity offsets are in UTF-16 code units
+			if units == nil {
+				units = utf16.Encode([]rune(formatted.Text))
+			}
+			start, end := int(entity.Offset), int(entity.Offset+entity.Length)
+			if start >= 0 && end <= len(units) && start < end {
+				links = append(links, string(utf16.Decode(units[start:end])))
+			}
+		}
+	}
+	return links
 }
 
 type TelegramAdminNotifier struct {

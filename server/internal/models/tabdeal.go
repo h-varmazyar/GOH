@@ -17,7 +17,8 @@ type TabdealAirdropGift struct {
 	RawMessage        string `gorm:"type:text;not null"`
 	SearchPhrase      string `gorm:"index"`
 	Route             string
-	GiftCode          string                  `gorm:"index"`
+	GiftCode          string `gorm:"index"`
+	GiftPageURL       string
 	Status            string                  `gorm:"index;not null"`
 	ErrorMessage      string                  `gorm:"type:text"`
 	Allocations       []*TabdealGitAllocation `gorm:"foreignKey:GiftID"`

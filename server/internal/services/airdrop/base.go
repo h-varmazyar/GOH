@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand/v2"
+	"net/url"
 	"regexp"
 	"strings"
 
@@ -158,7 +159,10 @@ func (s *Service) RetryCollectGift(ctx context.Context, userID, id uint) (*model
 	}
 
 	if len(gift.Allocations) == 0 {
-		if completelyCoolected, err := s.collectGift(ctx, gift); err != nil {
+		if err := s.resolveGiftCode(ctx, gift); err != nil {
+			gift.Status = GiftStatusFailed
+			gift.ErrorMessage = err.Error()
+		} else if completelyCoolected, err := s.collectGift(ctx, gift); err != nil {
 			gift.Status = GiftStatusFailed
 			gift.ErrorMessage = err.Error()
 		} else if completelyCoolected {
@@ -195,8 +199,10 @@ func (s *Service) RetryCollectGift(ctx context.Context, userID, id uint) (*model
 	return s.tabdealAirdropRepo.GetUserGift(ctx, userID, id)
 }
 
-func (s *Service) ProcessTelegramMessage(ctx context.Context, chatID, messageID int64, raw string) (*models.TabdealAirdropGift, error) {
-	phrases, code, err := parseMessageCandidates(raw)
+// ProcessTelegramMessage handles both message patterns: the 4-step one carries the gift code
+// in the message text, the 6-step one links to a tabdeal page that holds the code.
+func (s *Service) ProcessTelegramMessage(ctx context.Context, chatID, messageID int64, raw string, links []string) (*models.TabdealAirdropGift, error) {
+	phrases, code, pageURL, err := parseMessageCandidates(raw, links)
 	phrase := ""
 	if len(phrases) > 0 {
 		phrase = phrases[0]
@@ -207,6 +213,10 @@ func (s *Service) ProcessTelegramMessage(ctx context.Context, chatID, messageID 
 		RawMessage:        raw,
 		SearchPhrase:      phrase,
 		GiftCode:          code,
+		GiftPageURL:       pageURL,
+	}
+	if err == nil {
+		err = s.resolveGiftCode(ctx, gift)
 	}
 	if err != nil {
 		gift.Status = GiftStatusFailed
@@ -301,30 +311,71 @@ func (s *Service) collectGift(ctx context.Context, gift *models.TabdealAirdropGi
 	return false, nil
 }
 
-func parseMessageCandidates(raw string) ([]string, string, error) {
+// resolveGiftCode fetches the gift code from the gift page when the message didn't carry it.
+func (s *Service) resolveGiftCode(ctx context.Context, gift *models.TabdealAirdropGift) error {
+	if gift.GiftCode != "" || gift.GiftPageURL == "" {
+		return nil
+	}
+	code, err := s.tabdeal.FetchGiftCode(ctx, gift.GiftPageURL)
+	if err != nil {
+		return fmt.Errorf("fetch gift code from %s: %w", gift.GiftPageURL, err)
+	}
+	gift.GiftCode = code
+	return nil
+}
+
+var (
+	// search phrases sit between "جستجو کنید:" and the next step's keycap number (2️⃣ in the
+	// 4-step pattern, 4️⃣/5️⃣ in the 6-step one).
+	reTerms    = regexp.MustCompile(`(?s)جستجو کنید:\s*(.*?)\s*[0-9]\x{FE0F}?\x{20E3}`)
+	reCode     = regexp.MustCompile(`(?s)کد زیر را وارد کنید:\s*(\S+)`)
+	reGiftStep = regexp.MustCompile(`(?s)1\x{FE0F}?\x{20E3}(.*?)2\x{FE0F}?\x{20E3}`)
+	reURL      = regexp.MustCompile(`https?://[^\s()<>]+`)
+)
+
+// parseMessageCandidates returns the search phrases plus either the gift code (4-step pattern)
+// or the gift page URL to fetch it from (6-step pattern).
+func parseMessageCandidates(raw string, links []string) ([]string, string, string, error) {
 	phrases := []string{}
-	reTerms := regexp.MustCompile(`(?s)جستجو کنید:\s*(?:📌)?\s*(.*?)\s*2️⃣`)
 	matchesTerms := reTerms.FindStringSubmatch(raw)
 
 	if len(matchesTerms) > 1 {
 		lines := strings.Split(matchesTerms[1], "\n")
 		for _, line := range lines {
-			term := strings.TrimSpace(line)
+			term := strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(line), "📌"))
 			if term != "" {
 				phrases = append(phrases, term)
 			}
 		}
 	}
 
-	reCode := regexp.MustCompile(`(?s)کد زیر را وارد کنید:\s*(\S+)`)
 	matchesCode := reCode.FindStringSubmatch(raw)
-
-	code := ""
 	if len(matchesCode) > 1 {
-		code = strings.TrimSpace(matchesCode[1])
+		return phrases, strings.TrimSpace(matchesCode[1]), "", nil
 	}
 
-	return phrases, code, nil
+	// links from message entities come first since step-1 links are usually hidden behind text;
+	// plain URLs inside the step-1 text are the fallback.
+	candidates := append([]string{}, links...)
+	if matchesStep := reGiftStep.FindStringSubmatch(raw); len(matchesStep) > 1 {
+		candidates = append(candidates, reURL.FindAllString(matchesStep[1], -1)...)
+	}
+	for _, candidate := range candidates {
+		if isTabdealURL(candidate) {
+			return phrases, "", candidate, nil
+		}
+	}
+
+	return phrases, "", "", nil
+}
+
+func isTabdealURL(raw string) bool {
+	u, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") {
+		return false
+	}
+	host := strings.ToLower(u.Hostname())
+	return host == "tabdeal.org" || strings.HasSuffix(host, ".tabdeal.org")
 }
 
 func selectGiftCurrency() string {
