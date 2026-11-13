@@ -74,6 +74,27 @@ services:
       gate:
         ipv4_address: 10.72.0.21
 
+  # Web UI for browsing/querying ClickHouse. Sign in with the ClickHouse
+  # user/password (CLICKHOUSE_USER / CLICKHOUSE_PASSWORD).
+  # Bound to localhost by default; reach it remotely through an SSH tunnel.
+  ch-ui:
+    image: ghcr.io/caioricciuti/ch-ui:v2.33.0
+    environment:
+      CLICKHOUSE_URL: http://clickhouse:8123
+      CONNECTION_NAME: gatec
+    ports:
+      - "${CH_UI_BIND_ADDRESS:-127.0.0.1}:${CH_UI_HOST_PORT:-9052}:3488"
+    volumes:
+      # SQLite state + the auto-generated APP_SECRET_KEY live here.
+      - ch-ui-data:/app/data
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      gate:
+        ipv4_address: 10.72.0.22
+
   gate:
     # build:
     #   context: ..
@@ -320,6 +341,7 @@ services:
 volumes:
   postgres-data:
   clickhouse-data:
+  ch-ui-data:
   nats-data:
   gatec-logs:
   tdlib-data:
