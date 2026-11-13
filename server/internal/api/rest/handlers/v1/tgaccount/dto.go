@@ -11,6 +11,11 @@ type submitPhoneReq struct {
 	PhoneNumber string `json:"phone_number" binding:"required" example:"+989123456789"`
 }
 
+type submitBotTokenReq struct {
+	SessionID string `json:"session_id" binding:"required" example:"550e8400-e29b-41d4-a716-446655440000"`
+	BotToken  string `json:"bot_token" binding:"required" example:"123456789:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw"`
+}
+
 type submitCodeReq struct {
 	SessionID string `json:"session_id" binding:"required" example:"550e8400-e29b-41d4-a716-446655440000"`
 	Code      string `json:"code" binding:"required" example:"12345"`

@@ -43,10 +43,6 @@ func (m *Manager) CreateSession(ctx context.Context, sessionID string, sessionTy
 	}
 	m.mu.Unlock()
 
-	if sessionType == SessionTypeBot {
-		return nil, fmt.Errorf("bot sessions are not yet supported in the new flow")
-	}
-
 	dbDir := filepath.Join(m.cfg.DatabaseBaseDir, sessionID)
 	tdlibParams := &client.SetTdlibParametersRequest{
 		UseTestDc:           false,
@@ -64,7 +60,7 @@ func (m *Manager) CreateSession(ctx context.Context, sessionID string, sessionTy
 		ApplicationVersion:  "1.0.0",
 	}
 
-	authorizer := newClientAuthorizer(tdlibParams, m.cfg.AuthTimeout)
+	authorizer := newClientAuthorizer(tdlibParams, sessionType, m.cfg.AuthTimeout)
 
 	session := &Session{
 		id:          sessionID,
@@ -196,6 +192,29 @@ func (m *Manager) SubmitPhone(sessionID string, phone string) error {
 		return nil
 	default:
 		return fmt.Errorf("phone channel is full; a phone number was already submitted")
+	}
+}
+
+// SubmitBotToken submits a bot token for a session that is in SessionStateWaitBotToken.
+func (m *Manager) SubmitBotToken(sessionID string, token string) error {
+	session, err := m.GetSession(sessionID)
+	if err != nil {
+		return err
+	}
+
+	m.mu.RLock()
+	state := session.state
+	m.mu.RUnlock()
+
+	if state != SessionStateWaitBotToken {
+		return fmt.Errorf("session is not waiting for bot token (current state: %s)", state)
+	}
+
+	select {
+	case session.authorizer.botTokenCh <- token:
+		return nil
+	default:
+		return fmt.Errorf("bot token channel is full; a bot token was already submitted")
 	}
 }
 

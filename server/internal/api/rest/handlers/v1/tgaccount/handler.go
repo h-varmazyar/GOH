@@ -89,6 +89,39 @@ func (h *Handler) SubmitPhone(ctx *gin.Context) {
 	})
 }
 
+// SubmitBotToken godoc
+// @Summary      Submit bot token
+// @Description  Submit a bot token (from @BotFather) for an active bot session
+// @Tags         TelegramV2
+// @Accept       json
+// @Produce      json
+// @Param        request body submitBotTokenReq true "Bot token"
+// @Success      200 {object} stateResp
+// @Failure      400 {object} errorResp
+// @Failure      404 {object} errorResp
+// @Failure      408 {object} errorResp
+// @Failure      409 {object} errorResp
+// @Failure      500 {object} errorResp
+// @Router       /v2/telegram/sessions/bot-token [post]
+func (h *Handler) SubmitBotToken(ctx *gin.Context) {
+	var req submitBotTokenReq
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResp{Error: "invalid request body"})
+		return
+	}
+
+	resp, err := h.service.SubmitBotToken(ctx, req.SessionID, req.BotToken)
+	if err != nil {
+		ctx.JSON(httpStatusFromError(err), errorResp{Error: err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, stateResp{
+		SessionID: resp.SessionID,
+		State:     resp.State,
+	})
+}
+
 // SubmitCode godoc
 // @Summary      Submit OTP code
 // @Description  Submit verification code for an active telegram session

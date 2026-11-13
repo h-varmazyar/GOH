@@ -37,12 +37,12 @@ func (r *TelegramAccountRepository) upsertByBotToken(ctx context.Context, in *mo
 	query := `
 		INSERT INTO telegram_accounts (
 			id, created_at, updated_at, deleted_at,
-			role, database_directory, files_directory,
+			role, status, database_directory, files_directory,
 			bot_token, mobile, username, account_name, user_id
 		)
 		VALUES (
 			@id, @created_at, @updated_at, @deleted_at,
-			@role, @database_directory, @files_directory,
+			@role, @status, @database_directory, @files_directory,
 			@bot_token, @mobile, @username, @account_name, @user_id
 		)
 		ON CONFLICT (bot_token) WHERE bot_token IS NOT NULL
@@ -78,12 +78,12 @@ func (r *TelegramAccountRepository) upsertByMobile(ctx context.Context, in *mode
 	query := `
 		INSERT INTO telegram_accounts (
 			id, created_at, updated_at, deleted_at,
-			role, database_directory, files_directory,
+			role, status, database_directory, files_directory,
 			bot_token, mobile, username, account_name, user_id
 		)
 		VALUES (
 			@id, @created_at, @updated_at, @deleted_at,
-			@role, @database_directory, @files_directory,
+			@role, @status, @database_directory, @files_directory,
 			@bot_token, @mobile, @username, @account_name, @user_id
 		)
 		ON CONFLICT (mobile) WHERE mobile IS NOT NULL

@@ -7,7 +7,7 @@ import { Input } from '../../components/ui/Input';
 import { telegramService, type TelegramAccountType } from '../../services/telegramService';
 import { countryCodes, defaultCountryCode, type CountryCode } from '../../data/countryCodes';
 
-type FlowStep = 'select-type' | 'phone' | 'code' | 'password' | 'done';
+type FlowStep = 'select-type' | 'phone' | 'bot-token' | 'code' | 'password' | 'done';
 
 export function TelegramAddAccount() {
   const navigate = useNavigate();
@@ -19,6 +19,7 @@ export function TelegramAddAccount() {
   const [countrySearch, setCountrySearch] = useState('');
   const [formData, setFormData] = useState({
     phone: '',
+    botToken: '',
     code: '',
     password: '',
   });
@@ -27,6 +28,12 @@ export function TelegramAddAccount() {
 
   const handleSelectType = async (type: TelegramAccountType) => {
     setSessionType(type);
+    // Bot sessions are created on token submit, so a rejected token can simply be retried
+    if (type === 'bot') {
+      setError('');
+      setCurrentStep('bot-token');
+      return;
+    }
     setIsLoading(true);
     setError('');
     try {
@@ -56,6 +63,30 @@ export function TelegramAddAccount() {
       if (res.Failed) {
         setError('شماره تلفن نامعتبر است یا خطایی رخ داده.');
         setIsLoading(false);
+        return;
+      }
+      setSessionId(res.SessionId);
+      navigateToNextStep(res.NextStep);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'خطای ناشناخته');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSubmitBotToken = async () => {
+    setIsLoading(true);
+    setError('');
+    try {
+      // A failed token closes the backend session, so start a fresh one on every attempt
+      const session = await telegramService.addAccount('bot');
+      if (session.Failed) {
+        setError('خطا در ایجاد نشست. لطفاً دوباره تلاش کنید.');
+        return;
+      }
+      const res = await telegramService.submitBotToken(session.SessionId, formData.botToken.trim());
+      if (res.Failed) {
+        setError('توکن ربات نامعتبر است.');
         return;
       }
       setSessionId(res.SessionId);
@@ -107,7 +138,9 @@ export function TelegramAddAccount() {
 
   const navigateToNextStep = (nextStep: string | undefined) => {
     const step = (nextStep ?? '').toLowerCase();
-    if (step.includes('otp') || step.includes('code')) {
+    if (step.includes('bot_token')) {
+      setCurrentStep('bot-token');
+    } else if (step.includes('otp') || step.includes('code')) {
       setCurrentStep('code');
     } else if (step.includes('password')) {
       setCurrentStep('password');
@@ -121,6 +154,8 @@ export function TelegramAddAccount() {
     switch (currentStep) {
       case 'phone':
         return handleSubmitPhone();
+      case 'bot-token':
+        return handleSubmitBotToken();
       case 'code':
         return handleSubmitCode();
       case 'password':
@@ -130,23 +165,34 @@ export function TelegramAddAccount() {
 
   const canProceed = () => {
     if (currentStep === 'phone') return formData.phone.length >= 10;
+    // Bot tokens look like "<bot_id>:<secret>"
+    if (currentStep === 'bot-token') return /^\d+:[\w-]{20,}$/.test(formData.botToken.trim());
     if (currentStep === 'code') return formData.code.length >= 4;
     if (currentStep === 'password') return formData.password.length > 0;
     return false;
   };
 
   const getStepIndex = (): number => {
-    const stepOrder: FlowStep[] = ['select-type', 'phone', 'code', 'password', 'done'];
+    const stepOrder: FlowStep[] =
+      sessionType === 'bot'
+        ? ['select-type', 'bot-token', 'done']
+        : ['select-type', 'phone', 'code', 'password', 'done'];
     return stepOrder.indexOf(currentStep);
   };
 
   const renderStepIndicator = () => {
-    const steps = [
-      { id: 'select-type', label: 'نوع اکانت' },
-      { id: 'phone', label: 'شماره تلفن' },
-      { id: 'code', label: 'کد تایید' },
-      { id: 'password', label: 'رمز عبور' },
-    ];
+    const steps =
+      sessionType === 'bot'
+        ? [
+            { id: 'select-type', label: 'نوع اکانت' },
+            { id: 'bot-token', label: 'توکن ربات' },
+          ]
+        : [
+            { id: 'select-type', label: 'نوع اکانت' },
+            { id: 'phone', label: 'شماره تلفن' },
+            { id: 'code', label: 'کد تایید' },
+            { id: 'password', label: 'رمز عبور' },
+          ];
 
     const currentIndex = getStepIndex();
 
@@ -385,6 +431,24 @@ export function TelegramAddAccount() {
           </div>
         )}
 
+        {/* Step: Bot Token */}
+        {currentStep === 'bot-token' && (
+          <div className="space-y-4">
+            <Input
+              label="توکن ربات"
+              type="text"
+              placeholder="123456789:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw"
+              value={formData.botToken}
+              onChange={(e) => setFormData({ ...formData, botToken: e.target.value })}
+              dir="ltr"
+              autoComplete="off"
+            />
+            <p className="text-xs text-surface-500 dark:text-surface-400">
+              توکن دریافت‌شده از @BotFather را وارد کنید
+            </p>
+          </div>
+        )}
+
         {/* Step: OTP Code */}
         {currentStep === 'code' && (
           <div className="space-y-4">
@@ -428,7 +492,7 @@ export function TelegramAddAccount() {
               className="flex-1"
               onClick={() => {
                 setError('');
-                if (currentStep === 'phone') {
+                if (currentStep === 'phone' || currentStep === 'bot-token') {
                   setCurrentStep('select-type');
                   setSessionType(null);
                   setSessionId('');
@@ -447,7 +511,7 @@ export function TelegramAddAccount() {
               disabled={!canProceed()}
               isLoading={isLoading}
             >
-              {currentStep === 'password' ? 'اتمام' : 'مرحله بعد'}
+              {currentStep === 'password' || currentStep === 'bot-token' ? 'افزودن' : 'مرحله بعد'}
             </Button>
           </div>
         )}

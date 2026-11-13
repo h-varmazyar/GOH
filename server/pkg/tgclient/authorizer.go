@@ -15,7 +15,9 @@ import (
 // A separate stateCh notifies callers about state transitions.
 type clientAuthorizer struct {
 	tdlibParams *client.SetTdlibParametersRequest
+	sessionType SessionType
 	phoneCh     chan string
+	botTokenCh  chan string
 	codeCh      chan string
 	passwordCh  chan string
 	stateCh     chan SessionState
@@ -23,10 +25,12 @@ type clientAuthorizer struct {
 	timeout     time.Duration
 }
 
-func newClientAuthorizer(params *client.SetTdlibParametersRequest, timeout time.Duration) *clientAuthorizer {
+func newClientAuthorizer(params *client.SetTdlibParametersRequest, sessionType SessionType, timeout time.Duration) *clientAuthorizer {
 	return &clientAuthorizer{
 		tdlibParams: params,
+		sessionType: sessionType,
 		phoneCh:     make(chan string, 1),
+		botTokenCh:  make(chan string, 1),
 		codeCh:      make(chan string, 1),
 		passwordCh:  make(chan string, 1),
 		stateCh:     make(chan SessionState, 10),
@@ -44,6 +48,19 @@ func (a *clientAuthorizer) Handle(c *client.Client, state client.AuthorizationSt
 		return err
 
 	case client.TypeAuthorizationStateWaitPhoneNumber:
+		// TDLib asks bots for their token in the same state it asks clients for a phone.
+		if a.sessionType == SessionTypeBot {
+			a.stateCh <- SessionStateWaitBotToken
+			token, err := a.waitForInput(a.botTokenCh)
+			if err != nil {
+				return err
+			}
+			_, err = c.CheckAuthenticationBotToken(&client.CheckAuthenticationBotTokenRequest{
+				Token: token,
+			})
+			return err
+		}
+
 		a.stateCh <- SessionStateWaitPhone
 		phone, err := a.waitForInput(a.phoneCh)
 		if err != nil {
@@ -104,6 +121,7 @@ func (a *clientAuthorizer) Handle(c *client.Client, state client.AuthorizationSt
 // Authorize returns (which calls Close). stateCh is closed separately.
 func (a *clientAuthorizer) Close() {
 	close(a.phoneCh)
+	close(a.botTokenCh)
 	close(a.codeCh)
 	close(a.passwordCh)
 }

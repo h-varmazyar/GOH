@@ -119,6 +119,7 @@ func (s *Server) setupAPIRoutes() {
 		tgAccountHandler := v1.Group("telegram")
 		tgAccountHandler.POST("/sessions", s.tgAccountHandler.CreateAccount)
 		tgAccountHandler.POST("/sessions/phone", s.tgAccountHandler.SubmitPhone)
+		tgAccountHandler.POST("/sessions/bot-token", s.tgAccountHandler.SubmitBotToken)
 		tgAccountHandler.POST("/sessions/code", s.tgAccountHandler.SubmitCode)
 		tgAccountHandler.POST("/sessions/password", s.tgAccountHandler.SubmitPassword)
 		tgAccountHandler.POST("/sessions/re-auth", s.tgAccountHandler.ReAuthenticate)

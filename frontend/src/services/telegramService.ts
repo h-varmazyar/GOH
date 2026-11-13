@@ -70,6 +70,15 @@ export const telegramService = {
     return normalizeResponse(raw);
   },
 
+  /** Step 2 (bot): Submit bot token from @BotFather */
+  submitBotToken: async (sessionId: string, botToken: string): Promise<TelegramSessionResponse> => {
+    const raw = await api.post<Record<string, unknown>>('/v1/telegram/sessions/bot-token', {
+      session_id: sessionId,
+      bot_token: botToken,
+    });
+    return normalizeResponse(raw);
+  },
+
   /** Step 3: Submit OTP code */
   submitOtp: async (sessionId: string, code: string): Promise<TelegramSessionResponse> => {
     const raw = await api.post<Record<string, unknown>>('/v1/telegram/sessions/code', {

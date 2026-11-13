@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -191,6 +192,48 @@ func (s *Service) SubmitPhone(ctx context.Context, sessionID, phone string) (*Su
 	}, nil
 }
 
+// SubmitBotTokenResponse is returned after submitting a bot token.
+type SubmitBotTokenResponse struct {
+	SessionID string `json:"session_id"`
+	State     string `json:"state"`
+}
+
+// SubmitBotToken submits a bot token (from @BotFather) and waits for the next state transition.
+func (s *Service) SubmitBotToken(ctx context.Context, sessionID, token string) (*SubmitBotTokenResponse, error) {
+	token = strings.TrimSpace(token)
+	if token == "" {
+		return nil, fmt.Errorf("invalid bot token: token is empty")
+	}
+
+	if err := s.manager.SubmitBotToken(sessionID, token); err != nil {
+		return nil, err
+	}
+
+	state, err := s.manager.WaitForState(ctx, sessionID, stateWaitTimeout)
+	if err != nil {
+		s.cleanupFailedSession(sessionID)
+		return nil, fmt.Errorf("waiting for state after bot token submission: %w", err)
+	}
+
+	if state == tgclient.SessionStateError {
+		reason := "unknown error"
+		if session, err := s.manager.GetSession(sessionID); err == nil && session.Error() != "" {
+			reason = session.Error()
+		}
+		s.cleanupFailedSession(sessionID)
+		return nil, fmt.Errorf("authentication failed after bot token submission: %s", reason)
+	}
+
+	if state == tgclient.SessionStateReady {
+		s.onSessionReady(ctx, sessionID, token)
+	}
+
+	return &SubmitBotTokenResponse{
+		SessionID: sessionID,
+		State:     string(state),
+	}, nil
+}
+
 // SubmitCodeResponse is returned after submitting a verification code.
 type SubmitCodeResponse struct {
 	SessionID string `json:"session_id"`
@@ -216,7 +259,7 @@ func (s *Service) SubmitCode(ctx context.Context, sessionID, code string) (*Subm
 
 	// If we reached ready state, persist the account
 	if state == tgclient.SessionStateReady {
-		s.onSessionReady(ctx, sessionID)
+		s.onSessionReady(ctx, sessionID, "")
 	}
 
 	return &SubmitCodeResponse{
@@ -249,7 +292,7 @@ func (s *Service) SubmitPassword(ctx context.Context, sessionID, password string
 	}
 
 	if state == tgclient.SessionStateReady {
-		s.onSessionReady(ctx, sessionID)
+		s.onSessionReady(ctx, sessionID, "")
 	}
 
 	return &SubmitPasswordResponse{
@@ -280,6 +323,7 @@ type ReAuthenticateResponse struct {
 // submits the phone automatically, and returns the next state (usually wait_code).
 // After this, the client uses the existing SubmitCode/SubmitPassword endpoints
 // with the same session_id to complete the flow.
+// Bot accounts are re-authenticated entirely with their stored bot token.
 func (s *Service) ReAuthenticate(ctx context.Context, accountID string) (*ReAuthenticateResponse, error) {
 	// Fetch the account from DB
 	account, err := s.accountRepo.Get(ctx, map[string]any{"id = ?": accountID})
@@ -287,8 +331,16 @@ func (s *Service) ReAuthenticate(ctx context.Context, accountID string) (*ReAuth
 		return nil, fmt.Errorf("account not found: %w", err)
 	}
 
-	if account.Mobile == nil || *account.Mobile == "" {
-		return nil, fmt.Errorf("account has no phone number stored, cannot re-authenticate")
+	botToken := ""
+	if account.BotToken != nil {
+		botToken = *account.BotToken
+	}
+
+	sessionType := tgclient.SessionTypeClient
+	if botToken != "" {
+		sessionType = tgclient.SessionTypeBot
+	} else if account.Mobile == nil || *account.Mobile == "" {
+		return nil, fmt.Errorf("account has no phone number or bot token stored, cannot re-authenticate")
 	}
 
 	sessionID := accountID
@@ -312,10 +364,11 @@ func (s *Service) ReAuthenticate(ctx context.Context, accountID string) (*ReAuth
 		Secret:   proxy.Secret,
 		Username: proxy.Username,
 		Password: proxy.Password,
+		Type:     tgclient.ProxyType(proxy.Type),
 	}
 
 	// Create a new TDLib session
-	_, err = s.manager.CreateSession(ctx, sessionID, tgclient.SessionTypeClient, proxyConfig)
+	_, err = s.manager.CreateSession(ctx, sessionID, sessionType, proxyConfig)
 	if err != nil {
 		return nil, fmt.Errorf("create session for re-auth: %w", err)
 	}
@@ -350,9 +403,28 @@ func (s *Service) ReAuthenticate(ctx context.Context, accountID string) (*ReAuth
 		}
 	}
 
+	// If TDLib is asking for a bot token, submit the stored one
+	if state == tgclient.SessionStateWaitBotToken {
+		if err := s.manager.SubmitBotToken(sessionID, botToken); err != nil {
+			s.cleanupFailedSession(sessionID)
+			return nil, fmt.Errorf("submit bot token for re-auth: %w", err)
+		}
+
+		state, err = s.manager.WaitForState(ctx, sessionID, stateWaitTimeout)
+		if err != nil {
+			s.cleanupFailedSession(sessionID)
+			return nil, fmt.Errorf("waiting for state after bot token submission: %w", err)
+		}
+
+		if state == tgclient.SessionStateError {
+			s.cleanupFailedSession(sessionID)
+			return nil, fmt.Errorf("authentication failed during re-auth bot token submission")
+		}
+	}
+
 	// If already ready (session was still valid), update DB and start listening
 	if state == tgclient.SessionStateReady {
-		s.onSessionReady(ctx, sessionID)
+		s.onSessionReady(ctx, sessionID, botToken)
 	}
 
 	return &ReAuthenticateResponse{
@@ -363,7 +435,9 @@ func (s *Service) ReAuthenticate(ctx context.Context, accountID string) (*ReAuth
 
 // --- Account persistence ---
 
-func (s *Service) onSessionReady(ctx context.Context, sessionID string) {
+// botToken is empty for client sessions; for bot sessions it is stored so the
+// account can be identified and re-authenticated without user input.
+func (s *Service) onSessionReady(ctx context.Context, sessionID string, botToken string) {
 	log := logrus.WithField("session_id", sessionID)
 	log.Info("session ready, fetching user info and persisting account")
 
@@ -396,9 +470,14 @@ func (s *Service) onSessionReady(ctx context.Context, sessionID string) {
 	mobile := me.PhoneNumber
 
 	dbDir := s.manager.GetDatabaseDir(sessionID)
+	role := string(tgclient.SessionTypeClient)
+	if botToken != "" {
+		role = string(tgclient.SessionTypeBot)
+	}
+
 	account := &models.TelegramAccount{
 		ID:                uuid.MustParse(sessionID),
-		Role:              "client",
+		Role:              role,
 		Status:            models.TelegramAccountStatusReady,
 		DatabaseDirectory: filepath.Join(dbDir, "database"),
 		FilesDirectory:    filepath.Join(dbDir, "files"),
@@ -406,7 +485,9 @@ func (s *Service) onSessionReady(ctx context.Context, sessionID string) {
 		AccountName:       accountName,
 		UserID:            me.Id,
 	}
-	if mobile != "" {
+	if botToken != "" {
+		account.BotToken = &botToken
+	} else if mobile != "" {
 		account.Mobile = &mobile
 	}
 
@@ -550,7 +631,12 @@ func (s *Service) LoadAccounts(ctx context.Context) error {
 		}
 
 		sessionID := acc.ID.String()
-		_, err = s.manager.CreateSession(ctx, sessionID, tgclient.SessionTypeClient, proxyConfig)
+		sessionType := tgclient.SessionTypeClient
+		if acc.BotToken != nil && *acc.BotToken != "" {
+			sessionType = tgclient.SessionTypeBot
+		}
+
+		_, err = s.manager.CreateSession(ctx, sessionID, sessionType, proxyConfig)
 		if err != nil {
 			logrus.WithError(err).Errorf("failed to load account %s", sessionID)
 			_ = s.accountRepo.UpdateStatus(ctx, sessionID, models.TelegramAccountStatusDisconnected)
@@ -558,13 +644,13 @@ func (s *Service) LoadAccounts(ctx context.Context) error {
 		}
 
 		// Wait to see if it reconnects (TDLib uses stored session)
-		go s.handleLoadedSession(ctx, sessionID, proxyConfig)
+		go s.handleLoadedSession(ctx, sessionID, acc.BotToken, proxyConfig)
 	}
 
 	return nil
 }
 
-func (s *Service) handleLoadedSession(ctx context.Context, sessionID string, proxyConfig *tgclient.ProxyConfig) {
+func (s *Service) handleLoadedSession(ctx context.Context, sessionID string, botToken *string, proxyConfig *tgclient.ProxyConfig) {
 	log := logrus.WithField("session_id", sessionID)
 
 	// Give TDLib more time to restore a session from disk (includes DB init)
@@ -573,6 +659,20 @@ func (s *Service) handleLoadedSession(ctx context.Context, sessionID string, pro
 		log.WithError(err).Error("timeout waiting for loaded session state")
 		_ = s.accountRepo.UpdateStatus(ctx, sessionID, models.TelegramAccountStatusDisconnected)
 		return
+	}
+
+	// Bots can log in again without user input, using their stored token
+	if state == tgclient.SessionStateWaitBotToken && botToken != nil && *botToken != "" {
+		log.Info("loaded bot session needs login, submitting stored bot token")
+		if err := s.manager.SubmitBotToken(sessionID, *botToken); err == nil {
+			state, err = s.manager.WaitForState(ctx, sessionID, stateWaitTimeout)
+		}
+		if err != nil {
+			log.WithError(err).Error("failed to log in loaded bot session")
+			_ = s.accountRepo.UpdateStatus(ctx, sessionID, models.TelegramAccountStatusDisconnected)
+			_ = s.manager.CloseSession(sessionID)
+			return
+		}
 	}
 
 	switch state {
@@ -586,7 +686,7 @@ func (s *Service) handleLoadedSession(ctx context.Context, sessionID string, pro
 		}
 
 		go s.listenForUpdates(ctx, sessionID)
-	case tgclient.SessionStateWaitPhone, tgclient.SessionStateWaitCode, tgclient.SessionStateWaitPassword:
+	case tgclient.SessionStateWaitPhone, tgclient.SessionStateWaitBotToken, tgclient.SessionStateWaitCode, tgclient.SessionStateWaitPassword:
 		// TDLib couldn't restore the session — it's asking for credentials again.
 		// This means the session was invalidated (revoked, expired, etc.)
 		log.Warnf("loaded session needs re-auth (state: %s) — session may have been invalidated by Telegram", state)

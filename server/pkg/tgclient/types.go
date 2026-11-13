@@ -11,6 +11,7 @@ type SessionState string
 
 const (
 	SessionStateWaitPhone    SessionState = "wait_phone"
+	SessionStateWaitBotToken SessionState = "wait_bot_token"
 	SessionStateWaitCode     SessionState = "wait_code"
 	SessionStateWaitPassword SessionState = "wait_password"
 	SessionStateReady        SessionState = "ready"
@@ -58,6 +59,9 @@ type Session struct {
 
 // ID returns the session identifier.
 func (s *Session) ID() string { return s.id }
+
+// Type returns how the session authenticates (client or bot).
+func (s *Session) Type() SessionType { return s.sessionType }
 
 // State returns the current authorization state.
 func (s *Session) State() SessionState { return s.state }
