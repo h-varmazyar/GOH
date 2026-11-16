@@ -8,11 +8,12 @@ SHELL := /usr/bin/env bash
 APP     ?= all
 VERSION ?=
 ARGS    ?=
+CMD     ?=
 SUDO    ?= sudo
 
 SCRIPTS := scripts
 
-.PHONY: help build-image deploy render-nginx install-nginx check
+.PHONY: help build-image deploy tool render-nginx install-nginx check
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
@@ -20,8 +21,9 @@ help: ## Show available targets
 	@echo
 	@source $(SCRIPTS)/lib.sh && \
 		echo "Images  (build-image APP=): $$(image_names)" && \
-		echo "Targets (deploy APP=):      $$(target_names) nginx all"
-	@echo "Variables: APP=$(APP) VERSION=$(VERSION) ARGS=$(ARGS)"
+		echo "Targets (deploy APP=):      $$(target_names) nginx all" && \
+		echo "Tools   (tool APP=):        $$(tool_names)"
+	@echo "Variables: APP=$(APP) VERSION=$(VERSION) ARGS=$(ARGS) CMD=$(CMD)"
 
 build-image: ## Build an app image (APP=<image> VERSION=x.y.z)
 	@test -n "$(VERSION)" || { echo "error: VERSION is required" >&2; exit 1; }
@@ -30,6 +32,10 @@ build-image: ## Build an app image (APP=<image> VERSION=x.y.z)
 
 deploy: ## Deploy apps with compose + refresh host nginx (APP=<target>|nginx|all)
 	$(SCRIPTS)/deploy.sh --app $(APP) $(ARGS)
+
+tool: ## Run a one-off tool once and exit (APP=<tool> CMD="seed -days 7")
+	@test "$(APP)" != "all" || { echo "error: APP is required (see make help)" >&2; exit 1; }
+	$(SCRIPTS)/run-tool.sh $(APP) $(ARGS) -- $(CMD)
 
 render-nginx: ## Print the rendered host nginx config from its template
 	$(SCRIPTS)/render-nginx.sh $(ARGS)

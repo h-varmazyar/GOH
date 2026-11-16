@@ -4,3 +4,9 @@
 .DS_Store
 *.pem
 *.key
+
+# runtime data written by the server containers (bind mounts)
+server/logs/
+server/tdlib/
+server/secrets/*
+!server/secrets/.gitkeep

@@ -6,6 +6,7 @@
 #
 # Modes (auto-detected unless --mode is set):
 #   local  — git pull app repos on this host, build images, compose up
+#            (app repos may be separate clones or folders of one shared clone)
 #   ci     — pull prebuilt images from a registry, compose up
 #   images — use images already on this host (tags from .env), compose up
 #
@@ -148,25 +149,36 @@ update_image_tags_ci() {
 
 # --- local mode: pull sources + build images ---------------------------------
 
-# Each repo is pulled at most once per deploy; REPO_SHA[repo] holds its HEAD.
+# Each git clone is pulled at most once per deploy; REPO_SHA[repo] holds its HEAD.
+# An app "repo" may be its own clone or a folder inside a shared clone
+# (monorepo: deployment + apps in one repository) — then the clone is pulled
+# once, with the branch of the first app that needs it.
 declare -A REPO_SHA=()
+declare -A PULLED=()
 declare -A BUILT=()
 
 git_pull_repo() {
 	local repo="$1"
 	[[ -n "${REPO_SHA[$repo]:-}" ]] && return 0
 
-	local repo_path branch_var branch
+	local repo_path top branch_var branch
 	repo_path="$(repo_dir "$repo")"
 	branch_var="$(var_prefix "$repo")_BRANCH"
 	branch="${APP_BRANCH:-${!branch_var:-main}}"
 
-	[[ -d "$repo_path/.git" ]] || die "$repo repo not found or not a git clone: $repo_path"
+	[[ -d "$repo_path" ]] || die "$repo repo not found: $repo_path"
+	top="$(git -C "$repo_path" rev-parse --show-toplevel 2>/dev/null)" ||
+		die "$repo is not inside a git clone: $repo_path"
 
-	log "git pull $repo ($repo_path @ $branch)"
-	git -C "$repo_path" fetch origin >&2
-	git -C "$repo_path" checkout "$branch" >&2
-	git -C "$repo_path" pull --ff-only origin "$branch" >&2
+	if [[ -z "${PULLED[$top]:-}" ]]; then
+		log "git pull $repo ($top @ $branch)"
+		git -C "$top" fetch origin >&2
+		git -C "$top" checkout "$branch" >&2
+		git -C "$top" pull --ff-only origin "$branch" >&2
+		PULLED[$top]=1
+	else
+		log "$repo shares the clone $top (already pulled)"
+	fi
 
 	REPO_SHA[$repo]="$(git -C "$repo_path" rev-parse --short HEAD)"
 	log "$repo is at ${REPO_SHA[$repo]}"

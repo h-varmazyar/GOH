@@ -88,11 +88,17 @@ print_next_steps() {
 	echo "Bootstrap complete."
 	echo
 	echo "Next steps on this host:"
-	echo "  1. Clone repos side by side (once):"
-	for repo in "$deploy_repo" $(image_repos); do
-		echo "       git clone <$repo-url> $base/$repo"
-	done
-	echo "  2. cd $base/$deploy_repo"
+	if [[ "$(git -C "$ROOT_DIR" rev-parse --show-toplevel 2>/dev/null)" == "$WORKSPACE_DIR" ]]; then
+		# Monorepo: this deployment dir and the app repos live in one clone.
+		echo "  1. Single clone (deployment + $(image_repos)) already at $WORKSPACE_DIR"
+		echo "  2. cd $ROOT_DIR"
+	else
+		echo "  1. Clone repos side by side (once):"
+		for repo in "$deploy_repo" $(image_repos); do
+			echo "       git clone <$repo-url> $base/$repo"
+		done
+		echo "  2. cd $base/$deploy_repo"
+	fi
 	echo "  3. cp .env.example .env and fill it in (passwords, ports, build args ...)"
 	if [[ -n "$dirs" ]]; then
 		echo "  4. Put secrets / config files in: $dirs"

@@ -1,23 +1,43 @@
+# gatec stack — infra + server (API, airdrop catcher, workers) + frontend.
+# Host nginx (not Docker) terminates the public port and proxies
+# / → frontend and /api/ → server (nginx/gatec.conf.template).
+# Infra is published on 127.0.0.1 only (90xx ports); apps on 80xx.
+#
+# Every server-side service runs the same image (SERVER_IMAGE) and picks its
+# binary with `entrypoint`: gatec (API), gatec-worker <name>,
+# gatec-airdrop-catcher, gatec-signal-replay.
+
 name: gatec
 
+# --- shared blocks -----------------------------------------------------------
+
+x-server-base: &server-base
+  image: ${SERVER_IMAGE:?set SERVER_IMAGE in .env}
+  env_file:
+    - ./.env
+  restart: unless-stopped
+
+# Workers: gatec-worker <name> (see server/cmd/worker).
+x-worker: &worker
+  <<: *server-base
+  entrypoint: ["/usr/local/bin/gatec-worker"]
+
+x-depends-pg-nats: &depends-pg-nats
+  postgres:
+    condition: service_healthy
+  nats:
+    condition: service_healthy
+
 services:
-  nginx:
-    image: nginx:1.27-alpine
-    container_name: nginx
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx:/etc/nginx/conf.d:ro
-    networks:
-      - gate
+# Infra images run on 90xx ports (localhost only)
   nats:
     image: nats:2-alpine
     command: ["-js", "-m", "8222", "-sd", "/data"]
+    restart: unless-stopped
     ports:
-      - "${NATS_PUBLISH_PORT:-4220}:4222"
-      - "${NATS_MONITOR_PUBLISH_PORT:-8220}:8222"
+      - "127.0.0.1:${NATS_HOST_PORT:-9022}:4222"
+      # Monitoring UI: http://127.0.0.1:9023/ , JetStream state: /jsz?streams=true
+      - "127.0.0.1:${NATS_MONITOR_HOST_PORT:-9023}:8222"
     volumes:
       - nats-data:/data
     healthcheck:
@@ -25,19 +45,19 @@ services:
       interval: 5s
       timeout: 3s
       retries: 12
-    restart: unless-stopped
     networks:
-      gate:
+      gatec:
         ipv4_address: 10.72.0.10
 
   postgres:
     image: postgres:17-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB_NAME:-gatec}
       POSTGRES_USER: ${POSTGRES_USER:-gatec}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gatec-dev-password}
     ports:
-      - "${POSTGRES_PUBLISH_PORT:-5432}:5432"
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-9032}:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -46,21 +66,21 @@ services:
       timeout: 5s
       retries: 12
       start_period: 10s
-    restart: unless-stopped
     networks:
-      gate:
+      gatec:
         ipv4_address: 10.72.0.20
 
   clickhouse:
     image: clickhouse/clickhouse-server:25.3-alpine
+    restart: unless-stopped
     environment:
       CLICKHOUSE_DB: ${CLICKHOUSE_DATABASE:-gatec}
       CLICKHOUSE_USER: ${CLICKHOUSE_USER:-gatec}
       CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-gatec-dev-password}
       CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
     ports:
-      - "${CLICKHOUSE_PUBLISH_PORT:-8123}:8123"
-      - "${CLICKHOUSE_NATIVE_PUBLISH_PORT:-9000}:9000"
+      - "127.0.0.1:${CLICKHOUSE_NATIVE_HOST_PORT:-9042}:9000"
+      - "127.0.0.1:${CLICKHOUSE_HTTP_HOST_PORT:-9043}:8123"
     volumes:
       - clickhouse-data:/var/lib/clickhouse
     healthcheck:
@@ -69,16 +89,15 @@ services:
       timeout: 5s
       retries: 12
       start_period: 15s
-    restart: unless-stopped
     networks:
-      gate:
+      gatec:
         ipv4_address: 10.72.0.21
 
-  # Web UI for browsing/querying ClickHouse. Sign in with the ClickHouse
-  # user/password (CLICKHOUSE_USER / CLICKHOUSE_PASSWORD).
-  # Bound to localhost by default; reach it remotely through an SSH tunnel.
+  # Web UI for browsing/querying ClickHouse. Sign in with CLICKHOUSE_USER /
+  # CLICKHOUSE_PASSWORD. Localhost only by default; use an SSH tunnel.
   ch-ui:
     image: ghcr.io/caioricciuti/ch-ui:v2.33.0
+    restart: unless-stopped
     environment:
       CLICKHOUSE_URL: http://clickhouse:8123
       CONNECTION_NAME: gatec
@@ -90,265 +109,232 @@ services:
     depends_on:
       clickhouse:
         condition: service_healthy
-    restart: unless-stopped
     networks:
-      gate:
+      gatec:
         ipv4_address: 10.72.0.22
 
-  gate:
-    # build:
-    #   context: ..
-    #   dockerfile: deployments/Dockerfile
-    #   args:
-    #     GO_IMAGE: ${GO_IMAGE:-golang:1.26-bookworm}
-    #     RUNTIME_IMAGE: ${RUNTIME_IMAGE:-debian:bookworm-slim}
-    #     TDLIB_REF: ${TDLIB_REF:-master}
-    image: ${GATE_IMAGE:?set GATE_IMAGE in .env}
-    environment:
-      LOG_FILE: /app/logs/gate.log
-      CLICKHOUSE_URL: http://clickhouse:8123
-    env_file:
-      - ./.env
+# App images run on 80xx ports
+  frontend:
+    image: ${FRONTEND_IMAGE:?set FRONTEND_IMAGE in .env}
+    restart: unless-stopped
     ports:
-      - "${GATE_PUBLISH_PORT:-8575}:8575"
+      - "${FRONTEND_BIND_ADDRESS:-127.0.0.1}:${FRONTEND_HOST_PORT:-8091}:3000"
+    networks:
+      gatec:
+        ipv4_address: 10.72.10.20
+
+  server:
+    <<: *server-base
+    environment:
+      LOG_FILE: /app/logs/gatec.log
+    ports:
+      - "${SERVER_BIND_ADDRESS:-127.0.0.1}:${SERVER_HOST_PORT:-8575}:${SERVER_PORT:-8575}"
     volumes:
-      - ./gatec/logs:/app/logs
-      - ./gatec/tdlib:/app/.tdlib2
-      - ./gatec/secrets:/app/configs/secrets:ro
+      - ./server/logs:/app/logs
+      - ./server/tdlib:/app/.tdlib2
+      - ./server/secrets:/app/configs/secrets:ro
     depends_on:
-      postgres:
-        condition: service_healthy
-      nats:
-        condition: service_healthy
+      <<: *depends-pg-nats
       clickhouse:
         condition: service_healthy
-    restart: unless-stopped
     networks:
-      gate:
+      gatec:
         ipv4_address: 10.72.10.10
 
+  # Telegram airdrop consumer. Shares ./server/tdlib (Telegram sessions) with
+  # the API; keep SERVICE_TELEGRAM_DATABASE_DIR=/app/.tdlib2 in .env.
   airdrop-catcher:
-    image: ${GATE_IMAGE:?set GATE_IMAGE in .env}
+    <<: *server-base
     entrypoint: ["/usr/local/bin/gatec-airdrop-catcher"]
     environment:
       LOG_FILE: /app/logs/airdrop-catcher.log
-    env_file:
-      - ./.env
     volumes:
-      - ./gatec/logs:/app/logs
-      - ./gatec/tdlib:/app/.tdlib2
-      - ./gatec/secrets:/app/configs/secrets:ro
+      - ./server/logs:/app/logs
+      - ./server/tdlib:/app/.tdlib2
+      - ./server/secrets:/app/configs/secrets:ro
     depends_on:
       postgres:
         condition: service_healthy
-    restart: unless-stopped
     networks:
-      gate:
+      gatec:
         ipv4_address: 10.72.20.8
 
   candle-polling:
-    image: ${GATE_WORKER_IMAGE:?set GATE_WORKER_IMAGE in .env}
+    <<: *worker
     command: ["candle-polling"]
     environment:
       LOG_FILE: /app/logs/candle-polling.log
-    env_file:
-      - ./.env
     volumes:
-      - ./gatec/logs:/app/logs
-      - ./gatec/secrets:/app/configs/secrets:ro
-    depends_on:
-      postgres:
-        condition: service_healthy
-      nats:
-        condition: service_healthy
-    restart: unless-stopped
+      - ./server/logs:/app/logs
+      - ./server/secrets:/app/configs/secrets:ro
+    depends_on: *depends-pg-nats
     networks:
-      gate:
+      gatec:
         ipv4_address: 10.72.20.0
 
   market-sync:
-    image: ${GATE_WORKER_IMAGE:?set GATE_WORKER_IMAGE in .env}
+    <<: *worker
     command: ["market-sync"]
     environment:
       LOG_FILE: /app/logs/market-sync.log
-    env_file:
-      - ./.env
     volumes:
-      - ./gatec/logs:/app/logs
-      - ./gatec/secrets:/app/configs/secrets:ro
-    depends_on:
-      postgres:
-        condition: service_healthy
-      nats:
-        condition: service_healthy
-    restart: unless-stopped
+      - ./server/logs:/app/logs
+      - ./server/secrets:/app/configs/secrets:ro
+    depends_on: *depends-pg-nats
     networks:
-      gate:
+      gatec:
         ipv4_address: 10.72.20.1
 
   tse-market-data-sync:
-    image: ${GATE_WORKER_IMAGE:?set GATE_WORKER_IMAGE in .env}
+    <<: *worker
     command: ["tse-market-data-sync"]
+    restart: on-failure
     environment:
       LOG_FILE: /app/logs/tse-market-data-sync.log
-    env_file:
-      - ./.env
     volumes:
-      - ./gatec/logs:/app/logs
-      - ./gatec/secrets:/app/configs/secrets:ro
-    depends_on:
-      postgres:
-        condition: service_healthy
-      nats:
-        condition: service_healthy
-    restart: on-failure
+      - ./server/logs:/app/logs
+      - ./server/secrets:/app/configs/secrets:ro
+    depends_on: *depends-pg-nats
     networks:
-      gate:
+      gatec:
         ipv4_address: 10.72.20.2
 
+  indicator-watch:
+    <<: *worker
+    command: ["indicator-calculator", "tse-market-watch"]
+    environment:
+      LOG_FILE: /app/logs/indicator-watch.log
+    volumes:
+      - ./server/logs:/app/logs
+      - ./server/tdlib:/app/.tdlib2
+      - ./server/secrets:/app/configs/secrets:ro
+    depends_on: *depends-pg-nats
+    networks:
+      gatec:
+        ipv4_address: 10.72.20.3
+
+  proxy-health-checker:
+    <<: *worker
+    command: ["proxy-health-checker"]
+    environment:
+      LOG_FILE: /app/logs/proxy-health-checker.log
+    volumes:
+      - ./server/logs:/app/logs
+      - ./server/tdlib:/app/.tdlib2
+      - ./server/secrets:/app/configs/secrets:ro
+    depends_on: *depends-pg-nats
+    networks:
+      gatec:
+        ipv4_address: 10.72.20.4
+
+  connection-monitor:
+    <<: *worker
+    command: ["connection-monitor"]
+    environment:
+      LOG_FILE: /app/logs/connection-monitor.log
+    volumes:
+      - ./server/logs:/app/logs
+      - ./server/tdlib:/app/.tdlib2
+      - ./server/secrets:/app/configs/secrets:ro
+    depends_on: *depends-pg-nats
+    networks:
+      gatec:
+        ipv4_address: 10.72.20.5
+
+  stock-market-sync:
+    <<: *worker
+    command: ["stock-market-sync"]
+    environment:
+      LOG_FILE: /app/logs/stock-market-sync.log
+    volumes:
+      - ./server/logs:/app/logs
+      - ./server/secrets:/app/configs/secrets:ro
+    depends_on: *depends-pg-nats
+    networks:
+      gatec:
+        ipv4_address: 10.72.20.6
+
+  stock-instrument-sync:
+    <<: *worker
+    command: ["stock-instrument-sync"]
+    environment:
+      LOG_FILE: /app/logs/stock-instrument-sync.log
+    volumes:
+      - ./server/logs:/app/logs
+      - ./server/secrets:/app/configs/secrets:ro
+    depends_on: *depends-pg-nats
+    networks:
+      gatec:
+        ipv4_address: 10.72.20.7
+
   tse-trade-history:
-    image: ${GATE_WORKER_IMAGE:?set GATE_WORKER_IMAGE in .env}
+    <<: *worker
     command: ["tse-trade-history"]
+    restart: on-failure
     environment:
       LOG_FILE: /app/logs/tse-trade-history.log
-      CLICKHOUSE_URL: http://clickhouse:8123
-    env_file:
-      - ./.env
     volumes:
-      - ./gatec/logs:/app/logs
-      - ./gatec/secrets:/app/configs/secrets:ro
+      - ./server/logs:/app/logs
+      - ./server/secrets:/app/configs/secrets:ro
     depends_on:
       postgres:
         condition: service_healthy
       clickhouse:
         condition: service_healthy
-    restart: on-failure
     networks:
-      gate:
+      gatec:
         ipv4_address: 10.72.20.9
 
-  indicator-watch:
-    image: ${GATE_WORKER_IMAGE:?set GATE_WORKER_IMAGE in .env}
-    command: ["indicator-calculator", "tse-market-watch"]
-    environment:
-      LOG_FILE: /app/logs/indicator-watch.log
-    env_file:
-      - ./.env
-    volumes:
-      - ./gatec/logs:/app/logs
-      - ./gatec/tdlib:/app/.tdlib2
-      - ./gatec/secrets:/app/configs/secrets:ro
-    depends_on:
-      postgres:
-        condition: service_healthy
-      nats:
-        condition: service_healthy
-    restart: unless-stopped
-    networks:
-      gate:
-        ipv4_address: 10.72.20.3
+  # --- one-off tools (profile "tools": never started by `compose up`) --------
+  # Run once and exit; no fixed IP so parallel runs do not clash.
 
-  proxy-health-checker:
-    image: ${GATE_WORKER_IMAGE:?set GATE_WORKER_IMAGE in .env}
-    command: ["proxy-health-checker"]
+  # Any worker by name, once, e.g. a backfill:
+  #   make tool APP=worker CMD="tse-market-history-sync"
+  #   make tool APP=worker CMD="tse-market-data-sync --collection-method ins_codes --ins-codes 123,456"
+  worker:
+    <<: *worker
+    profiles: ["tools"]
+    restart: "no"
     environment:
-      LOG_FILE: /app/logs/proxy-health-checker.log
-    env_file:
-      - ./.env
+      LOG_FILE: /app/logs/worker-once.log
     volumes:
-      - ./gatec/logs:/app/logs
-      - ./gatec/tdlib:/app/.tdlib2
-      - ./gatec/secrets:/app/configs/secrets:ro
-    depends_on:
-      postgres:
-        condition: service_healthy
-      nats:
-        condition: service_healthy
-    restart: unless-stopped
+      - ./server/logs:/app/logs
+      - ./server/tdlib:/app/.tdlib2
+      - ./server/secrets:/app/configs/secrets:ro
+    depends_on: *depends-pg-nats
     networks:
-      gate:
-        ipv4_address: 10.72.20.4
+      - gatec
 
-  connection-monitor:
-    image: ${GATE_WORKER_IMAGE:?set GATE_WORKER_IMAGE in .env}
-    command: ["connection-monitor"]
+  # Strategy backtest over stored candles (server/cmd/signal-replay):
+  #   make tool APP=signal-replay CMD="-strategy <id|file> -from 2026-01-01 -to 2026-06-30"
+  signal-replay:
+    <<: *server-base
+    profiles: ["tools"]
+    restart: "no"
+    entrypoint: ["/usr/local/bin/gatec-signal-replay"]
     environment:
-      LOG_FILE: /app/logs/connection-monitor.log
-    env_file:
-      - ./.env
+      LOG_FILE: /app/logs/signal-replay.log
     volumes:
-      - ./gatec/logs:/app/logs
-      - ./gatec/tdlib:/app/.tdlib2
-      - ./gatec/secrets:/app/configs/secrets:ro
+      - ./server/logs:/app/logs
+      - ./server/secrets:/app/configs/secrets:ro
+      # strategy YAML files (WORKER_SIGNAL_STRATEGIES_DIR=strategies → /app/strategies)
+      - ../server/strategies:/app/strategies:ro
     depends_on:
       postgres:
         condition: service_healthy
-      nats:
-        condition: service_healthy
-    restart: unless-stopped
     networks:
-      gate:
-        ipv4_address: 10.72.20.5
-
-  stock-market-sync:
-    image: ${GATE_WORKER_IMAGE:?set GATE_WORKER_IMAGE in .env}
-    command: ["stock-market-sync"]
-    environment:
-      LOG_FILE: /app/logs/stock-market-sync.log
-    env_file:
-      - ./.env
-    volumes:
-      - ./gatec/logs:/app/logs
-      - ./gatec/secrets:/app/configs/secrets:ro
-    depends_on:
-      postgres:
-        condition: service_healthy
-      nats:
-        condition: service_healthy
-    restart: unless-stopped
-    networks:
-      gate:
-        ipv4_address: 10.72.20.6
-
-  stock-instrument-sync:
-    image: ${GATE_WORKER_IMAGE:?set GATE_WORKER_IMAGE in .env}
-    command: ["stock-instrument-sync"]
-    environment:
-      LOG_FILE: /app/logs/stock-instrument-sync.log
-    env_file:
-      - ./.env
-    volumes:
-      - ./gatec/logs:/app/logs
-      - ./gatec/secrets:/app/configs/secrets:ro
-    depends_on:
-      postgres:
-        condition: service_healthy
-      nats:
-        condition: service_healthy
-    restart: unless-stopped
-    networks:
-      gate:
-        ipv4_address: 10.72.20.7
-  gate-ui:
-    image: ${GATE_UI_IMAGE:?set GATE_UI_IMAGE in .env}
-    restart: unless-stopped
-    ports:
-      - "${GATE_UI_BIND_ADDRESS:-127.0.0.1}:${GATE_UI_HOST_PORT:-8091}:3000"
-    networks:
-      gate:
-        ipv4_address: 10.72.10.20
+      - gatec
 
 volumes:
+  # names kept from the previous compose so existing data is reused
+  nats-data:
   postgres-data:
   clickhouse-data:
   ch-ui-data:
-  nats-data:
-  gatec-logs:
-  tdlib-data:
 
 networks:
-  gate:
-    name: gate
+  gatec:
+    name: gatec
     driver: bridge
     ipam:
       config:
