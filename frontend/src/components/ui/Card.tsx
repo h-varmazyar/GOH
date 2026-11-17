@@ -6,8 +6,9 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 const paddings = {
-  none: '',
-  sm: 'p-3',
+  // Edge-to-edge content, such as a table header with a background, would otherwise poke out past the rounded corners.
+  none: 'overflow-hidden',
+  sm: 'p-4',
   md: 'p-4 sm:p-6',
   lg: 'p-6 sm:p-8',
 };
@@ -15,7 +16,7 @@ const paddings = {
 export function Card({ children, padding = 'md', className = '', ...props }: CardProps) {
   return (
     <div
-      className={`bg-white dark:bg-surface-800 rounded-xl border border-surface-200 dark:border-surface-700 shadow-sm ${paddings[padding]} ${className}`}
+      className={`rounded-lg border border-border bg-surface shadow-sm ${paddings[padding]} ${className}`}
       {...props}
     >
       {children}

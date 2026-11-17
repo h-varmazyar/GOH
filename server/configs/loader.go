@@ -72,12 +72,30 @@ func Load() (*Config, error) {
 
 		Workers: Workers{
 			TSETradeHistory: &TSETradeHistory{
-				PollInterval:      loadOptionalDuration("WORKER_TSE_TRADE_HISTORY_POLL_INTERVAL", 15*time.Second),
+				// Queued jobs wake the worker with a Postgres notification; the
+				// poll only covers a notification that was lost.
+				PollInterval:      loadOptionalDuration("WORKER_TSE_TRADE_HISTORY_POLL_INTERVAL", 10*time.Minute),
 				Instances:         loadOptionalInt("WORKER_TSE_TRADE_HISTORY_INSTANCES", 1),
 				MaxAttempts:       loadOptionalInt("WORKER_TSE_TRADE_HISTORY_MAX_ATTEMPTS", 3),
 				RetryDelay:        loadOptionalDuration("WORKER_TSE_TRADE_HISTORY_RETRY_DELAY", 30*time.Second),
 				StaleJobAfter:     loadOptionalDuration("WORKER_TSE_TRADE_HISTORY_STALE_JOB_AFTER", 5*time.Minute),
 				EnqueueAllOnStart: loadOptionalBool("WORKER_TSE_TRADE_HISTORY_ENQUEUE_ALL_ON_START", false),
+			},
+			CandleBuilder: &CandleBuilder{
+				Instances:     loadOptionalInt("WORKER_CANDLE_BUILDER_INSTANCES", 2),
+				PollInterval:  loadOptionalDuration("WORKER_CANDLE_BUILDER_POLL_INTERVAL", 10*time.Minute),
+				StaleJobAfter: loadOptionalDuration("WORKER_CANDLE_BUILDER_STALE_JOB_AFTER", 5*time.Minute),
+				ChunkDays:     loadOptionalInt("WORKER_CANDLE_BUILDER_CHUNK_DAYS", 182),
+				MaxAttempts:   loadOptionalInt("WORKER_CANDLE_BUILDER_MAX_ATTEMPTS", 3),
+				RetryDelay:    loadOptionalDuration("WORKER_CANDLE_BUILDER_RETRY_DELAY", 10*time.Second),
+			},
+			JobScheduler: &JobScheduler{
+				ScheduleHour:             loadOptionalInt("WORKER_JOB_SCHEDULER_SCHEDULE_HOUR", 23),
+				ScheduleMin:              loadOptionalInt("WORKER_JOB_SCHEDULER_SCHEDULE_MIN", 30),
+				CatchUp:                  loadOptionalBool("WORKER_JOB_SCHEDULER_CATCH_UP", true),
+				TradeHistoryLookbackDays: loadOptionalInt("WORKER_JOB_SCHEDULER_TRADE_HISTORY_LOOKBACK_DAYS", 7),
+				CandleLookbackDays:       loadOptionalInt("WORKER_JOB_SCHEDULER_CANDLE_LOOKBACK_DAYS", 7),
+				CandleTimeframes:         loadOptionalStringSlice("WORKER_JOB_SCHEDULER_CANDLE_TIMEFRAMES"),
 			},
 			IndicatorCalculator: &IndicatorCalculator{
 				ExecutionIttrationDuration: loadDuration("WORKER_INDICATOR_CALCULATOR_EXECUTION_ITTRATION_DURATION"),
@@ -159,6 +177,13 @@ func Load() (*Config, error) {
 	}
 	if !cfg.Workers.TSEInstrumentSync.SingleCheck && cfg.Workers.TSEInstrumentSync.IntervalDays < 1 {
 		return nil, fmt.Errorf("WORKER_TSE_INSTRUMENT_SYNC_INTERVAL_DAYS must be at least 1")
+	}
+	if scheduler := cfg.Workers.JobScheduler; scheduler.ScheduleHour < 0 || scheduler.ScheduleHour > 23 ||
+		scheduler.ScheduleMin < 0 || scheduler.ScheduleMin > 59 {
+		return nil, fmt.Errorf("WORKER_JOB_SCHEDULER_SCHEDULE_HOUR must be 0-23 and WORKER_JOB_SCHEDULER_SCHEDULE_MIN 0-59")
+	}
+	if scheduler := cfg.Workers.JobScheduler; scheduler.TradeHistoryLookbackDays < 0 || scheduler.CandleLookbackDays < 0 {
+		return nil, fmt.Errorf("WORKER_JOB_SCHEDULER lookback days must not be negative")
 	}
 
 	// if cfg.Workers.TSEMarketHistorySyncEnabled {
@@ -370,6 +395,17 @@ func loadFloat(envName string) float64 {
 func loadStringSlice(envName string) []string {
 	validate(envName)
 	return viper.GetStringSlice(envName)
+}
+
+// loadOptionalStringSlice reads a comma-separated list; empty when not set.
+func loadOptionalStringSlice(envName string) []string {
+	values := make([]string, 0)
+	for _, value := range strings.Split(viper.GetString(envName), ",") {
+		if value = strings.TrimSpace(value); value != "" {
+			values = append(values, value)
+		}
+	}
+	return values
 }
 
 func loadDuration(envName string) time.Duration {

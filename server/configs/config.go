@@ -83,6 +83,8 @@ type Workers struct {
 	TSEMarketWatch       *TSEMarketWatch
 	TSEMarketDataSync    *TSEMarketDataSync
 	TSETradeHistory      *TSETradeHistory
+	CandleBuilder        *CandleBuilder
+	JobScheduler         *JobScheduler
 }
 
 type TSEMarketHistorySync struct {
@@ -138,6 +140,52 @@ func (c *TSETradeHistory) StaleJobTimeout() time.Duration {
 		return 5 * time.Minute
 	}
 	return c.StaleJobAfter
+}
+
+// CandleBuilder configures the candle-builder worker, which runs the candle
+// jobs: it builds the candles of markets in ClickHouse from their stored trades.
+type CandleBuilder struct {
+	// Instances is the number of worker instances, each on its own goroutine.
+	// Idle instances help a running job, market by market.
+	Instances int
+	// PollInterval is how often idle instances look for queued jobs when no
+	// Postgres notification woke them.
+	PollInterval time.Duration
+	// StaleJobAfter requeues running jobs without a heartbeat for this long.
+	StaleJobAfter time.Duration
+	// ChunkDays is the number of days built by one ClickHouse query, rounded
+	// up to whole weeks.
+	ChunkDays int
+	// MaxAttempts and RetryDelay bound the queries of one chunk.
+	MaxAttempts int
+	RetryDelay  time.Duration
+}
+
+// StaleJobTimeout is StaleJobAfter, or 5 minutes when it is not set.
+func (c *CandleBuilder) StaleJobTimeout() time.Duration {
+	if c.StaleJobAfter <= 0 {
+		return 5 * time.Minute
+	}
+	return c.StaleJobAfter
+}
+
+// JobScheduler configures the job-scheduler worker, which queues the daily
+// jobs of the job workers once a day in Asia/Tehran time.
+type JobScheduler struct {
+	ScheduleHour int
+	ScheduleMin  int
+	// CatchUp makes the run of today at start when its time has passed and it
+	// was not made, such as when the process was down at that time.
+	CatchUp bool
+	// TradeHistoryLookbackDays queues the missing and failed trade history days
+	// of the last days, today included; 0 queues no trade history job.
+	TradeHistoryLookbackDays int
+	// CandleLookbackDays builds the candles of the last days, today included,
+	// after the trade history job; 0 queues no candle job.
+	CandleLookbackDays int
+	// CandleTimeframes are the labels of the timeframes to build, such as 5m
+	// and 1w; empty builds every supported timeframe.
+	CandleTimeframes []string
 }
 
 type TSEMarketDataSync struct {

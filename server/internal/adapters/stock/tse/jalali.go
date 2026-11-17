@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/h-varmazyar/gatec/pkg/jalali"
 )
 
 // parseJalaliDate parses a YYYY/MM/DD Jalali date into a Gregorian date at UTC midnight.
@@ -28,30 +30,4 @@ func parseJalaliDate(value string) (time.Time, error) {
 	return jalaliToGregorian(jy, jm, jd), nil
 }
 
-func jalaliToGregorian(jy, jm, jd int) time.Time {
-	jy += 1595
-	days := -355668 + 365*jy + (jy/33)*8 + ((jy%33)+3)/4 + jd
-	if jm < 7 {
-		days += (jm - 1) * 31
-	} else {
-		days += (jm-7)*30 + 186
-	}
-	gy := 400 * (days / 146097)
-	days %= 146097
-	if days > 36524 {
-		days--
-		gy += 100 * (days / 36524)
-		days %= 36524
-		if days >= 365 {
-			days++
-		}
-	}
-	gy += 4 * (days / 1461)
-	days %= 1461
-	if days > 365 {
-		gy += (days - 1) / 365
-		days = (days - 1) % 365
-	}
-	// days is the zero-based day of the Gregorian year; time.Date normalizes the overflow.
-	return time.Date(gy, time.January, days+1, 0, 0, 0, 0, time.UTC)
-}
+func jalaliToGregorian(jy, jm, jd int) time.Time { return jalali.ToGregorian(jy, jm, jd) }

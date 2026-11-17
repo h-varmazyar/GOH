@@ -109,6 +109,30 @@ func (s *Server) setupAPIRoutes() {
 		tradeHistoryGroup.POST("/jobs/:id/cancel", s.tradeHistoryHandler.CancelJob)
 	}
 
+	if s.candleHandler.HasService() {
+		candleGroup := v1.Group("/candles")
+		candleGroup.Use(middlewares.NewPublicAuthMiddleware().Handle)
+		candleGroup.GET("/timeframes", s.candleHandler.Timeframes)
+		candleGroup.GET("/markets/:id", s.candleHandler.Candles)
+		candleGroup.GET("/jobs", s.candleHandler.ListJobs)
+		candleGroup.POST("/jobs", s.candleHandler.CreateJob)
+		candleGroup.GET("/jobs/:id", s.candleHandler.GetJob)
+		candleGroup.POST("/jobs/:id/cancel", s.candleHandler.CancelJob)
+	}
+
+	if s.indicatorHandler.HasService() {
+		indicatorGroup := v1.Group("/tse/indicators")
+		indicatorGroup.Use(middlewares.NewPublicAuthMiddleware().Handle)
+		indicatorGroup.GET("/catalog", s.indicatorHandler.Catalog)
+		indicatorGroup.GET("/markets", s.indicatorHandler.Markets)
+		indicatorGroup.GET("", s.indicatorHandler.List)
+		indicatorGroup.POST("", s.indicatorHandler.Create)
+		indicatorGroup.GET("/:id", s.indicatorHandler.Get)
+		indicatorGroup.PUT("/:id", s.indicatorHandler.Update)
+		indicatorGroup.PATCH("/:id/enabled", s.indicatorHandler.SetEnabled)
+		indicatorGroup.DELETE("/:id", s.indicatorHandler.Delete)
+	}
+
 	if s.tabdealHandler.HasService() {
 		// tabdealHandlerV1 := v1.Group("/tabdeal")
 		// tabdealHandlerV1.Use(middlewares.NewPublicAuthMiddleware().Handle)

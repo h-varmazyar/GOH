@@ -5,6 +5,7 @@ import { Badge } from '../ui/Badge';
 import { Toggle } from '../ui/Toggle';
 import { mockMarkets, mockTimeframes, mockSessions } from '../../data/mock';
 import type { Strategy } from '../../types';
+import { Input } from '../ui/Input';
 
 interface Props {
   strategy: Strategy;
@@ -66,41 +67,32 @@ export function StepMarket({ strategy, onChange }: Props) {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-lg font-semibold text-surface-900 dark:text-white">تنظیمات مارکت</h2>
+      <h2 className="text-h3 font-semibold text-text">تنظیمات مارکت</h2>
 
       {/* Symbols */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <label className="text-sm font-medium text-surface-700 dark:text-surface-300">نمادها (Symbols)</label>
+          <label className="text-body font-medium text-text-muted">نمادها (Symbols)</label>
           <Toggle enabled={selectAll} onChange={handleSelectAll} label="همه نمادها" />
         </div>
 
         {!selectAll && (
           <>
-            <div className="relative mb-3">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400" />
-              <input
-                type="text"
-                value={searchSymbol}
-                onChange={(e) => setSearchSymbol(e.target.value)}
-                placeholder="جستجوی نماد..."
-                className="w-full pr-10 pl-3 py-2 rounded-lg border bg-white dark:bg-surface-800 border-surface-300 dark:border-surface-600 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
-              />
-            </div>
-            <div className="max-h-48 overflow-y-auto border border-surface-200 dark:border-surface-700 rounded-lg p-2 space-y-1">
+            <div className="mb-3"><Input leadingIcon={<Search />} aria-label="جستجو" value={searchSymbol} onChange={(e) => setSearchSymbol(e.target.value)} placeholder="جستجوی نماد..." /></div>
+            <div className="max-h-48 overflow-y-auto border border-border rounded-md p-2 space-y-1">
               {filteredMarkets.map((market) => (
                 <label
                   key={market.symbol}
-                  className="flex items-center gap-3 p-2 rounded hover:bg-surface-50 dark:hover:bg-surface-800 cursor-pointer"
+                  className="flex items-center gap-3 p-2 rounded-sm hover:bg-surface-muted cursor-pointer"
                 >
                   <input
                     type="checkbox"
                     checked={strategy.market.symbols.includes(market.symbol)}
                     onChange={() => handleSymbolToggle(market.symbol)}
-                    className="w-4 h-4 rounded border-surface-300 text-primary-600 focus:ring-primary-500"
+                    className="w-4 h-4 rounded-sm border-border-strong text-link"
                   />
-                  <span className="text-sm text-surface-900 dark:text-white font-medium">{market.symbol}</span>
-                  <span className="text-xs text-surface-500 dark:text-surface-400">{market.name}</span>
+                  <span className="text-body text-text font-medium">{market.symbol}</span>
+                  <span className="text-caption text-text-subtle">{market.name}</span>
                 </label>
               ))}
             </div>
@@ -119,22 +111,22 @@ export function StepMarket({ strategy, onChange }: Props) {
 
       {/* Excluded Symbols */}
       <div>
-        <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+        <label className="block text-body font-medium text-text-muted mb-2">
           نمادهای حذف شده
         </label>
-        <div className="max-h-36 overflow-y-auto border border-surface-200 dark:border-surface-700 rounded-lg p-2 space-y-1">
+        <div className="max-h-36 overflow-y-auto border border-border rounded-md p-2 space-y-1">
           {availableMarkets.map((market) => (
             <label
               key={market.symbol}
-              className="flex items-center gap-3 p-2 rounded hover:bg-surface-50 dark:hover:bg-surface-800 cursor-pointer"
+              className="flex items-center gap-3 p-2 rounded-sm hover:bg-surface-muted cursor-pointer"
             >
               <input
                 type="checkbox"
                 checked={strategy.market.excluded_symbols.includes(market.symbol)}
                 onChange={() => handleExcludeToggle(market.symbol)}
-                className="w-4 h-4 rounded border-surface-300 text-danger-600 focus:ring-danger-500"
+                className="w-4 h-4 rounded-sm border-border-strong text-error"
               />
-              <span className="text-sm text-surface-900 dark:text-white">{market.symbol}</span>
+              <span className="text-body text-text">{market.symbol}</span>
             </label>
           ))}
         </div>
@@ -149,7 +141,7 @@ export function StepMarket({ strategy, onChange }: Props) {
 
       {/* Timeframes */}
       <div>
-        <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+        <label className="block text-body font-medium text-text-muted mb-2">
           تایم‌فریم‌ها
         </label>
         <div className="flex flex-wrap gap-2">
@@ -158,10 +150,10 @@ export function StepMarket({ strategy, onChange }: Props) {
               key={tf.value}
               type="button"
               onClick={() => handleTimeframeToggle(tf.value)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border
+              className={`px-3 py-1.5 rounded-md text-body font-medium transition-colors border
                 ${strategy.market.timeframes.includes(tf.value)
-                  ? 'bg-primary-600 text-white border-primary-600'
-                  : 'bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 border-surface-300 dark:border-surface-600 hover:border-primary-400'
+                  ? 'bg-action text-on-action border-selected'
+                  : 'bg-surface text-text-muted border-border-strong hover:border-selected'
                 }`}
             >
               {tf.label}
@@ -184,7 +176,7 @@ export function StepMarket({ strategy, onChange }: Props) {
             <button
               key={s}
               onClick={() => removeSession(s)}
-              className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300 hover:bg-primary-200 dark:hover:bg-primary-900/50 transition-colors"
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-pill text-caption font-medium bg-selected/15 text-link hover:bg-selected/20 transition-colors"
             >
               {s} ×
             </button>

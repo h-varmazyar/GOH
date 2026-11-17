@@ -1,4 +1,5 @@
-import { forwardRef, type SelectHTMLAttributes } from 'react';
+import { forwardRef, useId, type SelectHTMLAttributes } from 'react';
+import { AlertCircle, ChevronDown } from 'lucide-react';
 
 interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
@@ -9,37 +10,43 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
   ({ label, error, options, placeholder, className = '', id, ...props }, ref) => {
-    const selectId = id || label?.replace(/\s/g, '-').toLowerCase();
+    const generatedId = useId();
+    const selectId = id || generatedId;
+    const errorId = `${selectId}-error`;
 
     return (
       <div className="w-full">
         {label && (
-          <label htmlFor={selectId} className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
+          <label htmlFor={selectId} className="mb-1.5 block text-label text-text">
             {label}
           </label>
         )}
-        <select
-          ref={ref}
-          id={selectId}
-          className={`w-full px-3 py-2 rounded-lg border transition-colors appearance-none
-            bg-white dark:bg-surface-800
-            border-surface-300 dark:border-surface-600
-            text-surface-900 dark:text-surface-100
-            focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
-            disabled:opacity-50 disabled:cursor-not-allowed
-            ${error ? 'border-danger-500 focus:ring-danger-500' : ''}
-            ${className}`}
-          {...props}
-        >
-          {placeholder && <option value="">{placeholder}</option>}
-          {options.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
+        <div className="relative">
+          <select
+            ref={ref}
+            id={selectId}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? errorId : undefined}
+            className={`field appearance-none pe-10 ${className}`}
+            {...props}
+          >
+            {placeholder && <option value="">{placeholder}</option>}
+            {options.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+          <ChevronDown
+            className="pointer-events-none absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-subtle"
+            aria-hidden="true"
+          />
+        </div>
         {error && (
-          <p className="mt-1 text-xs text-danger-500">{error}</p>
+          <p id={errorId} className="mt-1.5 flex items-center gap-1.5 text-caption text-error">
+            <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
+            {error}
+          </p>
         )}
       </div>
     );

@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LineChart, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
+import { Alert } from '../components/ui/Alert';
+import { AuthLayout } from '../components/layout/AuthLayout';
 
 const OTP_LENGTH = 5;
 
@@ -78,75 +79,70 @@ export function VerifyPhonePage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-surface-50 to-surface-100 dark:from-surface-950 dark:to-surface-900">
-      <Card className="w-full max-w-sm" padding="lg">
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-primary-600 flex items-center justify-center mb-4 shadow-lg shadow-primary-600/30">
-            <LineChart className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-xl font-bold text-surface-900 dark:text-white">تأیید شماره موبایل</h1>
-          <p className="text-sm text-surface-500 dark:text-surface-400 mt-2 text-center">
-            کد ۵ رقمی ارسال شده به{' '}
-            <span className="font-medium text-surface-700 dark:text-surface-200" dir="ltr">
-              {user?.phone}
-            </span>{' '}
-            را وارد کنید
+    <AuthLayout
+      title="تأیید شماره موبایل"
+      subtitle={
+        <>
+          کد ۵ رقمی ارسال شده به{' '}
+          <bdi dir="ltr" className="font-semibold text-text-muted">
+            {user?.phone}
+          </bdi>{' '}
+          را وارد کنید
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="flex justify-center gap-2" dir="ltr" onPaste={handlePaste}>
+          {otp.map((d, i) => (
+            <input
+              key={i}
+              ref={(el) => { inputRefs.current[i] = el; }}
+              type="text"
+              inputMode="numeric"
+              maxLength={1}
+              value={d}
+              onChange={(e) => handleChange(i, e.target.value)}
+              onKeyDown={(e) => handleKeyDown(i, e)}
+              aria-label={`رقم ${(i + 1).toLocaleString('fa-IR')} از ${OTP_LENGTH.toLocaleString('fa-IR')}`}
+              aria-invalid={error ? true : undefined}
+              className={`h-13 w-11 rounded-md border bg-surface text-center text-h3 text-text tabular-nums transition-colors
+                ${error ? 'border-error' : d ? 'border-selected' : 'border-border-strong'}`}
+            />
+          ))}
+        </div>
+
+        {error && <Alert tone="error">{error}</Alert>}
+
+        <Button type="submit" isLoading={isLoading} className="w-full" size="lg">
+          تأیید
+        </Button>
+      </form>
+
+      <div className="mt-6 text-center">
+        {countdown > 0 ? (
+          <p className="text-body text-text-subtle">
+            ارسال مجدد کد تا{' '}
+            <span className="font-semibold text-text-muted tabular-nums" dir="ltr">{formatTime(countdown)}</span>
           </p>
-        </div>
+        ) : (
+          <button
+            type="button"
+            onClick={handleResend}
+            className="min-h-10 px-2 text-body font-semibold text-link hover:underline"
+          >
+            ارسال مجدد کد
+          </button>
+        )}
+      </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="flex justify-center gap-2" dir="ltr" onPaste={handlePaste}>
-            {otp.map((d, i) => (
-              <input
-                key={i}
-                ref={(el) => { inputRefs.current[i] = el; }}
-                type="text"
-                inputMode="numeric"
-                maxLength={1}
-                value={d}
-                onChange={(e) => handleChange(i, e.target.value)}
-                onKeyDown={(e) => handleKeyDown(i, e)}
-                className={`w-11 h-13 text-center text-xl font-bold rounded-lg border transition-all
-                  bg-white dark:bg-surface-800 text-surface-900 dark:text-white py-3
-                  focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
-                  ${error ? 'border-danger-500' : 'border-surface-300 dark:border-surface-600'}
-                  ${d ? 'border-primary-400 dark:border-primary-500' : ''}`}
-              />
-            ))}
-          </div>
-
-          {error && <p className="text-sm text-danger-500 text-center">{error}</p>}
-
-          <Button type="submit" isLoading={isLoading} className="w-full" size="lg">
-            تأیید
-          </Button>
-        </form>
-
-        <div className="mt-6 text-center">
-          {countdown > 0 ? (
-            <p className="text-sm text-surface-500 dark:text-surface-400">
-              ارسال مجدد کد تا{' '}
-              <span className="font-medium text-surface-700 dark:text-surface-200">{formatTime(countdown)}</span>
-            </p>
-          ) : (
-            <button
-              onClick={handleResend}
-              className="text-sm text-primary-600 dark:text-primary-300 hover:underline font-medium"
-            >
-              ارسال مجدد کد
-            </button>
-          )}
-        </div>
-
-        <button
-          type="button"
-          onClick={() => { logout(); navigate('/login'); }}
-          className="flex items-center gap-1 mx-auto mt-4 text-sm text-surface-500 hover:text-surface-700 dark:hover:text-surface-300 transition-colors"
-        >
-          <ArrowRight className="w-4 h-4" />
-          خروج
-        </button>
-      </Card>
-    </div>
+      <button
+        type="button"
+        onClick={() => { logout(); navigate('/login'); }}
+        className="mx-auto mt-4 flex min-h-10 items-center gap-1 px-2 text-body text-text-subtle transition-colors hover:text-text"
+      >
+        <ArrowRight className="h-4 w-4 ltr:rotate-180" aria-hidden="true" />
+        خروج
+      </button>
+    </AuthLayout>
   );
 }

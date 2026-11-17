@@ -48,11 +48,11 @@ export function StepFilters({ strategy, onChange }: Props) {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-lg font-semibold text-surface-900 dark:text-white">فیلترها</h2>
+      <h2 className="text-h3 font-semibold text-text">فیلترها</h2>
 
       {/* Market Filters */}
       <div>
-        <h3 className="text-sm font-medium text-surface-700 dark:text-surface-300 mb-3">فیلترهای مارکت</h3>
+        <h3 className="text-body font-medium text-text-muted mb-3">فیلترهای مارکت</h3>
         <div className="grid sm:grid-cols-2 gap-4">
           <Input
             label="حداقل حجم روزانه (USDT)"
@@ -92,7 +92,7 @@ export function StepFilters({ strategy, onChange }: Props) {
 
       {/* Volatility */}
       <div>
-        <h3 className="text-sm font-medium text-surface-700 dark:text-surface-300 mb-3">نوسان (ATR)</h3>
+        <h3 className="text-body font-medium text-text-muted mb-3">نوسان (ATR)</h3>
         <div className="grid sm:grid-cols-2 gap-4">
           <Input
             label="حداقل پرسنتایل"
@@ -115,7 +115,7 @@ export function StepFilters({ strategy, onChange }: Props) {
 
       {/* Cooldown */}
       <div>
-        <h3 className="text-sm font-medium text-surface-700 dark:text-surface-300 mb-3">زمان انتظار (Cooldown)</h3>
+        <h3 className="text-body font-medium text-text-muted mb-3">زمان انتظار (Cooldown)</h3>
         <div className="grid sm:grid-cols-2 gap-4">
           <Input
             label="بعد از ورود (ثانیه)"
@@ -136,7 +136,7 @@ export function StepFilters({ strategy, onChange }: Props) {
 
       {/* Correlation */}
       <div>
-        <h3 className="text-sm font-medium text-surface-700 dark:text-surface-300 mb-3">همبستگی (Correlation)</h3>
+        <h3 className="text-body font-medium text-text-muted mb-3">همبستگی (Correlation)</h3>
         <div className="space-y-3">
           <Toggle
             enabled={filters.correlation.enabled}

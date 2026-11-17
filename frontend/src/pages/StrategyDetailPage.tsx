@@ -20,7 +20,7 @@ export function StrategyDetailPage() {
   if (!hasSeeded || isLoading) {
     return (
       <div className="flex justify-center py-12">
-        <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-selected border-t-transparent rounded-pill animate-spin" />
       </div>
     );
   }
@@ -28,8 +28,8 @@ export function StrategyDetailPage() {
   if (!strategy) {
     return (
       <div className="text-center py-12">
-        <p className="text-surface-500 dark:text-surface-400">استراتژی یافت نشد</p>
-        <Link to="/strategies" className="text-primary-600 dark:text-primary-400 hover:underline text-sm mt-2 inline-block">
+        <p className="text-text-subtle">استراتژی یافت نشد</p>
+        <Link to="/strategies" className="text-link hover:underline text-body mt-2 inline-block">
           بازگشت به لیست
         </Link>
       </div>
@@ -47,10 +47,10 @@ export function StrategyDetailPage() {
         </Link>
         <div className="flex-1">
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-surface-900 dark:text-white">{strategy.name}</h1>
-            <Toggle enabled={strategy.enabled} onChange={() => toggleStrategy(strategy.id!)} />
+            <h1 className="text-h1 font-bold text-text">{strategy.name}</h1>
+            <Toggle aria-label="فعال بودن استراتژی" enabled={strategy.enabled} onChange={() => toggleStrategy(strategy.id!)} />
           </div>
-          <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">{strategy.description}</p>
+          <p className="text-body text-text-subtle mt-1">{strategy.description}</p>
         </div>
       </div>
 
@@ -68,23 +68,23 @@ export function StrategyDetailPage() {
 
       {/* Indicators */}
       <Card>
-        <h2 className="text-base font-semibold text-surface-900 dark:text-white mb-4 flex items-center gap-2">
-          <Activity className="w-5 h-5 text-primary-500" />
+        <h2 className="text-body-lg font-semibold text-text mb-4 flex items-center gap-2">
+          <Activity className="w-5 h-5 text-link" />
           اندیکاتورها
         </h2>
         {Object.keys(strategy.indicators).length === 0 ? <EmptyState text="اندیکاتوری تعریف نشده است." /> : <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {Object.entries(strategy.indicators).map(([key, ind]) => (
-            <div key={key} className="p-3 rounded-lg bg-surface-50 dark:bg-surface-800/50 border border-surface-100 dark:border-surface-700">
+            <div key={key} className="p-3 rounded-md bg-surface-muted border border-border">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-surface-900 dark:text-white">{key}</span>
+                <span className="text-body font-medium text-text">{key}</span>
                 <Badge size="sm">{ind.type}</Badge>
               </div>
-              <p className="text-xs text-surface-500 dark:text-surface-400">تایم‌فریم: {ind.timeframe}</p>
+              <p className="text-caption text-text-subtle">تایم‌فریم: {ind.timeframe}</p>
               <div className="mt-2 space-y-1">
                 {Object.entries(ind.configs).map(([ck, cv]) => (
-                  <div key={ck} className="flex justify-between text-xs">
-                    <span className="text-surface-500 dark:text-surface-400">{ck}:</span>
-                    <span className="text-surface-700 dark:text-surface-300 font-medium">{String(cv)}</span>
+                  <div key={ck} className="flex justify-between text-caption">
+                    <span className="text-text-subtle">{ck}:</span>
+                    <span className="text-text-muted font-medium">{String(cv)}</span>
                   </div>
                 ))}
               </div>
@@ -95,13 +95,13 @@ export function StrategyDetailPage() {
 
       {/* Market */}
       <Card>
-        <h2 className="text-base font-semibold text-surface-900 dark:text-white mb-4 flex items-center gap-2">
-          <BarChart3 className="w-5 h-5 text-primary-500" />
+        <h2 className="text-body-lg font-semibold text-text mb-4 flex items-center gap-2">
+          <BarChart3 className="w-5 h-5 text-link" />
           مارکت
         </h2>
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <p className="text-sm text-surface-500 dark:text-surface-400 mb-2">نمادها</p>
+            <p className="text-body text-text-subtle mb-2">نمادها</p>
             <div className="flex flex-wrap gap-1">
               {strategy.market.symbols.length ? strategy.market.symbols.map((s) => (
                 <Badge key={s}>{s === '*' ? 'همه نمادها' : s}</Badge>
@@ -109,7 +109,7 @@ export function StrategyDetailPage() {
             </div>
           </div>
           <div>
-            <p className="text-sm text-surface-500 dark:text-surface-400 mb-2">نمادهای حذف شده</p>
+            <p className="text-body text-text-subtle mb-2">نمادهای حذف شده</p>
             <div className="flex flex-wrap gap-1">
               {strategy.market.excluded_symbols.length ? strategy.market.excluded_symbols.map((s) => (
                 <Badge key={s} variant="danger">{s}</Badge>
@@ -117,7 +117,7 @@ export function StrategyDetailPage() {
             </div>
           </div>
           <div>
-            <p className="text-sm text-surface-500 dark:text-surface-400 mb-2">تایم‌فریم</p>
+            <p className="text-body text-text-subtle mb-2">تایم‌فریم</p>
             <div className="flex flex-wrap gap-1">
               {strategy.market.timeframes.length ? strategy.market.timeframes.map((t) => (
                 <Badge key={t} variant="primary">{t}</Badge>
@@ -125,7 +125,7 @@ export function StrategyDetailPage() {
             </div>
           </div>
           <div>
-            <p className="text-sm text-surface-500 dark:text-surface-400 mb-2">جلسات</p>
+            <p className="text-body text-text-subtle mb-2">جلسات</p>
             <div className="flex flex-wrap gap-1">
               {strategy.market.sessions.length ? strategy.market.sessions.map((s) => (
                 <Badge key={s}>{s}</Badge>
@@ -137,8 +137,8 @@ export function StrategyDetailPage() {
 
       {/* Alerts */}
       <Card>
-        <h2 className="text-base font-semibold text-surface-900 dark:text-white mb-4 flex items-center gap-2">
-          <Bell className="w-5 h-5 text-primary-500" />هشدارها
+        <h2 className="text-body-lg font-semibold text-text mb-4 flex items-center gap-2">
+          <Bell className="w-5 h-5 text-link" />هشدارها
         </h2>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <InfoItem label="وضعیت" value={strategy.alerts.enabled ? 'فعال' : 'غیرفعال'} />
@@ -147,14 +147,14 @@ export function StrategyDetailPage() {
           <InfoItem label="ساعات سکوت" value={strategy.alerts.quietHours.enabled ? `${strategy.alerts.quietHours.start} تا ${strategy.alerts.quietHours.end}` : 'غیرفعال'} />
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
-          {Object.entries(strategy.alerts.channels).map(([name, channel]) => <div key={name} className="p-3 rounded-lg bg-surface-50 dark:bg-surface-900/30"><div className="flex justify-between"><span className="text-sm font-medium">{name}</span><Badge variant={channel.enabled ? 'success' : 'default'}>{channel.enabled ? 'فعال' : 'خاموش'}</Badge></div><p className="text-xs text-surface-500 mt-2 break-all" dir="ltr">{channel.destination || '—'}</p></div>)}
+          {Object.entries(strategy.alerts.channels).map(([name, channel]) => <div key={name} className="p-3 rounded-md bg-surface-muted"><div className="flex justify-between"><span className="text-body font-medium">{name}</span><Badge variant={channel.enabled ? 'success' : 'default'}>{channel.enabled ? 'فعال' : 'خاموش'}</Badge></div><p className="text-caption text-text-subtle mt-2 break-all" dir="ltr">{channel.destination || '—'}</p></div>)}
         </div>
       </Card>
 
       {/* Risk Management */}
       <Card>
-        <h2 className="text-base font-semibold text-surface-900 dark:text-white mb-4 flex items-center gap-2">
-          <Shield className="w-5 h-5 text-danger-500" />
+        <h2 className="text-body-lg font-semibold text-text mb-4 flex items-center gap-2">
+          <Shield className="w-5 h-5 text-error" />
           مدیریت ریسک
         </h2>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -172,8 +172,8 @@ export function StrategyDetailPage() {
 
       {/* Execution */}
       <Card>
-        <h2 className="text-base font-semibold text-surface-900 dark:text-white mb-4 flex items-center gap-2">
-          <Zap className="w-5 h-5 text-warning-500" />
+        <h2 className="text-body-lg font-semibold text-text mb-4 flex items-center gap-2">
+          <Zap className="w-5 h-5 text-warning-text" />
           اجرا
         </h2>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -187,32 +187,32 @@ export function StrategyDetailPage() {
       {/* Entry/Exit Conditions */}
       <div className="grid lg:grid-cols-2 gap-4">
         <Card>
-          <h2 className="text-base font-semibold text-surface-900 dark:text-white mb-4 flex items-center gap-2">
-            <Radio className="w-5 h-5 text-success-500" />
+          <h2 className="text-body-lg font-semibold text-text mb-4 flex items-center gap-2">
+            <Radio className="w-5 h-5 text-success" />
             شرایط ورود (Long)
           </h2>
           <div className="space-y-2">
             {strategy.entry.long.all.length ? strategy.entry.long.all.map((condition, i) => (
-              <div key={i} className="text-xs font-mono p-2 rounded bg-surface-50 dark:bg-surface-800/50 text-surface-700 dark:text-surface-300 border border-surface-100 dark:border-surface-700">
+              <div key={i} className="text-caption font-mono p-2 rounded-sm bg-surface-muted text-text-muted border border-border">
                 {condition}
               </div>
             )) : <EmptyState text="شرط ورودی تعریف نشده است." />}
           </div>
-          <div className="mt-3 pt-3 border-t border-surface-100 dark:border-surface-700">
-            <p className="text-xs text-surface-500 dark:text-surface-400">
+          <div className="mt-3 pt-3 border-t border-border">
+            <p className="text-caption text-text-subtle">
               حداقل امتیاز: {strategy.entry.long.score.minimum} | وزن‌ها: ترند {strategy.entry.long.score.weights.trend}, مومنتوم {strategy.entry.long.score.weights.momentum}
             </p>
           </div>
         </Card>
 
         <Card>
-          <h2 className="text-base font-semibold text-surface-900 dark:text-white mb-4 flex items-center gap-2">
-            <Radio className="w-5 h-5 text-danger-500" />
+          <h2 className="text-body-lg font-semibold text-text mb-4 flex items-center gap-2">
+            <Radio className="w-5 h-5 text-error" />
             شرایط خروج (Long)
           </h2>
           <div className="space-y-2">
             {strategy.exit.long.any.length ? strategy.exit.long.any.map((condition, i) => (
-              <div key={i} className="text-xs font-mono p-2 rounded bg-surface-50 dark:bg-surface-800/50 text-surface-700 dark:text-surface-300 border border-surface-100 dark:border-surface-700">
+              <div key={i} className="text-caption font-mono p-2 rounded-sm bg-surface-muted text-text-muted border border-border">
                 {condition}
               </div>
             )) : <EmptyState text="شرط خروجی تعریف نشده است." />}
@@ -222,29 +222,29 @@ export function StrategyDetailPage() {
 
       {/* Scoring */}
       <Card>
-        <h2 className="text-base font-semibold text-surface-900 dark:text-white mb-4 flex items-center gap-2">
-          <Settings className="w-5 h-5 text-surface-500" />
+        <h2 className="text-body-lg font-semibold text-text mb-4 flex items-center gap-2">
+          <Settings className="w-5 h-5 text-text-subtle" />
           امتیازدهی
         </h2>
         <div className="grid sm:grid-cols-2 gap-6">
           <div>
-            <p className="text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">جریمه‌ها</p>
+            <p className="text-body font-medium text-text-muted mb-2">جریمه‌ها</p>
             <div className="space-y-1">
               {Object.entries(strategy.scoring.penalties).map(([key, val]) => (
-                <div key={key} className="flex justify-between text-sm">
-                  <span className="text-surface-500 dark:text-surface-400">{key}</span>
-                  <span className="text-danger-500 font-medium">{val}</span>
+                <div key={key} className="flex justify-between text-body">
+                  <span className="text-text-subtle">{key}</span>
+                  <span className="text-error font-medium">{val}</span>
                 </div>
               ))}
             </div>
           </div>
           <div>
-            <p className="text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">پاداش‌ها</p>
+            <p className="text-body font-medium text-text-muted mb-2">پاداش‌ها</p>
             <div className="space-y-1">
               {Object.entries(strategy.scoring.bonuses).map(([key, val]) => (
-                <div key={key} className="flex justify-between text-sm">
-                  <span className="text-surface-500 dark:text-surface-400">{key}</span>
-                  <span className="text-success-500 font-medium">+{val}</span>
+                <div key={key} className="flex justify-between text-body">
+                  <span className="text-text-subtle">{key}</span>
+                  <span className="text-success font-medium">+{val}</span>
                 </div>
               ))}
             </div>
@@ -256,14 +256,14 @@ export function StrategyDetailPage() {
 }
 
 function EmptyState({ text }: { text: string }) {
-  return <p className="text-xs text-surface-400 py-1">{text}</p>;
+  return <p className="text-caption text-text-subtle py-1">{text}</p>;
 }
 
 function InfoItem({ label, value }: { label: string; value: string | number }) {
   return (
     <div>
-      <p className="text-xs text-surface-500 dark:text-surface-400">{label}</p>
-      <p className="text-sm font-medium text-surface-900 dark:text-white mt-0.5">{String(value)}</p>
+      <p className="text-caption text-text-subtle">{label}</p>
+      <p className="text-body font-medium text-text mt-0.5">{String(value)}</p>
     </div>
   );
 }

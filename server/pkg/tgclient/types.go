@@ -14,6 +14,9 @@ const (
 	SessionStateWaitBotToken SessionState = "wait_bot_token"
 	SessionStateWaitCode     SessionState = "wait_code"
 	SessionStateWaitPassword SessionState = "wait_password"
+	// SessionStateWaitQrScan means a login QR code is shown and waits to be scanned
+	// from a logged-in Telegram app (Settings → Devices → Link Desktop Device).
+	SessionStateWaitQrScan SessionState = "wait_qr_scan"
 	SessionStateReady        SessionState = "ready"
 	SessionStateClosed       SessionState = "closed"
 	SessionStateError        SessionState = "error"
@@ -25,6 +28,8 @@ type SessionType string
 const (
 	SessionTypeClient SessionType = "client"
 	SessionTypeBot    SessionType = "bot"
+	// SessionTypeQr logs a user account in by scanning a QR code instead of entering a phone and code.
+	SessionTypeQr SessionType = "qr"
 )
 
 // Config holds the configuration for the session manager.

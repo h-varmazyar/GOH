@@ -8,6 +8,7 @@ import { Input } from '../../components/ui/Input';
 import { Pagination } from '../../components/ui/Pagination';
 import { Select } from '../../components/ui/Select';
 import { Toggle } from '../../components/ui/Toggle';
+import { IconButton } from '../../components/ui/IconButton';
 import { AddMarketModal, LinkMarketModal } from '../../components/tse/MarketModals';
 import { confirmDelisted, deleteMarket } from '../../components/tse/marketActions';
 import { confirmDialog } from '../../components/ui/dialogs';
@@ -24,6 +25,7 @@ import {
   type TseMarketFilter,
   type TseMarketFlags,
 } from '../../services/tseMarketService';
+import { Alert } from '../../components/ui/Alert';
 
 const PAGE_SIZE = 50;
 
@@ -233,14 +235,14 @@ export function MarketsPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-surface-900 dark:text-white">مدیریت نمادها</h1>
-          <p className="mt-1 text-sm text-surface-500">تعیین نمادهای فعال برای دریافت داده و ارزیابی</p>
+          <h1 className="text-h3 font-semibold text-text">مدیریت نمادها</h1>
+          <p className="mt-1 text-body text-text-subtle">تعیین نمادهای فعال برای دریافت داده و ارزیابی</p>
         </div>
         <div className="flex items-center gap-2">
           {openIssues > 0 && (
             <Link
               to="/tse/markets/issues"
-              className="inline-flex items-center gap-1 rounded-full bg-warning-400/20 px-2.5 py-1 text-xs font-medium text-warning-700 hover:bg-warning-400/30 dark:text-warning-400"
+              className="inline-flex items-center gap-1 rounded-pill bg-warning/20 px-2.5 py-1 text-caption font-medium text-warning-text hover:bg-warning/25"
             >
               <AlertTriangle className="h-3.5 w-3.5" />
               {openIssues.toLocaleString('fa-IR')} مورد نیازمند بررسی
@@ -256,9 +258,8 @@ export function MarketsPage() {
 
       <Card padding="sm">
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <div className="relative md:col-span-2">
-            <Search className="absolute right-3 top-2.5 h-5 w-5 text-surface-400" />
-            <Input className="pr-10" placeholder="نماد، نام، insCode یا شناسه IR..." value={query} onChange={(e) => setQuery(e.target.value)} />
+          <div className="md:col-span-2">
+            <Input leadingIcon={<Search />} aria-label="جستجو" placeholder="نماد، نام، insCode یا شناسه IR..." value={query} onChange={(e) => setQuery(e.target.value)} />
           </div>
           {filters.marketId !== undefined && (
             <div className="flex items-center gap-2 md:col-span-2 xl:col-span-4">
@@ -281,9 +282,9 @@ export function MarketsPage() {
         </div>
       </Card>
 
-      <Card padding="sm" className={selected.length > 0 ? 'border-primary-200 bg-primary-50 dark:border-primary-800 dark:bg-primary-950/40' : ''}>
+      <Card padding="sm" className={selected.length > 0 ? 'border-selected/40 bg-selected/10' : ''}>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <span className="flex items-center gap-2 text-sm font-medium text-primary-700 dark:text-primary-300">
+          <span className="flex items-center gap-2 text-body font-medium text-link">
             <CheckSquare className="h-4 w-4" />
             {selected.length > 0
               ? `${selected.length.toLocaleString('fa-IR')} نماد انتخاب شده`
@@ -307,82 +308,78 @@ export function MarketsPage() {
         </div>
       </Card>
 
-      {error && <div className="rounded-lg bg-danger-50 p-3 text-sm text-danger-600 dark:bg-danger-950/40">{error}</div>}
-      {notice && <div className="rounded-lg bg-success-50 p-3 text-sm text-success-700 dark:bg-success-950/40">{notice}</div>}
+      {error && <Alert tone="error">{error}</Alert>}
+      {notice && <Alert tone="success">{notice}</Alert>}
 
       <Card padding="none">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1100px] text-right">
+          <table className="w-full min-w-[860px] text-center [&_td]:align-middle">
             <thead>
-              <tr className="border-b border-surface-200 bg-surface-50 dark:border-surface-700 dark:bg-surface-800/50">
+              <tr className="border-b border-border bg-surface-muted">
                 <th className="px-3 py-3">
-                  <input type="checkbox" aria-label="انتخاب همه صفحه" checked={allVisibleSelected} onChange={togglePage} className="h-4 w-4 accent-primary-600" />
+                  <input type="checkbox" aria-label="انتخاب همه صفحه" checked={allVisibleSelected} onChange={togglePage} className="h-4 w-4 accent-action" />
                 </th>
-                {['نماد', 'نام', 'نوع', 'بازار', 'گروه صنعت', 'تاریخ درج', 'تاریخ عرضه', 'تاریخ پذیرش', 'دریافت داده', 'ارزیابی', 'عملیات'].map((title) => (
-                  <th key={title} className="px-3 py-3 text-xs font-medium text-surface-500">{title}</th>
+                {['نماد', 'نام', 'نوع', 'بازار', 'تاریخ عرضه', 'دریافت داده', 'ارزیابی', 'عملیات'].map((title) => (
+                  <th key={title} className="px-3 py-3 text-center text-label text-text-muted">{title}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {isLoading && markets.length === 0 && (
-                <tr><td colSpan={12} className="px-3 py-8 text-center text-sm text-surface-500">در حال دریافت...</td></tr>
+                <tr><td colSpan={9} className="px-3 py-8 text-center text-body text-text-subtle">در حال دریافت...</td></tr>
               )}
               {!isLoading && markets.length === 0 && (
-                <tr><td colSpan={12} className="px-3 py-8 text-center text-sm text-surface-500">نمادی یافت نشد</td></tr>
+                <tr><td colSpan={9} className="px-3 py-8 text-center text-body text-text-subtle">نمادی یافت نشد</td></tr>
               )}
               {markets.map((item) => (
-                <tr key={item.id} className={`border-b border-surface-100 dark:border-surface-700 ${selected.includes(item.id) ? 'bg-primary-50/70 dark:bg-primary-950/30' : ''}`}>
+                <tr key={item.id} className={`border-b border-border ${selected.includes(item.id) ? 'bg-selected/10' : ''}`}>
                   <td className="px-3 py-2">
-                    <input type="checkbox" aria-label={`انتخاب ${item.symbol}`} checked={selected.includes(item.id)} onChange={() => toggleSelection(item.id)} className="h-4 w-4 accent-primary-600" />
+                    <input type="checkbox" aria-label={`انتخاب ${item.symbol}`} checked={selected.includes(item.id)} onChange={() => toggleSelection(item.id)} className="h-4 w-4 accent-action align-middle" />
                   </td>
-                  <td className="px-3 py-2">
-                    <div className="flex items-center gap-2">
-                      <Link to={`/tse/markets/${item.id}`} className="font-bold text-primary-700 hover:underline dark:text-primary-300">{item.symbol}</Link>
-                      {item.delisted && <Badge variant="danger">لغو پذیرش</Badge>}
-                      {item.manually_added && <Badge variant="warning">دستی</Badge>}
-                    </div>
-                    <div className="mt-0.5 text-[11px] text-surface-400" dir="ltr">{item.instrument_id || '—'} · {item.ins_code}</div>
-                    <button
-                      type="button"
-                      onClick={() => showMarket(item)}
-                      title="نمایش همه insCodeهای این مارکت"
-                      className="mt-0.5 flex items-center gap-1 text-[11px] text-surface-500 hover:text-primary-600"
+                  <td className="whitespace-nowrap px-3 py-2">
+                    <Link
+                      to={`/tse/markets/${item.id}`}
+                      title={item.delisted ? 'لغو پذیرش‌شده' : undefined}
+                      className={`font-bold hover:underline ${item.delisted ? 'text-error line-through' : 'text-link'}`}
                     >
-                      <Layers className="h-3 w-3" />
-                      مارکت {item.market_label || '—'}
-                      {item.market_members > 1 && ` · ${item.market_members.toLocaleString('fa-IR')} insCode`}
-                    </button>
+                      {item.symbol}
+                    </Link>
                   </td>
-                  <td className="px-3 py-2 text-sm">{item.name}</td>
+                  <td className="px-3 py-2 text-body">{item.name}</td>
                   <td className="px-3 py-2"><Badge>{item.kind_label || '—'}</Badge></td>
-                  <td className="px-3 py-2 text-xs text-surface-600 dark:text-surface-300">{item.market_type_label || '—'}</td>
-                  <td className="px-3 py-2 text-xs text-surface-600 dark:text-surface-300">{item.industry_group_name || item.industry_group_code || '—'}</td>
-                  <td className="px-3 py-2 text-xs">{formatDate(item.insert_date)}</td>
-                  <td className="px-3 py-2 text-xs" title={item.release_date_source === 'price_history' ? 'از قدیمی‌ترین داده معاملاتی' : undefined}>
+                  <td className="px-3 py-2 text-caption text-text-muted">{item.market_type_label || '—'}</td>
+                  <td className="px-3 py-2 text-caption" title={item.release_date_source === 'price_history' ? 'از قدیمی‌ترین داده معاملاتی' : undefined}>
                     {formatDate(item.release_date)}
-                    {item.release_date && item.release_date_source === 'price_history' && <span className="mr-1 text-surface-400">*</span>}
-                  </td>
-                  <td className="px-3 py-2 text-xs">{formatDate(item.acceptance_date)}</td>
-                  <td className="px-3 py-2">
-                    <Toggle enabled={item.data_collection_enabled} onChange={(value) => updateRow(item, { data_collection_enabled: value })} />
+                    {item.release_date && item.release_date_source === 'price_history' && <span className="ms-1 text-text-subtle">*</span>}
                   </td>
                   <td className="px-3 py-2">
-                    <Toggle enabled={item.evaluation_enabled} onChange={(value) => updateRow(item, { evaluation_enabled: value })} />
+                    <Toggle aria-label={`جمع‌آوری داده ${item.symbol}`} enabled={item.data_collection_enabled} onChange={(value) => updateRow(item, { data_collection_enabled: value })} />
                   </td>
                   <td className="px-3 py-2">
-                    <div className="flex items-center gap-1">
-                      <Button size="sm" variant="ghost" title="خواندن دوباره از منابع" disabled={busyId !== null} isLoading={busyId === item.id} onClick={() => refreshRow(item)}>
-                        {busyId !== item.id && <RefreshCw className="h-4 w-4" />}
-                      </Button>
-                      <Button size="sm" variant="ghost" title={item.delisted ? 'برداشتن علامت لغو پذیرش' : 'علامت لغو پذیرش'} disabled={busyId !== null} onClick={() => toggleDelisted(item)}>
-                        {item.delisted ? <RotateCcw className="h-4 w-4" /> : <Ban className="h-4 w-4" />}
-                      </Button>
-                      <Button size="sm" variant="ghost" title="انتقال به مارکت دیگر" disabled={busyId !== null} onClick={() => setLinking(item)}>
-                        <Link2 className="h-4 w-4" />
-                      </Button>
-                      <Button size="sm" variant="ghost" title="حذف insCode" disabled={busyId !== null} onClick={() => removeRow(item)}>
-                        <Trash2 className="h-4 w-4 text-danger-500" />
-                      </Button>
+                    <Toggle aria-label={`ارزیابی ${item.symbol}`} enabled={item.evaluation_enabled} onChange={(value) => updateRow(item, { evaluation_enabled: value })} />
+                  </td>
+                  <td className="px-3 py-2">
+                    <div className="flex items-center justify-center gap-2">
+                      <IconButton
+                        title="خواندن دوباره از منابع"
+                        disabled={busyId !== null}
+                        aria-busy={busyId === item.id}
+                        onClick={() => refreshRow(item)}
+                        icon={<RefreshCw className={busyId === item.id ? 'animate-spin' : ''} />}
+                      />
+                      <IconButton
+                        title="نمایش همه insCodeهای این مارکت"
+                        onClick={() => showMarket(item)}
+                        icon={<Layers />}
+                      />
+                      <IconButton
+                        title={item.delisted ? 'برداشتن علامت لغو پذیرش' : 'علامت لغو پذیرش'}
+                        disabled={busyId !== null}
+                        onClick={() => toggleDelisted(item)}
+                        icon={item.delisted ? <RotateCcw /> : <Ban />}
+                      />
+                      <IconButton title="انتقال به مارکت دیگر" disabled={busyId !== null} onClick={() => setLinking(item)} icon={<Link2 />} />
+                      <IconButton title="حذف insCode" tone="danger" disabled={busyId !== null} onClick={() => removeRow(item)} icon={<Trash2 />} />
                     </div>
                   </td>
                 </tr>
@@ -392,7 +389,7 @@ export function MarketsPage() {
         </div>
         <Pagination page={page} totalPages={pagination?.total_pages || 1} totalItems={totalItems} onChange={setPage} />
       </Card>
-      <p className="text-xs text-surface-500">* تاریخ عرضه از قدیمی‌ترین داده معاملاتی نماد برداشته شده است، چون منابع پذیرش آن را نداشتند.</p>
+      <p className="text-caption text-text-subtle">* تاریخ عرضه از قدیمی‌ترین داده معاملاتی نماد برداشته شده است، چون منابع پذیرش آن را نداشتند.</p>
 
       {linking && (
         <LinkMarketModal

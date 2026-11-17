@@ -73,21 +73,21 @@ export function ProfilePage() {
     <div className="space-y-6 max-w-2xl">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-bold text-surface-900 dark:text-white">پروفایل کاربری</h1>
-        <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">مدیریت اطلاعات حساب کاربری</p>
+        <h1 className="text-h1 font-bold text-text">پروفایل کاربری</h1>
+        <p className="text-body text-text-subtle mt-1">مدیریت اطلاعات حساب کاربری</p>
       </div>
 
       {/* User Info Card */}
       <Card>
         <div className="flex items-center gap-4 mb-6">
-          <div className="w-16 h-16 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
-            <User className="w-8 h-8 text-primary-600 dark:text-primary-300" />
+          <div className="w-16 h-16 rounded-pill bg-selected/15 flex items-center justify-center">
+            <User className="w-8 h-8 text-link" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-surface-900 dark:text-white">{fullName}</h2>
+            <h2 className="text-h3 font-semibold text-text">{fullName}</h2>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
               <Badge variant={user?.role === 'admin' ? 'primary' : 'default'}>
-                <Shield className="w-3 h-3 ml-1" />
+                <Shield className="w-3 h-3 me-1" />
                 {roleLabels[user?.role || 'user']}
               </Badge>
               <Badge variant={user?.isVerified ? 'success' : 'warning'}>
@@ -98,20 +98,20 @@ export function ProfilePage() {
         </div>
 
         <div className="space-y-2">
-          <div className="flex items-center gap-2 p-3 rounded-lg bg-surface-50 dark:bg-surface-800/50 border border-surface-100 dark:border-surface-700">
-            <AtSign className="w-4 h-4 text-surface-500" />
-            <span className="text-sm text-surface-600 dark:text-surface-300" dir="ltr">{user?.username}</span>
+          <div className="flex items-center gap-2 p-3 rounded-md bg-surface-muted border border-border">
+            <AtSign className="w-4 h-4 text-text-subtle" />
+            <span className="text-body text-text-muted" dir="ltr">{user?.username}</span>
           </div>
-          <div className="flex items-center gap-2 p-3 rounded-lg bg-surface-50 dark:bg-surface-800/50 border border-surface-100 dark:border-surface-700">
-            <Phone className="w-4 h-4 text-surface-500" />
-            <span className="text-sm text-surface-600 dark:text-surface-300" dir="ltr">{user?.phone}</span>
+          <div className="flex items-center gap-2 p-3 rounded-md bg-surface-muted border border-border">
+            <Phone className="w-4 h-4 text-text-subtle" />
+            <span className="text-body text-text-muted" dir="ltr">{user?.phone}</span>
           </div>
         </div>
       </Card>
 
       {/* Edit Profile */}
       <Card>
-        <h3 className="text-base font-semibold text-surface-900 dark:text-white mb-4 flex items-center gap-2">
+        <h3 className="text-body-lg font-semibold text-text mb-4 flex items-center gap-2">
           <User className="w-5 h-5" />
           ویرایش اطلاعات
         </h3>
@@ -131,7 +131,7 @@ export function ProfilePage() {
             />
           </div>
           {saveMessage && (
-            <p className="text-sm text-success-500">{saveMessage}</p>
+            <p className="text-body text-success">{saveMessage}</p>
           )}
           <Button type="submit" isLoading={isSaving}>
             ذخیره تغییرات
@@ -141,7 +141,7 @@ export function ProfilePage() {
 
       {/* Change Password */}
       <Card>
-        <h3 className="text-base font-semibold text-surface-900 dark:text-white mb-4 flex items-center gap-2">
+        <h3 className="text-body-lg font-semibold text-text mb-4 flex items-center gap-2">
           <Lock className="w-5 h-5" />
           تغییر رمز عبور
         </h3>
@@ -172,10 +172,10 @@ export function ProfilePage() {
             dir="ltr"
           />
           {passwordError && (
-            <p className="text-sm text-danger-500">{passwordError}</p>
+            <p className="text-body text-error">{passwordError}</p>
           )}
           {passwordSuccess && (
-            <p className="text-sm text-success-500">{passwordSuccess}</p>
+            <p className="text-body text-success">{passwordSuccess}</p>
           )}
           <Button type="submit" isLoading={isChangingPassword}>
             تغییر رمز عبور

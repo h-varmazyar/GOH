@@ -23,46 +23,46 @@ export function TelegramOverview() {
     <div className="space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-bold text-surface-900 dark:text-white">تلگرام</h1>
-        <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">نمای کلی وضعیت اکانت‌های تلگرام</p>
+        <h1 className="text-h1 font-bold text-text">تلگرام</h1>
+        <p className="text-body text-text-subtle mt-1">نمای کلی وضعیت اکانت‌های تلگرام</p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card padding="sm" className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-primary-400/10">
-            <Users className="w-5 h-5 text-primary-500" />
+          <div className="p-2 rounded-md bg-selected/10">
+            <Users className="w-5 h-5 text-link" />
           </div>
           <div>
-            <p className="text-xs text-surface-500 dark:text-surface-400">کل اکانت‌ها</p>
-            <p className="text-lg font-bold text-surface-900 dark:text-white">{accounts.length}</p>
+            <p className="text-caption text-text-subtle">کل اکانت‌ها</p>
+            <p className="text-h3 font-bold text-text">{accounts.length}</p>
           </div>
         </Card>
         <Card padding="sm" className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-success-400/10">
-            <CheckCircle className="w-5 h-5 text-success-500" />
+          <div className="p-2 rounded-md bg-success/8">
+            <CheckCircle className="w-5 h-5 text-success" />
           </div>
           <div>
-            <p className="text-xs text-surface-500 dark:text-surface-400">متصل</p>
-            <p className="text-lg font-bold text-surface-900 dark:text-white">{connectedCount}</p>
+            <p className="text-caption text-text-subtle">متصل</p>
+            <p className="text-h3 font-bold text-text">{connectedCount}</p>
           </div>
         </Card>
         <Card padding="sm" className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-warning-400/10">
-            <AlertCircle className="w-5 h-5 text-warning-500" />
+          <div className="p-2 rounded-md bg-warning/12">
+            <AlertCircle className="w-5 h-5 text-warning-text" />
           </div>
           <div>
-            <p className="text-xs text-surface-500 dark:text-surface-400">نیاز به احراز هویت</p>
-            <p className="text-lg font-bold text-surface-900 dark:text-white">{needsAuthCount}</p>
+            <p className="text-caption text-text-subtle">نیاز به احراز هویت</p>
+            <p className="text-h3 font-bold text-text">{needsAuthCount}</p>
           </div>
         </Card>
       </div>
 
       {/* Quick Actions */}
       <Card>
-        <h2 className="text-lg font-semibold text-surface-900 dark:text-white mb-4">دسترسی سریع</h2>
+        <h2 className="text-h3 font-semibold text-text mb-4">دسترسی سریع</h2>
         <div className="flex flex-wrap gap-3">
-          <Button onClick={() => navigate('/telegram/add')}>
+          <Button onClick={() => navigate('/telegram/accounts?add=1')}>
             <PlusCircle className="w-4 h-4" />
             افزودن اکانت جدید
           </Button>
@@ -76,20 +76,20 @@ export function TelegramOverview() {
       {/* Recent accounts */}
       {accounts.length > 0 && (
         <Card>
-          <h2 className="text-lg font-semibold text-surface-900 dark:text-white mb-4">آخرین اکانت‌ها</h2>
+          <h2 className="text-h3 font-semibold text-text mb-4">آخرین اکانت‌ها</h2>
           <div className="space-y-3">
             {accounts.slice(0, 5).map((account) => (
               <div
                 key={account.id}
-                className="flex items-center justify-between p-3 rounded-lg bg-surface-50 dark:bg-surface-800/50 border border-surface-100 dark:border-surface-700"
+                className="flex items-center justify-between p-3 rounded-md bg-surface-muted border border-border"
               >
                 <div className="flex items-center gap-3">
-                  {account.status === 'connected' && <CheckCircle className="w-4 h-4 text-success-500" />}
-                  {account.status === 'needs_auth' && <AlertCircle className="w-4 h-4 text-warning-500" />}
-                  {account.status === 'disconnected' && <XCircle className="w-4 h-4 text-danger-500" />}
+                  {account.status === 'connected' && <CheckCircle className="w-4 h-4 text-success" />}
+                  {account.status === 'needs_auth' && <AlertCircle className="w-4 h-4 text-warning-text" />}
+                  {account.status === 'disconnected' && <XCircle className="w-4 h-4 text-error" />}
                   <div>
-                    <p className="text-sm font-medium text-surface-900 dark:text-white">@{account.username}</p>
-                    <p className="text-xs text-surface-500 dark:text-surface-400">
+                    <p className="text-body font-medium text-text">@{account.username}</p>
+                    <p className="text-caption text-text-subtle">
                       {account.type === 'bot' ? 'ربات' : 'حساب شخصی'}
                     </p>
                   </div>

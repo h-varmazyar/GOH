@@ -11,11 +11,13 @@ import (
 	"github.com/h-varmazyar/gatec/internal/consts"
 	"github.com/h-varmazyar/gatec/internal/models"
 	"github.com/h-varmazyar/gatec/internal/repositories"
+	"github.com/h-varmazyar/gatec/internal/services/candles"
 	tgAccountService "github.com/h-varmazyar/gatec/internal/services/tgaccount"
 	"github.com/h-varmazyar/gatec/internal/services/tradehistory"
 	"github.com/h-varmazyar/gatec/internal/worker/events"
 	clickhouseClient "github.com/h-varmazyar/gatec/pkg/clickhouse"
 	gormext "github.com/h-varmazyar/gatec/pkg/gormOld"
+	"github.com/h-varmazyar/gatec/pkg/pgnotify"
 	"github.com/h-varmazyar/gatec/pkg/tgclient"
 	"gorm.io/gorm"
 )
@@ -35,6 +37,8 @@ type dependencyPlan struct {
 	tseDailyClosingPrice bool
 	tseTradeHistory      bool
 	signalWorker         bool
+	candleBuilder        bool
+	jobScheduler         bool
 	cryptoProviders      bool
 	stockProviders       bool
 }
@@ -107,6 +111,18 @@ func dependencyNeeds(names []string, cfg *configs.Config) dependencyPlan {
 			needs.market = true
 			needs.tseMarket = true
 			needs.stockProviders = true
+		case "candle-builder":
+			needs.provider = true
+			needs.market = true
+			needs.timeframe = true
+			needs.tseMarket = true
+			needs.candleBuilder = true
+		case "job-scheduler":
+			needs.provider = true
+			needs.market = true
+			needs.timeframe = true
+			needs.tseMarket = true
+			needs.jobScheduler = true
 		}
 	}
 	needs.provider = needs.provider || needs.cryptoProviders || needs.stockProviders
@@ -236,8 +252,25 @@ func StandaloneFactory(ctx context.Context, cfg *configs.Config, ch *clickhouseC
 		}
 	}
 
+	var candleStore *repositories.MarketCandleRepository
+	if needs.candleBuilder {
+		if ch == nil {
+			closeDB()
+			return nil, nil, fmt.Errorf("ClickHouse client is required for the candle builder")
+		}
+		if candleStore, err = repositories.NewMarketCandleRepository(ch); err == nil {
+			err = candleStore.EnsureSchema(ctx)
+		}
+		if err != nil {
+			closeDB()
+			return nil, nil, err
+		}
+	}
+
+	// The job-scheduler only queues trade history jobs, so it needs neither
+	// the TSE adapter nor the trade storage.
 	var tradeHistoryService *tradehistory.Service
-	if needs.tseTradeHistory {
+	if needs.tseTradeHistory || needs.jobScheduler {
 		var adapter *stockTSE.Adapter
 		if len(stockProviders) > 0 {
 			adapter = stockProviders[0]
@@ -249,6 +282,24 @@ func StandaloneFactory(ctx context.Context, cfg *configs.Config, ch *clickhouseC
 			repositories.NewTradeHistoryStatusRepository(db),
 			tradeHistoryRepo,
 		)
+	}
+
+	var candleService *candles.Service
+	var scheduledRuns *repositories.ScheduledRunRepository
+	if needs.candleBuilder || needs.jobScheduler {
+		candleService = candles.NewService(cfg.Workers.CandleBuilder, repositories.NewCandleJobRepository(db), providerRepo, timeframeRepo, candleStore)
+		scheduledRuns = repositories.NewScheduledRunRepository(db)
+	}
+
+	sqlDB, err := db.DB()
+	if err != nil {
+		closeDB()
+		return nil, nil, err
+	}
+	// listen reports the notifications of job queues; each job worker listens
+	// on a connection of its own.
+	listen := func(channels ...string) func(context.Context, func()) {
+		return pgnotify.NewListener(sqlDB, channels...).Run
 	}
 
 	var tgManagerService *tgAccountService.Service
@@ -278,14 +329,17 @@ func StandaloneFactory(ctx context.Context, cfg *configs.Config, ch *clickhouseC
 			StockProviders:  stockProviders,
 		},
 		Services: &ServicesBundle{
-			TgAccount:    tgManagerService,
-			TradeHistory: tradeHistoryService,
+			TgAccount:     tgManagerService,
+			TradeHistory:  tradeHistoryService,
+			Candles:       candleService,
+			ScheduledRuns: scheduledRuns,
 		},
 		Channels: &ChannelsBundle{
 			CandleChan: candleChan,
 		},
 		EventBus:  eventBus,
 		TgManager: managerOf(tgManagerService),
+		Listen:    listen,
 	}
 	return NewWorkerFactory(&cfg.Workers, bundles), closeDependencies, nil
 }
@@ -339,8 +393,15 @@ func migrateWorkerModels(db *gorm.DB, needs dependencyPlan) error {
 	if needs.signalWorker {
 		modelsToMigrate = append(modelsToMigrate, &models.SignalRecord{})
 	}
-	if needs.tseTradeHistory {
+	if needs.tseTradeHistory || needs.candleBuilder || needs.jobScheduler {
+		// Candle jobs may wait for a trade history job.
 		modelsToMigrate = append(modelsToMigrate, &models.TSETradeHistoryJob{})
+	}
+	if needs.candleBuilder || needs.jobScheduler {
+		modelsToMigrate = append(modelsToMigrate, &models.CandleJob{})
+	}
+	if needs.jobScheduler {
+		modelsToMigrate = append(modelsToMigrate, &models.ScheduledRun{})
 	}
 	return db.AutoMigrate(modelsToMigrate...)
 }

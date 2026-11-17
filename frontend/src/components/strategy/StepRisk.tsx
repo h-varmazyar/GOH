@@ -30,11 +30,11 @@ export function StepRisk({ strategy, onChange }: Props) {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-lg font-semibold text-surface-900 dark:text-white">مدیریت ریسک</h2>
+      <h2 className="text-h3 font-semibold text-text">مدیریت ریسک</h2>
 
       {/* Position */}
       <div>
-        <h3 className="text-sm font-medium text-surface-700 dark:text-surface-300 mb-3">پوزیشن</h3>
+        <h3 className="text-body font-medium text-text-muted mb-3">پوزیشن</h3>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <Input
             label="حداکثر پوزیشن باز"
@@ -79,7 +79,7 @@ export function StepRisk({ strategy, onChange }: Props) {
 
       {/* Stoploss */}
       <div>
-        <h3 className="text-sm font-medium text-surface-700 dark:text-surface-300 mb-3">استاپ‌لاس</h3>
+        <h3 className="text-body font-medium text-text-muted mb-3">استاپ‌لاس</h3>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <Select
             label="نوع"
@@ -118,7 +118,7 @@ export function StepRisk({ strategy, onChange }: Props) {
 
       {/* Trailing Stop */}
       <div>
-        <h3 className="text-sm font-medium text-surface-700 dark:text-surface-300 mb-3">تریلینگ استاپ</h3>
+        <h3 className="text-body font-medium text-text-muted mb-3">تریلینگ استاپ</h3>
         <div className="space-y-3">
           <Toggle
             enabled={risk.trailing_stop.enabled}
@@ -150,7 +150,7 @@ export function StepRisk({ strategy, onChange }: Props) {
 
       {/* Take Profit */}
       <div>
-        <h3 className="text-sm font-medium text-surface-700 dark:text-surface-300 mb-3">تیک‌پرافیت</h3>
+        <h3 className="text-body font-medium text-text-muted mb-3">تیک‌پرافیت</h3>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <Select
             label="نوع"

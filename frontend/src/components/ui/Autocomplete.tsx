@@ -109,21 +109,26 @@ export function Autocomplete({
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         dir="ltr"
-        className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-surface-800 border-surface-300 dark:border-surface-600 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm font-mono"
+        role="combobox"
+        aria-expanded={open && filteredSuggestions.length > 0}
+        aria-autocomplete="list"
+        className="field font-mono"
       />
 
       {open && filteredSuggestions.length > 0 && (
-        <div className="absolute z-20 mt-1 w-full max-h-56 overflow-y-auto rounded-lg border border-surface-200 dark:border-surface-600 bg-white dark:bg-surface-800 shadow-lg">
+        <div role="listbox" className="absolute z-(--z-dropdown) mt-1 max-h-56 w-full overflow-y-auto rounded-md border border-border bg-surface py-1 shadow-md">
           {filteredSuggestions.map((s, i) => (
             <button
               key={s}
               type="button"
+              role="option"
+              aria-selected={i === activeIndex}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => applySuggestion(s)}
-              className={`w-full text-left px-3 py-1.5 text-sm font-mono transition-colors
+              className={`flex min-h-9 w-full items-center px-3 text-start font-mono text-body transition-colors
                 ${i === activeIndex
-                  ? 'bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-200'
-                  : 'text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-700'
+                  ? 'bg-selected/15 text-text'
+                  : 'text-text-muted hover:bg-surface-muted'
                 }`}
               dir="ltr"
             >

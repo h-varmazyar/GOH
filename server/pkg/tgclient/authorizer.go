@@ -2,8 +2,10 @@ package tgclient
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/zelenin/go-tdlib/client"
 )
 
@@ -23,9 +25,34 @@ type clientAuthorizer struct {
 	stateCh     chan SessionState
 	errCh       chan error
 	timeout     time.Duration
+	log         *logrus.Entry
+	// cancelCh is closed when the session is abandoned, so a pending wait for user input
+	// returns at once and TDLib is closed instead of idling until the input timeout.
+	cancelCh   chan struct{}
+	cancelOnce sync.Once
+
+	// lastState avoids logging the same TDLib state on every QR re-check.
+	lastState string
+
+	// QR login: the latest tg://login link, refreshed by TDLib as tokens expire.
+	qrMu        sync.Mutex
+	qrLink      string
+	qrStartedAt time.Time
 }
 
-func newClientAuthorizer(params *client.SetTdlibParametersRequest, sessionType SessionType, timeout time.Duration) *clientAuthorizer {
+// qrPollInterval is how often the QR state is re-read. TDLib has no blocking call
+// for authorizationStateWaitOtherDeviceConfirmation, and Authorize re-reads the
+// state every time Handle returns, so Handle pauses this long before returning.
+const qrPollInterval = time.Second
+
+// QrLink returns the current QR login link, or "" before one is issued.
+func (a *clientAuthorizer) QrLink() string {
+	a.qrMu.Lock()
+	defer a.qrMu.Unlock()
+	return a.qrLink
+}
+
+func newClientAuthorizer(params *client.SetTdlibParametersRequest, sessionID string, sessionType SessionType, timeout time.Duration) *clientAuthorizer {
 	return &clientAuthorizer{
 		tdlibParams: params,
 		sessionType: sessionType,
@@ -36,12 +63,24 @@ func newClientAuthorizer(params *client.SetTdlibParametersRequest, sessionType S
 		stateCh:     make(chan SessionState, 10),
 		errCh:       make(chan error, 1),
 		timeout:     timeout,
+		log:         logrus.WithField("session_id", sessionID),
+		cancelCh:    make(chan struct{}),
 	}
+}
+
+// cancel aborts any pending wait for user input. Safe to call more than once.
+func (a *clientAuthorizer) cancel() {
+	a.cancelOnce.Do(func() { close(a.cancelCh) })
 }
 
 // Handle implements client.AuthorizationStateHandler.
 // This method is called by TDLib's Authorize loop for each state transition.
 func (a *clientAuthorizer) Handle(c *client.Client, state client.AuthorizationState) error {
+	if stateType := state.AuthorizationStateType(); stateType != a.lastState {
+		a.lastState = stateType
+		a.log.WithField("tdlib_state", stateType).Info("tdlib authorization state")
+	}
+
 	switch state.AuthorizationStateType() {
 	case client.TypeAuthorizationStateWaitTdlibParameters:
 		_, err := c.SetTdlibParameters(a.tdlibParams)
@@ -57,6 +96,14 @@ func (a *clientAuthorizer) Handle(c *client.Client, state client.AuthorizationSt
 			}
 			_, err = c.CheckAuthenticationBotToken(&client.CheckAuthenticationBotTokenRequest{
 				Token: token,
+			})
+			return err
+		}
+
+		// QR login replaces the phone number: TDLib moves to WaitOtherDeviceConfirmation with a link.
+		if a.sessionType == SessionTypeQr {
+			_, err := c.RequestQrCodeAuthentication(&client.RequestQrCodeAuthenticationRequest{
+				OtherUserIds: []int64{},
 			})
 			return err
 		}
@@ -87,6 +134,9 @@ func (a *clientAuthorizer) Handle(c *client.Client, state client.AuthorizationSt
 		})
 		return err
 
+	case client.TypeAuthorizationStateWaitOtherDeviceConfirmation:
+		return a.handleQrConfirmation(state.(*client.AuthorizationStateWaitOtherDeviceConfirmation))
+
 	case client.TypeAuthorizationStateWaitPassword:
 		a.stateCh <- SessionStateWaitPassword
 		password, err := a.waitForInput(a.passwordCh)
@@ -116,6 +166,34 @@ func (a *clientAuthorizer) Handle(c *client.Client, state client.AuthorizationSt
 	}
 }
 
+// handleQrConfirmation stores the latest QR link and waits briefly for the scan.
+// After a scan TDLib moves to WaitPassword (2FA accounts) or Ready.
+func (a *clientAuthorizer) handleQrConfirmation(state *client.AuthorizationStateWaitOtherDeviceConfirmation) error {
+	a.qrMu.Lock()
+	first := a.qrStartedAt.IsZero()
+	if first {
+		a.qrStartedAt = time.Now()
+	}
+	a.qrLink = state.Link
+	startedAt := a.qrStartedAt
+	a.qrMu.Unlock()
+
+	if first {
+		a.stateCh <- SessionStateWaitQrScan
+	}
+
+	if time.Since(startedAt) > a.timeout {
+		return fmt.Errorf("timeout waiting for qr code scan")
+	}
+
+	select {
+	case <-time.After(qrPollInterval):
+		return nil
+	case <-a.cancelCh:
+		return fmt.Errorf("session cancelled")
+	}
+}
+
 // Close implements client.AuthorizationStateHandler.
 // Note: We do NOT close stateCh here because runAuth writes to it after
 // Authorize returns (which calls Close). stateCh is closed separately.
@@ -139,5 +217,7 @@ func (a *clientAuthorizer) waitForInput(ch <-chan string) (string, error) {
 		return val, nil
 	case <-timer.C:
 		return "", fmt.Errorf("timeout waiting for user input")
+	case <-a.cancelCh:
+		return "", fmt.Errorf("session cancelled")
 	}
 }

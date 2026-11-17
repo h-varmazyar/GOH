@@ -60,7 +60,7 @@ func (m *Manager) CreateSession(ctx context.Context, sessionID string, sessionTy
 		ApplicationVersion:  "1.0.0",
 	}
 
-	authorizer := newClientAuthorizer(tdlibParams, sessionType, m.cfg.AuthTimeout)
+	authorizer := newClientAuthorizer(tdlibParams, sessionID, sessionType, m.cfg.AuthTimeout)
 
 	session := &Session{
 		id:          sessionID,
@@ -323,6 +323,15 @@ func (m *Manager) GetClient(sessionID string) (*client.Client, error) {
 	return session.client, nil
 }
 
+// QrLink returns the current QR login link of a session ("" if none was issued).
+func (m *Manager) QrLink(sessionID string) (string, error) {
+	session, err := m.GetSession(sessionID)
+	if err != nil {
+		return "", err
+	}
+	return session.authorizer.QrLink(), nil
+}
+
 // GetDatabaseDir returns the database directory path for a session.
 func (m *Manager) GetDatabaseDir(sessionID string) string {
 	return filepath.Join(m.cfg.DatabaseBaseDir, sessionID)
@@ -346,6 +355,9 @@ func (m *Manager) CloseSession(sessionID string) error {
 
 	if session.client != nil {
 		_, _ = session.client.Close()
+	} else {
+		// Still authorizing: unblock the auth loop so it closes the TDLib client now
+		session.authorizer.cancel()
 	}
 
 	session.state = SessionStateClosed

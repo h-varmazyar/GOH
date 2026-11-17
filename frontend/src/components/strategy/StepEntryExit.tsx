@@ -6,6 +6,7 @@ import { Autocomplete } from '../ui/Autocomplete';
 import { Badge } from '../ui/Badge';
 import { mockIndicators } from '../../data/mock';
 import type { Strategy } from '../../types';
+import { Alert } from '../ui/Alert';
 
 interface Props {
   strategy: Strategy;
@@ -130,19 +131,19 @@ export function StepEntryExit({ strategy, onChange }: Props) {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-lg font-semibold text-surface-900 dark:text-white">شرایط ورود و خروج</h2>
-        <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
+        <h2 className="text-h3 font-semibold text-text">شرایط ورود و خروج</h2>
+        <p className="text-body text-text-subtle mt-1">
           شرط‌ها با نام اندیکاتور شروع می‌شوند و سپس با نقطه (.) به ویژگی‌های آن دسترسی پیدا می‌کنید.
         </p>
       </div>
 
       {/* Available indicators reminder */}
       {indicatorNames.length > 0 ? (
-        <div className="p-3 rounded-lg bg-primary-50 dark:bg-primary-950/30 border border-primary-200 dark:border-primary-900">
+        <div className="p-3 rounded-md bg-selected/10 border border-selected/40">
           <div className="flex items-start gap-2">
-            <Info className="w-4 h-4 text-primary-600 dark:text-primary-300 mt-0.5 flex-shrink-0" />
+            <Info className="w-4 h-4 text-link mt-0.5 flex-shrink-0" />
             <div className="flex-1">
-              <p className="text-xs font-medium text-primary-700 dark:text-primary-200 mb-2">
+              <p className="text-caption font-medium text-link mb-2">
                 اندیکاتورهای موجود (کلیک کنید برای کپی):
               </p>
               <div className="flex flex-wrap gap-1.5">
@@ -151,7 +152,7 @@ export function StepEntryExit({ strategy, onChange }: Props) {
                     key={n}
                     type="button"
                     onClick={() => navigator.clipboard?.writeText(n)}
-                    className="px-2 py-0.5 rounded-md text-xs font-mono bg-white dark:bg-surface-800 border border-primary-300 dark:border-primary-700 text-primary-700 dark:text-primary-200 hover:bg-primary-100 dark:hover:bg-primary-900/40 transition-colors"
+                    className="px-2 py-0.5 rounded-sm text-caption font-mono bg-surface border border-selected/50 text-link hover:bg-selected/15 transition-colors"
                     dir="ltr"
                   >
                     {n}
@@ -162,11 +163,7 @@ export function StepEntryExit({ strategy, onChange }: Props) {
           </div>
         </div>
       ) : (
-        <div className="p-3 rounded-lg bg-warning-300/30 dark:bg-warning-300/10 border border-warning-300 dark:border-warning-400">
-          <p className="text-xs text-warning-600 dark:text-warning-300">
-            ابتدا در مرحله "اندیکاتورها" حداقل یک اندیکاتور اضافه کنید.
-          </p>
-        </div>
+        <Alert tone="warning">ابتدا در مرحله «اندیکاتورها» حداقل یک اندیکاتور اضافه کنید.</Alert>
       )}
 
       {/* Entry Long */}
@@ -184,8 +181,8 @@ export function StepEntryExit({ strategy, onChange }: Props) {
       />
 
       {/* Score Weights for Long */}
-      <div className="p-4 rounded-lg bg-surface-50 dark:bg-surface-800/50 border border-surface-200 dark:border-surface-700">
-        <h4 className="text-sm font-medium text-surface-700 dark:text-surface-300 mb-3">امتیازدهی ورود Long</h4>
+      <div className="p-4 rounded-md bg-surface-muted border border-border">
+        <h4 className="text-body font-medium text-text-muted mb-3">امتیازدهی ورود Long</h4>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           <Input label="حداقل" type="number" value={strategy.entry.long.score.minimum}
             onChange={(e) => updateLongScore('minimum', Number(e.target.value))}
@@ -266,17 +263,17 @@ function ConditionSection({
   color: 'success' | 'danger' | 'warning';
 }) {
   const accent = {
-    success: 'border-success-400/40',
-    danger: 'border-danger-400/40',
-    warning: 'border-warning-400/40',
+    success: 'border-success/40',
+    danger: 'border-error/40',
+    warning: 'border-warning/50',
   };
 
   return (
-    <div className={`p-4 rounded-lg border ${accent[color]} bg-surface-50/50 dark:bg-surface-800/30`}>
+    <div className={`p-4 rounded-md border ${accent[color]} bg-surface-muted `}>
       <div className="flex items-center justify-between mb-3">
         <div>
-          <h3 className="text-sm font-medium text-surface-800 dark:text-surface-200">{title}</h3>
-          <p className="text-xs text-surface-500 dark:text-surface-400 mt-0.5">{subtitle}</p>
+          <h3 className="text-body font-medium text-text">{title}</h3>
+          <p className="text-caption text-text-subtle mt-0.5">{subtitle}</p>
         </div>
         <Badge size="sm" variant={color === 'warning' ? 'warning' : color === 'danger' ? 'danger' : 'success'}>
           {conditions.length} شرط
@@ -300,19 +297,21 @@ function ConditionSection({
 
       {/* List */}
       {conditions.length === 0 ? (
-        <p className="text-xs text-surface-400 dark:text-surface-500">هنوز شرطی اضافه نشده</p>
+        <p className="text-caption text-text-subtle">هنوز شرطی اضافه نشده</p>
       ) : (
         <div className="space-y-1.5">
           {conditions.map((condition, i) => (
             <div key={i} className="flex items-center gap-2 group">
-              <span className="flex-1 text-xs font-mono p-2 rounded bg-white dark:bg-surface-800 text-surface-700 dark:text-surface-300 border border-surface-200 dark:border-surface-700" dir="ltr">
+              <span className="flex-1 text-caption font-mono p-2 rounded-sm bg-surface text-text-muted border border-border" dir="ltr">
                 {condition}
               </span>
               <button
+                type="button"
+                aria-label="حذف شرط"
                 onClick={() => onRemove(i)}
-                className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-danger-400/10 text-danger-500 transition-all"
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-error opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 hover:bg-error/8"
               >
-                <Trash2 className="w-3.5 h-3.5" />
+                <Trash2 className="h-4 w-4" aria-hidden="true" />
               </button>
             </div>
           ))}

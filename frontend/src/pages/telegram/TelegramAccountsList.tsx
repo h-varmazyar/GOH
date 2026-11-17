@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Settings, CheckCircle, AlertCircle, XCircle, Loader2 } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Settings, CheckCircle, AlertCircle, XCircle, Loader2, PlusCircle } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { telegramService, type TelegramAccountListItem } from '../../services/telegramService';
 import type { Pagination } from '../../services/airdropService';
+import { TelegramAddAccountDialog } from './TelegramAddAccountDialog';
 
 export function TelegramAccountsList() {
   const navigate = useNavigate();
@@ -14,10 +15,19 @@ export function TelegramAccountsList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+  // ?add=1 opens the add-account dialog (used by the sidebar and overview links)
+  const [searchParams, setSearchParams] = useSearchParams();
+  const showAddDialog = searchParams.get('add') === '1';
 
-  useEffect(() => {
-    fetchAccounts(page);
-  }, [page]);
+  const setShowAddDialog = (show: boolean) =>
+    setSearchParams(
+      (params) => {
+        if (show) params.set('add', '1');
+        else params.delete('add');
+        return params;
+      },
+      { replace: !show }
+    );
 
   const fetchAccounts = async (p: number) => {
     setLoading(true);
@@ -33,6 +43,10 @@ export function TelegramAccountsList() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchAccounts(page);
+  }, [page]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -68,11 +82,11 @@ export function TelegramAccountsList() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'ready':
-        return <CheckCircle className="w-5 h-5 text-success-500" />;
+        return <CheckCircle className="w-5 h-5 text-success" />;
       case 'needs_auth':
-        return <AlertCircle className="w-5 h-5 text-warning-500" />;
+        return <AlertCircle className="w-5 h-5 text-warning-text" />;
       case 'disconnected':
-        return <XCircle className="w-5 h-5 text-danger-500" />;
+        return <XCircle className="w-5 h-5 text-error" />;
       default:
         return null;
     }
@@ -83,10 +97,11 @@ export function TelegramAccountsList() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-surface-900 dark:text-white">لیست اکانت‌ها</h2>
-          <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">مدیریت اکانت‌های تلگرام متصل</p>
+          <h2 className="text-h3 font-semibold text-text">لیست اکانت‌ها</h2>
+          <p className="text-body text-text-subtle mt-1">مدیریت اکانت‌های تلگرام متصل</p>
         </div>
-        <Button onClick={() => navigate('/telegram/add')} size="sm">
+        <Button onClick={() => setShowAddDialog(true)} size="sm">
+          <PlusCircle className="w-4 h-4" />
           افزودن اکانت جدید
         </Button>
       </div>
@@ -94,7 +109,7 @@ export function TelegramAccountsList() {
       {/* Error */}
       {error && (
         <Card>
-          <p className="text-sm text-danger-500">{error}</p>
+          <p className="text-body text-error">{error}</p>
         </Card>
       )}
 
@@ -103,31 +118,31 @@ export function TelegramAccountsList() {
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800/50">
-                <th className="text-center px-4 py-3 text-xs font-medium text-surface-500 dark:text-surface-400">وضعیت</th>
-                <th className="text-right px-4 py-3 text-xs font-medium text-surface-500 dark:text-surface-400">نام کاربری</th>
-                <th className="text-right px-4 py-3 text-xs font-medium text-surface-500 dark:text-surface-400">نام اکانت</th>
-                <th className="text-center px-4 py-3 text-xs font-medium text-surface-500 dark:text-surface-400">نقش</th>
-                <th className="text-center px-4 py-3 text-xs font-medium text-surface-500 dark:text-surface-400">شماره موبایل</th>
-                <th className="text-center px-4 py-3 text-xs font-medium text-surface-500 dark:text-surface-400">تنظیمات</th>
+              <tr className="border-b border-border bg-surface-muted">
+                <th className="text-center px-4 py-3 text-label text-text-muted">وضعیت</th>
+                <th className="text-start px-4 py-3 text-label text-text-muted">نام کاربری</th>
+                <th className="text-start px-4 py-3 text-label text-text-muted">نام اکانت</th>
+                <th className="text-center px-4 py-3 text-label text-text-muted">نقش</th>
+                <th className="text-center px-4 py-3 text-label text-text-muted">شماره موبایل</th>
+                <th className="text-center px-4 py-3 text-label text-text-muted">تنظیمات</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
                   <td colSpan={6} className="px-4 py-8 text-center">
-                    <Loader2 className="w-5 h-5 animate-spin mx-auto text-surface-400" />
+                    <Loader2 className="w-5 h-5 animate-spin mx-auto text-text-subtle" />
                   </td>
                 </tr>
               ) : accounts.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-sm text-surface-500 dark:text-surface-400">
+                  <td colSpan={6} className="px-4 py-8 text-center text-body text-text-subtle">
                     هیچ اکانتی وجود ندارد
                   </td>
                 </tr>
               ) : (
                 accounts.map((account) => (
-                  <tr key={account.ID} className="border-b border-surface-100 dark:border-surface-700 hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-colors">
+                  <tr key={account.ID} className="border-b border-border hover:bg-surface-muted transition-colors">
                     <td className="px-4 py-3 text-center">
                       <div className="flex items-center justify-center gap-2">
                         {getStatusIcon(account.Status)}
@@ -135,12 +150,12 @@ export function TelegramAccountsList() {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-sm font-medium text-surface-900 dark:text-white">
+                      <span className="text-body font-medium text-text">
                         {account.Username ? `@${account.Username}` : '—'}
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-sm text-surface-700 dark:text-surface-300">
+                      <span className="text-body text-text-muted">
                         {account.AccountName || '—'}
                       </span>
                     </td>
@@ -148,7 +163,7 @@ export function TelegramAccountsList() {
                       <Badge variant="primary" size="sm">{getRoleLabel(account.Role)}</Badge>
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <span className="text-sm text-surface-600 dark:text-surface-400" dir="ltr">
+                      <span className="text-body text-text-muted" dir="ltr">
                         {account.Mobile || '—'}
                       </span>
                     </td>
@@ -171,7 +186,7 @@ export function TelegramAccountsList() {
 
         {/* Pagination */}
         {pagination && pagination.total_pages > 1 && (
-          <div className="flex items-center justify-center gap-2 px-4 py-3 border-t border-surface-200 dark:border-surface-700">
+          <div className="flex items-center justify-center gap-2 px-4 py-3 border-t border-border">
             <Button
               variant="ghost"
               size="sm"
@@ -180,7 +195,7 @@ export function TelegramAccountsList() {
             >
               قبلی
             </Button>
-            <span className="text-sm text-surface-600 dark:text-surface-400">
+            <span className="text-body text-text-muted">
               صفحه {pagination.page} از {pagination.total_pages}
             </span>
             <Button
@@ -194,6 +209,17 @@ export function TelegramAccountsList() {
           </div>
         )}
       </Card>
+
+      {showAddDialog && (
+        <TelegramAddAccountDialog
+          onClose={() => {
+            setShowAddDialog(false);
+            // A QR login is persisted just after it reports ready, so refresh once more on close
+            fetchAccounts(page);
+          }}
+          onAdded={() => fetchAccounts(page)}
+        />
+      )}
     </div>
   );
 }

@@ -29,3 +29,14 @@ func (r *TimeframeRepository) ReturnByID(ctx context.Context, id uint) (*models.
 
 	return tf, r.db.Model(&models.Timeframe{}).Where("id = ?", id).First(&tf).Error
 }
+
+func (r *TimeframeRepository) Create(ctx context.Context, timeframe *models.Timeframe) error {
+	return r.db.WithContext(ctx).Create(timeframe).Error
+}
+
+// ListByProvider returns the timeframes of a provider.
+func (r *TimeframeRepository) ListByProvider(ctx context.Context, providerID uint) ([]models.Timeframe, error) {
+	timeframes := make([]models.Timeframe, 0)
+	err := r.db.WithContext(ctx).Where("provider_id = ?", providerID).Order("duration, id").Find(&timeframes).Error
+	return timeframes, err
+}

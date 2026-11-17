@@ -53,6 +53,7 @@ func (h *Handler) CreateAccount(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, createAccountResp{
 		SessionID: resp.SessionID,
 		State:     resp.State,
+		QrLink:    resp.QrLink,
 	})
 }
 
@@ -225,18 +226,19 @@ func (h *Handler) ReAuthenticate(ctx *gin.Context) {
 // @Description  Get the current state of a telegram session
 // @Tags         TelegramV2
 // @Produce      json
-// @Param        session_id path string true "Session ID"
+// @Param        id path string true "Session ID"
 // @Success      200 {object} stateResp
 // @Failure      404 {object} errorResp
-// @Router       /v2/telegram/sessions/{session_id}/state [get]
+// @Router       /v2/telegram/sessions/{id}/state [get]
 func (h *Handler) GetState(ctx *gin.Context) {
-	sessionID := ctx.Param("session_id")
+	// The route is registered as /sessions/:id/state
+	sessionID := ctx.Param("id")
 	if sessionID == "" {
 		ctx.JSON(http.StatusBadRequest, errorResp{Error: "session_id is required"})
 		return
 	}
 
-	state, err := h.service.GetSessionState(ctx, sessionID)
+	resp, err := h.service.GetSessionState(ctx, sessionID)
 	if err != nil {
 		ctx.JSON(httpStatusFromError(err), errorResp{Error: err.Error()})
 		return
@@ -244,7 +246,8 @@ func (h *Handler) GetState(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, stateResp{
 		SessionID: sessionID,
-		State:     state,
+		State:     resp.State,
+		QrLink:    resp.QrLink,
 	})
 }
 

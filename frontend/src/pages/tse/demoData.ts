@@ -31,16 +31,6 @@ export interface PickCandidate {
   reason: string;
 }
 
-export interface Indicator {
-  id: string;
-  name: string;
-  code: string;
-  category: 'روند' | 'مومنتوم' | 'حجم' | 'نوسان';
-  timeframe: string;
-  enabled: boolean;
-  parameters: Record<string, number>;
-}
-
 export interface MarketItem {
   id: string;
   symbol: string;
@@ -108,22 +98,6 @@ export const analyses: MarketAnalysis[] = dates.map((date, index) => {
     sellCandidates,
   };
 });
-
-const indicatorSeeds: Omit<Indicator, 'id'>[] = [
-  { name: 'شاخص قدرت نسبی', code: 'RSI', category: 'مومنتوم', timeframe: 'روزانه', enabled: true, parameters: { period: 14, overbought: 70, oversold: 30 } },
-  { name: 'همگرایی/واگرایی میانگین', code: 'MACD', category: 'روند', timeframe: 'روزانه', enabled: true, parameters: { fast: 12, slow: 26, signal: 9 } },
-  { name: 'میانگین متحرک نمایی', code: 'EMA', category: 'روند', timeframe: 'روزانه', enabled: true, parameters: { period: 21 } },
-  { name: 'باندهای بولینگر', code: 'BB', category: 'نوسان', timeframe: 'روزانه', enabled: true, parameters: { period: 20, deviation: 2 } },
-  { name: 'میانگین دامنه واقعی', code: 'ATR', category: 'نوسان', timeframe: 'روزانه', enabled: false, parameters: { period: 14 } },
-  { name: 'حجم متوازن', code: 'OBV', category: 'حجم', timeframe: 'روزانه', enabled: true, parameters: { smoothing: 5 } },
-  { name: 'استوکاستیک', code: 'STOCH', category: 'مومنتوم', timeframe: '۶۰ دقیقه', enabled: true, parameters: { k: 14, d: 3, smooth: 3 } },
-  { name: 'شاخص جریان نقدینگی', code: 'MFI', category: 'حجم', timeframe: 'روزانه', enabled: true, parameters: { period: 14 } },
-  { name: 'ابر ایچیموکو', code: 'ICHIMOKU', category: 'روند', timeframe: 'روزانه', enabled: false, parameters: { conversion: 9, base: 26, span: 52 } },
-  { name: 'شاخص قدرت روند', code: 'ADX', category: 'روند', timeframe: 'هفتگی', enabled: true, parameters: { period: 14, threshold: 25 } },
-  { name: 'کانال کلتنر', code: 'KC', category: 'نوسان', timeframe: 'روزانه', enabled: false, parameters: { period: 20, multiplier: 2 } },
-  { name: 'نرخ تغییر قیمت', code: 'ROC', category: 'مومنتوم', timeframe: 'روزانه', enabled: true, parameters: { period: 12 } },
-];
-export const initialIndicators: Indicator[] = indicatorSeeds.map((item, index) => ({ ...item, id: `indicator-${index + 1}` }));
 
 const marketSeeds: Omit<MarketItem, 'id'>[] = [
   { symbol: 'فولاد', name: 'فولاد مبارکه اصفهان', industry: 'فلزات اساسی', board: 'بورس - بازار اول', price: 4830, change: 2.4, volume: 328, active: true },

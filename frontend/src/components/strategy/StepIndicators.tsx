@@ -79,7 +79,7 @@ export function StepIndicators({ strategy, onChange }: Props) {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-surface-900 dark:text-white">اندیکاتورها</h2>
+        <h2 className="text-h3 font-semibold text-text">اندیکاتورها</h2>
         <Button variant="secondary" size="sm" onClick={() => setShowAdd(!showAdd)}>
           <Plus className="w-4 h-4" />
           افزودن
@@ -88,7 +88,7 @@ export function StepIndicators({ strategy, onChange }: Props) {
 
       {/* Add Form */}
       {showAdd && (
-        <Card className="border-primary-200 dark:border-primary-800 bg-primary-50/50 dark:bg-primary-950/20">
+        <Card className="border-selected/40 bg-selected/8">
           <div className="space-y-4">
             <div className="grid sm:grid-cols-3 gap-3">
               <Input
@@ -122,7 +122,7 @@ export function StepIndicators({ strategy, onChange }: Props) {
             {/* Dynamic configs */}
             {selectedIndicatorDef && selectedIndicatorDef.configs.length > 0 && (
               <div>
-                <p className="text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">تنظیمات</p>
+                <p className="text-body font-medium text-text-muted mb-2">تنظیمات</p>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {selectedIndicatorDef.configs.map((config) => (
                     <div key={config.key}>
@@ -163,7 +163,7 @@ export function StepIndicators({ strategy, onChange }: Props) {
 
       {/* Indicators List */}
       {Object.keys(strategy.indicators).length === 0 ? (
-        <p className="text-sm text-surface-500 dark:text-surface-400 text-center py-6">
+        <p className="text-body text-text-subtle text-center py-6">
           هنوز اندیکاتوری اضافه نشده. روی "افزودن" کلیک کنید.
         </p>
       ) : (
@@ -171,24 +171,26 @@ export function StepIndicators({ strategy, onChange }: Props) {
           {Object.entries(strategy.indicators).map(([key, ind]) => (
             <div
               key={key}
-              className="p-3 rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800/50"
+              className="p-3 rounded-md border border-border bg-surface-muted"
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-surface-900 dark:text-white">{key}</span>
+                  <span className="text-body font-medium text-text">{key}</span>
                   <Badge size="sm">{ind.type}</Badge>
                 </div>
                 <button
+                  type="button"
+                  aria-label={`حذف ${key}`}
                   onClick={() => handleRemove(key)}
-                  className="p-1 rounded hover:bg-danger-400/10 text-danger-500 transition-colors"
+                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-error transition-colors hover:bg-error/8"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
-              <p className="text-xs text-surface-500 dark:text-surface-400 mb-1">تایم‌فریم: {ind.timeframe}</p>
+              <p className="text-caption text-text-subtle mb-1">تایم‌فریم: {ind.timeframe}</p>
               <div className="flex flex-wrap gap-1">
                 {Object.entries(ind.configs).map(([ck, cv]) => (
-                  <span key={ck} className="text-xs bg-surface-200 dark:bg-surface-700 px-1.5 py-0.5 rounded">
+                  <span key={ck} className="text-caption bg-border px-1.5 py-0.5 rounded-sm">
                     {ck}: {String(cv)}
                   </span>
                 ))}

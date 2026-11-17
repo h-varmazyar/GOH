@@ -68,8 +68,8 @@ export function BackendConfigsPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-surface-900 dark:text-white">کانفیگ‌های Backend</h1>
-          <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">نمایش و بروزرسانی تنظیمات داینامیک سمت سرور</p>
+          <h1 className="text-h3 font-semibold text-text">کانفیگ‌های Backend</h1>
+          <p className="text-body text-text-subtle mt-1">نمایش و بروزرسانی تنظیمات داینامیک سمت سرور</p>
         </div>
         <div className="flex flex-wrap items-end gap-3">
           <div className="w-full sm:w-72">
@@ -88,24 +88,24 @@ export function BackendConfigsPage() {
         </div>
       </div>
 
-      {error && <Card><p className="text-sm text-danger-500">{error}</p></Card>}
-      {success && <Card><p className="text-sm text-success-500">{success}</p></Card>}
+      {error && <Card><p className="text-body text-error">{error}</p></Card>}
+      {success && <Card><p className="text-body text-success">{success}</p></Card>}
 
       <Card padding="none">
         {loading ? (
-          <div className="py-12"><Loader2 className="w-6 h-6 animate-spin mx-auto text-surface-400" /></div>
+          <div className="py-12"><Loader2 className="w-6 h-6 animate-spin mx-auto text-text-subtle" /></div>
         ) : !loadedSection ? (
-          <p className="py-12 text-center text-sm text-surface-500">برای مشاهده تنظیمات، نام بخش را وارد کنید</p>
+          <p className="py-12 text-center text-body text-text-subtle">برای مشاهده تنظیمات، نام بخش را وارد کنید</p>
         ) : configs.length === 0 ? (
-          <p className="py-12 text-center text-sm text-surface-500">کانفیگی از سرور دریافت نشد</p>
+          <p className="py-12 text-center text-body text-text-subtle">کانفیگی از سرور دریافت نشد</p>
         ) : (
-          <div className="divide-y divide-surface-200 dark:divide-surface-700">
+          <div className="divide-y divide-border">
             {configs.map((config) => (
               <div key={config.key} className="p-4 grid gap-3 lg:grid-cols-[minmax(180px,1fr)_minmax(300px,2fr)_auto] lg:items-start">
                 <div>
-                  <p className="font-medium text-surface-900 dark:text-white" dir="ltr">{config.key}</p>
-                  {config.description && <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">{config.description}</p>}
-                  {config.type && <span className="inline-block mt-2 text-xs text-surface-400" dir="ltr">{config.type}</span>}
+                  <p className="font-medium text-text" dir="ltr">{config.key}</p>
+                  {config.description && <p className="mt-1 text-caption text-text-subtle">{config.description}</p>}
+                  {config.type && <span className="inline-block mt-2 text-caption text-text-subtle" dir="ltr">{config.type}</span>}
                 </div>
                 <ConfigValueInput
                   config={config}

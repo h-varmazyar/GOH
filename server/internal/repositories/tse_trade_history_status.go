@@ -2,7 +2,6 @@ package repositories
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strings"
 	"time"
@@ -10,6 +9,7 @@ import (
 	"github.com/h-varmazyar/gatec/internal/consts"
 	"github.com/h-varmazyar/gatec/internal/models"
 	"github.com/h-varmazyar/gatec/pkg/paginator"
+	"github.com/h-varmazyar/gatec/pkg/pgnotify"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -19,10 +19,21 @@ const sqlDate = "2006-01-02"
 // TradeHistoryStatusRepository records the trade history fetch results in the
 // daily closing price rows, which are the trading days of each TSE market, and
 // stores the queued trade history jobs.
-type TradeHistoryStatusRepository struct{ db *gorm.DB }
+type TradeHistoryStatusRepository struct {
+	db   *gorm.DB
+	jobs *JobQueue[models.TSETradeHistoryJob]
+}
+
+// Postgres channels of the trade history jobs: TradeHistoryJobChannel wakes
+// the tse-trade-history workers, and TradeHistoryJobFinishedChannel is sent
+// when a job finished, which wakes the queues whose jobs wait for it.
+const (
+	TradeHistoryJobChannel         = "tse_trade_history_jobs"
+	TradeHistoryJobFinishedChannel = "tse_trade_history_jobs_finished"
+)
 
 func NewTradeHistoryStatusRepository(db *gorm.DB) *TradeHistoryStatusRepository {
-	return &TradeHistoryStatusRepository{db: db}
+	return &TradeHistoryStatusRepository{db: db, jobs: NewJobQueue[models.TSETradeHistoryJob](db, TradeHistoryJobChannel, nil)}
 }
 
 // tradeDaysFrom joins the daily closing prices with their candles; candle times
@@ -400,13 +411,13 @@ func (r *TradeHistoryStatusRepository) CountWithoutDays(ctx context.Context, fil
 
 // --- Jobs ---
 
+// CreateJob stores a queued job and wakes the workers.
 func (r *TradeHistoryStatusRepository) CreateJob(ctx context.Context, job *models.TSETradeHistoryJob) error {
-	return r.db.WithContext(ctx).Create(job).Error
+	return r.jobs.Create(ctx, job)
 }
 
 func (r *TradeHistoryStatusRepository) GetJob(ctx context.Context, id uint) (*models.TSETradeHistoryJob, error) {
-	job := new(models.TSETradeHistoryJob)
-	return job, r.db.WithContext(ctx).First(job, id).Error
+	return r.jobs.Get(ctx, id)
 }
 
 // TradeHistoryJobFilter selects jobs in the panel; empty fields match everything.
@@ -452,79 +463,39 @@ func (r *TradeHistoryStatusRepository) HasActiveAllMarketsJob(ctx context.Contex
 // ClaimJob marks the oldest pending job as running by worker and returns it,
 // or nil when no job is pending. Workers never claim the same job.
 func (r *TradeHistoryStatusRepository) ClaimJob(ctx context.Context, worker string) (*models.TSETradeHistoryJob, error) {
-	var claimed *models.TSETradeHistoryJob
-	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		job := new(models.TSETradeHistoryJob)
-		err := tx.Clauses(clause.Locking{Strength: "UPDATE", Options: "SKIP LOCKED"}).
-			Where("status = ?", consts.TSETradeHistoryJobPending).Order("id ASC").Limit(1).Find(job).Error
-		if err != nil || job.ID == 0 {
-			return err
-		}
-		now := time.Now()
-		columns := map[string]any{
-			"status": consts.TSETradeHistoryJobRunning, "worker": worker, "heartbeat_at": now, "updated_at": now, "error": "",
-		}
-		if job.StartedAt == nil {
-			columns["started_at"] = now
-		}
-		if err := tx.Model(job).UpdateColumns(columns).Error; err != nil {
-			return err
-		}
-		claimed = job
-		return nil
-	})
-	return claimed, err
+	return r.jobs.Claim(ctx, worker)
 }
 
 // CancelJob cancels a pending job, or asks the worker of a running job to stop
 // it. It reports whether the job was active.
 func (r *TradeHistoryStatusRepository) CancelJob(ctx context.Context, id uint) (bool, error) {
-	now := time.Now()
-	result := r.db.WithContext(ctx).Model(&models.TSETradeHistoryJob{}).
-		Where("id = ? AND status = ?", id, consts.TSETradeHistoryJobPending).
-		UpdateColumns(map[string]any{"status": consts.TSETradeHistoryJobCanceled, "finished_at": now, "updated_at": now})
-	if result.Error != nil || result.RowsAffected > 0 {
-		return result.RowsAffected > 0, result.Error
-	}
-	result = r.db.WithContext(ctx).Model(&models.TSETradeHistoryJob{}).
-		Where("id = ? AND status = ?", id, consts.TSETradeHistoryJobRunning).
-		UpdateColumns(map[string]any{"cancel_requested": true, "updated_at": now})
-	return result.RowsAffected > 0, result.Error
+	return r.jobs.Cancel(ctx, id)
 }
 
 // RequeueStaleJobs queues again the running jobs without a heartbeat since before.
 func (r *TradeHistoryStatusRepository) RequeueStaleJobs(ctx context.Context, before time.Time) (int64, error) {
-	result := r.db.WithContext(ctx).Model(&models.TSETradeHistoryJob{}).
-		Where("status = ? AND (heartbeat_at IS NULL OR heartbeat_at < ?)", consts.TSETradeHistoryJobRunning, before).
-		UpdateColumns(map[string]any{"status": consts.TSETradeHistoryJobPending, "updated_at": time.Now()})
-	return result.RowsAffected, result.Error
+	return r.jobs.RequeueStale(ctx, before)
 }
 
 // OldestRunningHeartbeat returns the oldest heartbeat of the running jobs; nil
 // when no job is running.
 func (r *TradeHistoryStatusRepository) OldestRunningHeartbeat(ctx context.Context) (*time.Time, error) {
-	var oldest sql.NullTime
-	err := r.db.WithContext(ctx).Model(&models.TSETradeHistoryJob{}).
-		Where("status = ?", consts.TSETradeHistoryJobRunning).
-		Select("MIN(heartbeat_at)").Scan(&oldest).Error
-	if err != nil || !oldest.Valid {
-		return nil, err
-	}
-	return &oldest.Time, nil
+	return r.jobs.OldestRunningHeartbeat(ctx)
 }
 
 // UpdateOwnedJob updates a job only while worker runs it. owned is false when
 // the job was queued again or claimed by another worker; cancelRequested
 // reports a cancel request of the panel.
 func (r *TradeHistoryStatusRepository) UpdateOwnedJob(ctx context.Context, id uint, worker string, columns map[string]any) (owned, cancelRequested bool, err error) {
-	columns["updated_at"] = time.Now()
-	var rows []models.TSETradeHistoryJob
-	err = r.db.WithContext(ctx).Model(&rows).
-		Clauses(clause.Returning{Columns: []clause.Column{{Name: "id"}, {Name: "cancel_requested"}}}).
-		Where("id = ? AND worker = ? AND status = ?", id, worker, consts.TSETradeHistoryJobRunning).
-		UpdateColumns(columns).Error
-	if err != nil || len(rows) == 0 {
-		return false, false, err
-	}
-	return true, rows[0].CancelRequested, nil
+	return r.jobs.UpdateOwned(ctx, id, worker, columns)
+}
+
+// NotifyJobs wakes the tse-trade-history workers.
+func (r *TradeHistoryStatusRepository) NotifyJobs(ctx context.Context) error {
+	return r.jobs.Notify(ctx)
+}
+
+// NotifyJobFinished wakes the queues whose jobs wait for a trade history job.
+func (r *TradeHistoryStatusRepository) NotifyJobFinished(ctx context.Context) error {
+	return pgnotify.Notify(r.db.WithContext(ctx), TradeHistoryJobFinishedChannel)
 }

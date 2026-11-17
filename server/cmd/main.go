@@ -21,6 +21,8 @@ import (
 	airdropService "github.com/h-varmazyar/gatec/internal/services/airdrop"
 	applogService "github.com/h-varmazyar/gatec/internal/services/applog"
 	authService "github.com/h-varmazyar/gatec/internal/services/auth"
+	candleService "github.com/h-varmazyar/gatec/internal/services/candles"
+	indicatorService "github.com/h-varmazyar/gatec/internal/services/indicators"
 	dynamicConfigService "github.com/h-varmazyar/gatec/internal/services/dynamicconfig"
 	messagingService "github.com/h-varmazyar/gatec/internal/services/messaging"
 	proxyService "github.com/h-varmazyar/gatec/internal/services/proxy"
@@ -81,6 +83,8 @@ func main() {
 			dep.Service.DynamicConfig,
 			dep.Service.TSEMarket,
 			dep.Service.TradeHistory,
+			dep.Service.Candles,
+			dep.Service.Indicators,
 		).Serve(ctx, serverAddress)
 		if err != nil {
 			panic(err)
@@ -129,6 +133,8 @@ type depencencies struct {
 		DynamicConfig  *dynamicConfigService.Service
 		TSEMarket      *tseMarketService.Service
 		TradeHistory   *tradeHistoryService.Service
+		Candles        *candleService.Service
+		Indicators     *indicatorService.Service
 	}
 	Adapters struct {
 		Nobitex *nobitex.Adapter
@@ -203,6 +209,7 @@ func initializeDependencies(ctx context.Context, cfg *configs.Config) (*depencen
 		&models.TSEIndicatorSnapshot{},
 		&models.DynamicConfig{},
 		&models.TSETradeHistoryJob{},
+		&models.CandleJob{},
 	); err != nil {
 		return nil, fmt.Errorf("migration failed: %w", err)
 	}
@@ -252,6 +259,22 @@ func initializeDependencies(ctx context.Context, cfg *configs.Config) (*depencen
 		repositories.NewTradeHistoryStatusRepository(dep.DB),
 		dep.Repositories.TSETradeHistory,
 	)
+
+	candleStore, err := repositories.NewMarketCandleRepository(dep.ClickHouse)
+	if err != nil {
+		return nil, err
+	}
+	if err = candleStore.EnsureSchema(ctx); err != nil {
+		return nil, fmt.Errorf("initialize candle repository: %w", err)
+	}
+	dep.Service.Candles = candleService.NewService(
+		cfg.Workers.CandleBuilder,
+		repositories.NewCandleJobRepository(dep.DB),
+		dep.Repositories.Provider,
+		dep.Repositories.Timeframe,
+		candleStore,
+	)
+	dep.Service.Indicators = indicatorService.NewService(dep.Repositories.Indicator, dep.Repositories.TSEMarket, dep.Service.Candles)
 
 	clickHouseReady = true
 	return dep, nil

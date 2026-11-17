@@ -4,15 +4,18 @@
 //
 //	go run ./cmd/worker candle-polling
 //	go run ./cmd/worker candle-polling market-sync
+//	go run ./cmd/worker job-scheduler tse-trade-history candle-builder
 package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/h-varmazyar/gatec/configs"
 	"github.com/h-varmazyar/gatec/internal/consts"
@@ -61,7 +64,7 @@ func main() {
 	var ch *clickhouseClient.Client
 	needsTradeHistory := false
 	for _, name := range names {
-		if name == "tse-trade-history" ||
+		if name == "tse-trade-history" || name == "candle-builder" ||
 			(name == "tse-market-data-sync" &&
 				(cfg.Workers.TSEMarketDataSync.Mode == "" || cfg.Workers.TSEMarketDataSync.Mode == consts.TSEMarketDataToday)) {
 			needsTradeHistory = true
@@ -102,7 +105,19 @@ func main() {
 	if err := factory.StopAllWorkers(); err != nil {
 		logrus.WithError(err).Error("stop workers")
 	}
+	// Workers finish on their way out, such as job workers queueing their
+	// running jobs again, so the process waits for them for a while.
+	waitCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+	defer cancel()
+	for _, name := range names {
+		if err := factory.WaitWorker(waitCtx, name); errors.Is(err, context.DeadlineExceeded) {
+			logrus.WithField("worker", name).Warn("worker did not stop in time")
+		}
+	}
 }
+
+// shutdownTimeout bounds the wait for the workers to stop.
+const shutdownTimeout = 30 * time.Second
 
 func parseWorkerArgs(args []string) ([]string, string, string, error) {
 	names := make([]string, 0, len(args))

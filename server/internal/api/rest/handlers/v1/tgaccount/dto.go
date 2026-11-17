@@ -3,7 +3,7 @@ package tgaccount
 // --- Request DTOs ---
 
 type createAccountReq struct {
-	SessionType string `json:"session_type" binding:"required" example:"client"`
+	SessionType string `json:"session_type" binding:"required" example:"client" enums:"client,bot,qr"`
 }
 
 type submitPhoneReq struct {
@@ -40,11 +40,13 @@ type reAuthReq struct {
 type createAccountResp struct {
 	SessionID string `json:"session_id" example:"550e8400-e29b-41d4-a716-446655440000"`
 	State     string `json:"next_step" example:"wait_phone"`
+	QrLink    string `json:"qr_link,omitempty" example:"tg://login?token=AQID"`
 }
 
 type stateResp struct {
 	SessionID string `json:"session_id" example:"550e8400-e29b-41d4-a716-446655440000"`
 	State     string `json:"next_step" example:"wait_code"`
+	QrLink    string `json:"qr_link,omitempty" example:"tg://login?token=AQID"`
 }
 
 type errorResp struct {

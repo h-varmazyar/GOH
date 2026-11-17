@@ -14,6 +14,7 @@ import {
   type CreateProxyPayload,
 } from '../../services/telegramService';
 import type { Pagination } from '../../services/airdropService';
+import { Alert } from '../../components/ui/Alert';
 
 type AddMethod = 'manual' | 'clipboard';
 
@@ -313,8 +314,8 @@ export function TelegramProxiesList() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-surface-900 dark:text-white">لیست پراکسی‌ها</h2>
-            <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">مدیریت پراکسی‌های تلگرام</p>
+            <h2 className="text-h3 font-semibold text-text">لیست پراکسی‌ها</h2>
+            <p className="text-body text-text-subtle mt-1">مدیریت پراکسی‌های تلگرام</p>
           </div>
           <Button onClick={() => setShowCreateModal(true)} size="sm">
             <Plus className="w-4 h-4" />
@@ -323,9 +324,7 @@ export function TelegramProxiesList() {
         </div>
 
         {error && (
-          <div className="p-3 rounded-lg bg-danger-50 dark:bg-danger-950/20 border border-danger-200 dark:border-danger-800">
-            <p className="text-sm text-danger-700 dark:text-danger-300">{error}</p>
-          </div>
+          <Alert tone="error">{error}</Alert>
         )}
 
         {/* Proxies Table */}
@@ -333,25 +332,25 @@ export function TelegramProxiesList() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800/50">
-                  <th className="text-center px-4 py-3 text-xs font-medium text-surface-500 dark:text-surface-400">نوع</th>
-                  <th className="text-right px-4 py-3 text-xs font-medium text-surface-500 dark:text-surface-400">آدرس سرور</th>
-                  <th className="text-center px-4 py-3 text-xs font-medium text-surface-500 dark:text-surface-400">پورت</th>
-                  <th className="text-center px-4 py-3 text-xs font-medium text-surface-500 dark:text-surface-400">وضعیت</th>
-                  <th className="text-center px-4 py-3 text-xs font-medium text-surface-500 dark:text-surface-400">آخرین بررسی</th>
-                  <th className="text-center px-4 py-3 text-xs font-medium text-surface-500 dark:text-surface-400">عملیات</th>
+                <tr className="border-b border-border bg-surface-muted">
+                  <th className="text-center px-4 py-3 text-label text-text-muted">نوع</th>
+                  <th className="text-start px-4 py-3 text-label text-text-muted">آدرس سرور</th>
+                  <th className="text-center px-4 py-3 text-label text-text-muted">پورت</th>
+                  <th className="text-center px-4 py-3 text-label text-text-muted">وضعیت</th>
+                  <th className="text-center px-4 py-3 text-label text-text-muted">آخرین بررسی</th>
+                  <th className="text-center px-4 py-3 text-label text-text-muted">عملیات</th>
                 </tr>
               </thead>
               <tbody>
                 {isLoading ? (
                   <tr>
                     <td colSpan={6} className="px-4 py-8 text-center">
-                      <Loader2 className="w-5 h-5 animate-spin mx-auto text-surface-400" />
+                      <Loader2 className="w-5 h-5 animate-spin mx-auto text-text-subtle" />
                     </td>
                   </tr>
                 ) : proxies.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-sm text-surface-500 dark:text-surface-400">
+                    <td colSpan={6} className="px-4 py-8 text-center text-body text-text-subtle">
                       هیچ پراکسی‌ای وجود ندارد
                     </td>
                   </tr>
@@ -360,18 +359,18 @@ export function TelegramProxiesList() {
                     <tr
                       key={proxy.ID}
                       onClick={() => setSelectedProxy(proxy)}
-                      className="border-b border-surface-100 dark:border-surface-700 hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-colors cursor-pointer"
+                      className="border-b border-border hover:bg-surface-muted transition-colors cursor-pointer"
                     >
                       <td className="px-4 py-3 text-center">
                         {getTypeBadge(proxy.type)}
                       </td>
                       <td className="px-4 py-3">
-                        <span className="text-sm font-medium text-surface-900 dark:text-white font-mono" dir="ltr">
+                        <span className="text-body font-medium text-text font-mono" dir="ltr">
                           {proxy.server}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <span className="text-sm text-surface-600 dark:text-surface-400 font-mono" dir="ltr">
+                        <span className="text-body text-text-muted font-mono" dir="ltr">
                           {proxy.port}
                         </span>
                       </td>
@@ -379,7 +378,7 @@ export function TelegramProxiesList() {
                         {getStatusBadge(proxy.status, proxy.is_enable)}
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <span className="text-xs text-surface-500 dark:text-surface-400">
+                        <span className="text-caption text-text-subtle">
                           {formatDate(proxy.last_checked_at)}
                         </span>
                       </td>
@@ -389,7 +388,7 @@ export function TelegramProxiesList() {
                           size="sm"
                           onClick={(e) => handleDelete(proxy.ID, e)}
                           disabled={isDeleting === proxy.ID}
-                          className="text-danger-500 hover:text-danger-700"
+                          className="text-error hover:underline"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -403,8 +402,8 @@ export function TelegramProxiesList() {
 
           {/* Pagination */}
           {pagination && pagination.total_pages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t border-surface-200 dark:border-surface-700">
-              <p className="text-xs text-surface-500 dark:text-surface-400">
+            <div className="flex items-center justify-between px-4 py-3 border-t border-border">
+              <p className="text-caption text-text-subtle">
                 صفحه {pagination.page} از {pagination.total_pages} (مجموع: {pagination.total_items})
               </p>
               <div className="flex items-center gap-1">
@@ -416,7 +415,7 @@ export function TelegramProxiesList() {
                 >
                   <ChevronRight className="w-4 h-4" />
                 </Button>
-                <span className="px-3 py-1 text-sm text-surface-700 dark:text-surface-300">
+                <span className="px-3 py-1 text-body text-text-muted">
                   {pagination.page}
                 </span>
                 <Button
@@ -435,16 +434,16 @@ export function TelegramProxiesList() {
 
       {/* Detail Dialog */}
       {selectedProxy && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50" onClick={() => {
+        <div role="dialog" aria-modal="true" className="fixed inset-0 z-(--z-modal) flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-scrim" onClick={() => {
             setSelectedProxy(null);
             setDialogError('');
           }} />
-          <div className="relative bg-white dark:bg-surface-900 rounded-xl shadow-xl w-full max-w-md border border-surface-200 dark:border-surface-700">
-            <div className="flex items-center justify-between p-4 border-b border-surface-200 dark:border-surface-700">
+          <div className="relative bg-surface rounded-xl shadow-lg w-full max-w-md border border-border">
+            <div className="flex items-center justify-between p-4 border-b border-border">
               <div className="flex items-center gap-2">
-                <Info className="w-5 h-5 text-primary-500" />
-                <h3 className="text-lg font-semibold text-surface-900 dark:text-white">
+                <Info className="w-5 h-5 text-link" />
+                <h3 className="text-h3 font-semibold text-text">
                   جزئیات پراکسی #{selectedProxy.ID}
                 </h3>
               </div>
@@ -453,17 +452,15 @@ export function TelegramProxiesList() {
                   setSelectedProxy(null);
                   setDialogError('');
                 }}
-                className="p-1 rounded hover:bg-surface-100 dark:hover:bg-surface-800"
+                className="p-1 rounded-sm hover:bg-surface-muted"
               >
-                <X className="w-5 h-5 text-surface-500" />
+                <X className="w-5 h-5 text-text-subtle" />
               </button>
             </div>
             <div className="p-4 space-y-3">
               {/* Detail Dialog Error */}
               {dialogError && selectedProxy && selectedProxy.ID === isDeleting && (
-                <div className="p-3 rounded-lg bg-danger-50 dark:bg-danger-950/20 border border-danger-200 dark:border-danger-800 mb-3">
-                  <p className="text-sm text-danger-700 dark:text-danger-300">{dialogError}</p>
-                </div>
+                <Alert tone="error" className="mb-3">{dialogError}</Alert>
               )}
 
               <DetailRow label="نوع" value={getTypeBadge(selectedProxy.type)} />
@@ -483,7 +480,7 @@ export function TelegramProxiesList() {
                 <DetailRow
                   label="Secret"
                   value={
-                    <span className="font-mono text-xs break-all" dir="ltr">
+                    <span className="font-mono text-caption break-all" dir="ltr">
                       {selectedProxy.secret || '—'}
                     </span>
                   }
@@ -496,7 +493,7 @@ export function TelegramProxiesList() {
                 </>
               )}
             </div>
-            <div className="flex gap-2 p-4 border-t border-surface-200 dark:border-surface-700">
+            <div className="flex gap-2 p-4 border-t border-border">
               <Button variant="secondary" className="flex-1" onClick={() => {
                 setSelectedProxy(null);
                 setDialogError('');
@@ -520,8 +517,8 @@ export function TelegramProxiesList() {
 
       {/* Create Dialog */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50" onClick={() => {
+        <div role="dialog" aria-modal="true" className="fixed inset-0 z-(--z-modal) flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-scrim" onClick={() => {
             setShowCreateModal(false);
             setDialogError('');
             setManualForm({ type: 'mtproto', server: '', port: 443 });
@@ -529,9 +526,9 @@ export function TelegramProxiesList() {
             setParsedProxies([]);
             setSelectedProxyIndices([]);
           }} />
-          <div className="relative bg-white dark:bg-surface-900 rounded-xl shadow-xl w-full max-w-lg border border-surface-200 dark:border-surface-700">
-            <div className="flex items-center justify-between p-4 border-b border-surface-200 dark:border-surface-700">
-              <h3 className="text-lg font-semibold text-surface-900 dark:text-white">
+          <div className="relative bg-surface rounded-xl shadow-lg w-full max-w-lg border border-border">
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <h3 className="text-h3 font-semibold text-text">
                 افزودن پراکسی جدید
               </h3>
               <button
@@ -543,14 +540,14 @@ export function TelegramProxiesList() {
                   setParsedProxies([]);
                   setSelectedProxyIndices([]);
                 }}
-                className="p-1 rounded hover:bg-surface-100 dark:hover:bg-surface-800"
+                className="p-1 rounded-sm hover:bg-surface-muted"
               >
-                <X className="w-5 h-5 text-surface-500" />
+                <X className="w-5 h-5 text-text-subtle" />
               </button>
             </div>
 
             {/* Method Selection */}
-            <div className="flex gap-1 p-2 border-b border-surface-200 dark:border-surface-700">
+            <div className="flex gap-1 p-2 border-b border-border">
               <Button
                 variant={addMethod === 'manual' ? 'primary' : 'ghost'}
                 size="sm"
@@ -565,7 +562,7 @@ export function TelegramProxiesList() {
                 className="flex-1"
                 onClick={() => setAddMethod('clipboard')}
               >
-                <Clipboard className="w-4 h-4 ml-1" />
+                <Clipboard className="w-4 h-4 me-1" />
                 وارد کردن از کلیپ‌بورد
               </Button>
             </div>
@@ -573,9 +570,7 @@ export function TelegramProxiesList() {
             <div className="p-4 space-y-4 max-h-[60vh] overflow-y-auto">
               {/* Dialog Error */}
               {dialogError && (
-                <div className="p-3 rounded-lg bg-danger-50 dark:bg-danger-950/20 border border-danger-200 dark:border-danger-800">
-                  <p className="text-sm text-danger-700 dark:text-danger-300">{dialogError}</p>
-                </div>
+                <Alert tone="error">{dialogError}</Alert>
               )}
 
               {addMethod === 'manual' ? (
@@ -651,11 +646,11 @@ export function TelegramProxiesList() {
                 // Clipboard Import
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-surface-700 dark:text-surface-300">
+                    <label className="text-body font-medium text-text-muted">
                       متن کلیپ‌بورد
                     </label>
                     <textarea
-                      className="w-full h-32 px-3 py-2 text-sm border rounded-lg border-surface-300 dark:border-surface-600 bg-surface-50 dark:bg-surface-800 text-surface-900 dark:text-white resize-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className="field h-32 bg-surface-muted resize-none"
                       placeholder="در حال خواندن از کلیپ‌بورد..."
                       value={clipboardText}
                       onChange={(e) => {
@@ -667,7 +662,7 @@ export function TelegramProxiesList() {
                       }}
                       dir="ltr"
                     />
-                    <p className="text-xs text-surface-500 dark:text-surface-400">
+                    <p className="text-caption text-text-subtle">
                       فرمت‌های پشتیبانی شده:
                       <br />• لینک‌های MTProto تلگرام: https://t.me/proxy?server=...&port=...&secret=...
                       <br />• SOCKS5: socks5://user:pass@server:port
@@ -679,7 +674,7 @@ export function TelegramProxiesList() {
                   {parsedProxies.length > 0 && (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-medium text-surface-700 dark:text-surface-300">
+                        <h4 className="text-body font-medium text-text-muted">
                           پراکسی‌های شناسایی شده ({parsedProxies.length})
                         </h4>
                         <div className="flex gap-1">
@@ -695,28 +690,28 @@ export function TelegramProxiesList() {
                         {parsedProxies.map((proxy, idx) => (
                           <div
                             key={idx}
-                            className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors ${
+                            className={`flex items-center gap-2 p-2 rounded-md border cursor-pointer transition-colors ${
                               selectedProxyIndices.includes(idx)
-                                ? 'border-primary-500 bg-primary-50 dark:bg-primary-950/30'
-                                : 'border-surface-200 dark:border-surface-700 hover:bg-surface-50 dark:hover:bg-surface-800'
+                                ? 'border-selected bg-selected/10'
+                                : 'border-border hover:bg-surface-muted'
                             }`}
                             onClick={() => toggleProxySelection(idx)}
                           >
                             <div className="w-4 h-4">
                               {selectedProxyIndices.includes(idx) ? (
-                                <Check className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                                <Check className="w-4 h-4 text-link" />
                               ) : (
-                                <div className="w-4 h-4 border border-surface-300 dark:border-surface-600 rounded" />
+                                <div className="w-4 h-4 border border-border-strong rounded-sm" />
                               )}
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
                                 {getTypeBadge(proxy.type)}
-                                <span className="text-sm font-mono text-surface-900 dark:text-white truncate" dir="ltr">
+                                <span className="text-body font-mono text-text truncate" dir="ltr">
                                   {proxy.server}:{proxy.port}
                                 </span>
                               </div>
-                              <div className="text-xs text-surface-500 dark:text-surface-400 mt-0.5">
+                              <div className="text-caption text-text-subtle mt-0.5">
                                 {proxy.type === 'mtproto'
                                   ? proxy.secret
                                     ? `Secret: ${proxy.secret.substring(0, 20)}...`
@@ -729,24 +724,20 @@ export function TelegramProxiesList() {
                           </div>
                         ))}
                       </div>
-                      <p className="text-xs text-surface-500 dark:text-surface-400">
+                      <p className="text-caption text-text-subtle">
                         {selectedProxyIndices.length} از {parsedProxies.length} پراکسی انتخاب شده است
                       </p>
                     </div>
                   )}
 
                   {parsedProxies.length === 0 && clipboardText && (
-                    <div className="p-3 rounded-lg bg-warning-50 dark:bg-warning-950/20 border border-warning-200 dark:border-warning-800">
-                      <p className="text-sm text-warning-700 dark:text-warning-300">
-                        هیچ پراکسی معتبری در متن شناسایی نشد.
-                      </p>
-                    </div>
+                    <Alert tone="warning">هیچ پراکسی معتبری در متن شناسایی نشد.</Alert>
                   )}
                 </div>
               )}
             </div>
 
-            <div className="flex gap-2 p-4 border-t border-surface-200 dark:border-surface-700">
+            <div className="flex gap-2 p-4 border-t border-border">
               <Button variant="secondary" className="flex-1" onClick={() => {
                 setShowCreateModal(false);
                 setDialogError('');
@@ -773,7 +764,7 @@ export function TelegramProxiesList() {
                   disabled={selectedProxyIndices.length === 0 || isSaving}
                   isLoading={isSaving}
                 >
-                  <Upload className="w-4 h-4 ml-1" />
+                  <Upload className="w-4 h-4 me-1" />
                   افزودن {selectedProxyIndices.length} پراکسی
                 </Button>
               )}
@@ -789,8 +780,8 @@ export function TelegramProxiesList() {
 function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-start justify-between gap-4">
-      <span className="text-sm text-surface-500 dark:text-surface-400 shrink-0">{label}</span>
-      <span className="text-sm text-surface-900 dark:text-white text-left">{value}</span>
+      <span className="text-body text-text-subtle shrink-0">{label}</span>
+      <span className="text-body text-text text-end">{value}</span>
     </div>
   );
 }

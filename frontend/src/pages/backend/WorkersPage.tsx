@@ -115,36 +115,36 @@ export function WorkersPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-surface-900 dark:text-white">مدیریت ورکرها</h1>
-          <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">کنترل وضعیت، لاگ‌ها و تنظیمات ورکرهای Backend</p>
+          <h1 className="text-h3 font-semibold text-text">مدیریت ورکرها</h1>
+          <p className="text-body text-text-subtle mt-1">کنترل وضعیت، لاگ‌ها و تنظیمات ورکرهای Backend</p>
         </div>
         <Button variant="secondary" size="sm" onClick={() => void loadWorkers()} disabled={loading}>
           <RefreshCw className="w-4 h-4" /> بروزرسانی
         </Button>
       </div>
 
-      {error && <Card><p className="text-sm text-danger-500">{error}</p></Card>}
+      {error && <Card><p className="text-body text-error">{error}</p></Card>}
 
       <Card padding="none">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800/50">
-                <th className="text-right px-4 py-3 text-xs font-medium text-surface-500">نام ورکر</th>
-                <th className="text-center px-4 py-3 text-xs font-medium text-surface-500">وضعیت</th>
-                <th className="text-center px-4 py-3 text-xs font-medium text-surface-500">عملیات</th>
+              <tr className="border-b border-border bg-surface-muted">
+                <th className="text-start px-4 py-3 text-label text-text-muted">نام ورکر</th>
+                <th className="text-center px-4 py-3 text-label text-text-muted">وضعیت</th>
+                <th className="text-center px-4 py-3 text-label text-text-muted">عملیات</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={3} className="py-12"><Loader2 className="w-6 h-6 animate-spin mx-auto text-surface-400" /></td></tr>
+                <tr><td colSpan={3} className="py-12"><Loader2 className="w-6 h-6 animate-spin mx-auto text-text-subtle" /></td></tr>
               ) : workers.length === 0 ? (
-                <tr><td colSpan={3} className="py-12 text-center text-sm text-surface-500">ورکری از سرور دریافت نشد</td></tr>
+                <tr><td colSpan={3} className="py-12 text-center text-body text-text-subtle">ورکری از سرور دریافت نشد</td></tr>
               ) : workers.map((worker) => (
-                <tr key={worker.id} className="border-b border-surface-100 dark:border-surface-700 hover:bg-surface-50 dark:hover:bg-surface-800/50">
+                <tr key={worker.id} className="border-b border-border hover:bg-surface-muted">
                   <td className="px-4 py-3">
-                    <p className="text-sm font-medium text-surface-900 dark:text-white">{worker.name}</p>
-                    {worker.section && <p className="text-xs text-surface-400 mt-1" dir="ltr">{worker.section}</p>}
+                    <p className="text-body font-medium text-text">{worker.name}</p>
+                    {worker.section && <p className="text-caption text-text-subtle mt-1" dir="ltr">{worker.section}</p>}
                   </td>
                   <td className="px-4 py-3 text-center">
                     <div className="flex flex-wrap justify-center gap-2">
@@ -190,16 +190,16 @@ export function WorkersPage() {
 
 
       {logsWorker && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setLogsWorker(null)} />
-          <div className="relative w-full max-w-3xl rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 shadow-xl">
-            <div className="flex items-center justify-between p-4 border-b border-surface-200 dark:border-surface-700">
-              <h2 className="font-semibold text-surface-900 dark:text-white">لاگ‌های {logsWorker.name}</h2>
-              <button aria-label="بستن" onClick={() => setLogsWorker(null)} className="p-1 rounded hover:bg-surface-100 dark:hover:bg-surface-800"><X className="w-5 h-5" /></button>
+        <div role="dialog" aria-modal="true" className="fixed inset-0 z-(--z-modal) flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-scrim" onClick={() => setLogsWorker(null)} />
+          <div className="relative w-full max-w-3xl rounded-xl border border-border bg-surface shadow-lg">
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <h2 className="font-semibold text-text">لاگ‌های {logsWorker.name}</h2>
+              <button aria-label="بستن" onClick={() => setLogsWorker(null)} className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-text-subtle hover:text-text hover:bg-surface-muted"><X className="h-5 w-5" aria-hidden="true" /></button>
             </div>
             <div className="p-4">
-              {logsLoading ? <Loader2 className="w-6 h-6 animate-spin mx-auto my-16 text-surface-400" /> : (
-                <pre className="min-h-64 max-h-[60vh] overflow-auto rounded-lg bg-surface-950 p-4 text-xs leading-6 text-surface-100 text-left whitespace-pre-wrap" dir="ltr">
+              {logsLoading ? <Loader2 className="w-6 h-6 animate-spin mx-auto my-16 text-text-subtle" /> : (
+                <pre className="min-h-64 max-h-[60vh] overflow-auto rounded-md bg-neutral-950 p-4 text-caption leading-6 text-neutral-50 text-start whitespace-pre-wrap" dir="ltr">
                   {logs || 'لاگی ثبت نشده است'}
                 </pre>
               )}
@@ -209,24 +209,24 @@ export function WorkersPage() {
       )}
 
       {settingsWorker && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50" onClick={() => !settingsSaving && setSettingsWorker(null)} />
-          <div className="relative w-full max-w-2xl rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 shadow-xl">
-            <div className="flex items-center justify-between p-4 border-b border-surface-200 dark:border-surface-700">
+        <div role="dialog" aria-modal="true" className="fixed inset-0 z-(--z-modal) flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-scrim" onClick={() => !settingsSaving && setSettingsWorker(null)} />
+          <div className="relative w-full max-w-2xl rounded-xl border border-border bg-surface shadow-lg">
+            <div className="flex items-center justify-between p-4 border-b border-border">
               <div>
-                <h2 className="font-semibold text-surface-900 dark:text-white">تنظیمات {settingsWorker.name}</h2>
-                <p className="text-xs text-surface-500 mt-1">مقادیر تنظیمات از سرور دریافت شده‌اند</p>
+                <h2 className="font-semibold text-text">تنظیمات {settingsWorker.name}</h2>
+                <p className="text-caption text-text-subtle mt-1">مقادیر تنظیمات از سرور دریافت شده‌اند</p>
               </div>
-              <button aria-label="بستن" disabled={settingsSaving} onClick={() => setSettingsWorker(null)} className="p-1 rounded hover:bg-surface-100 dark:hover:bg-surface-800 disabled:opacity-50"><X className="w-5 h-5" /></button>
+              <button aria-label="بستن" disabled={settingsSaving} onClick={() => setSettingsWorker(null)} className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-text-subtle hover:text-text hover:bg-surface-muted disabled:opacity-40"><X className="w-5 h-5" /></button>
             </div>
             <div className="p-4 max-h-[60vh] overflow-y-auto space-y-4">
-              {settingsLoading ? <Loader2 className="w-6 h-6 animate-spin mx-auto my-16 text-surface-400" /> : settings.length === 0 ? (
-                <p className="py-10 text-center text-sm text-surface-500">تنظیمی برای این ورکر دریافت نشد</p>
+              {settingsLoading ? <Loader2 className="w-6 h-6 animate-spin mx-auto my-16 text-text-subtle" /> : settings.length === 0 ? (
+                <p className="py-10 text-center text-body text-text-subtle">تنظیمی برای این ورکر دریافت نشد</p>
               ) : settings.map((setting) => (
                 <div key={setting.key}>
                   <div className="flex items-center justify-between gap-2 mb-1.5">
-                    <label className="text-sm font-medium text-surface-700 dark:text-surface-300" dir="ltr">{setting.key}</label>
-                    {setting.type && <span className="text-xs text-surface-400" dir="ltr">{setting.type}</span>}
+                    <label className="text-body font-medium text-text-muted" dir="ltr">{setting.key}</label>
+                    {setting.type && <span className="text-caption text-text-subtle" dir="ltr">{setting.type}</span>}
                   </div>
                   <ConfigValueInput
                     config={setting}
@@ -235,11 +235,11 @@ export function WorkersPage() {
                     disabled={!setting.editable || settingsSaving}
                     ariaLabel={`مقدار ${setting.key}`}
                   />
-                  {setting.description && <p className="text-xs text-surface-500 mt-1">{setting.description}</p>}
+                  {setting.description && <p className="text-caption text-text-subtle mt-1">{setting.description}</p>}
                 </div>
               ))}
             </div>
-            <div className="flex justify-end gap-2 p-4 border-t border-surface-200 dark:border-surface-700">
+            <div className="flex justify-end gap-2 p-4 border-t border-border">
               <Button variant="secondary" onClick={() => setSettingsWorker(null)} disabled={settingsSaving}>انصراف</Button>
               <Button onClick={() => void saveSettings()} isLoading={settingsSaving} disabled={settingsLoading || settings.length === 0}>ذخیره تنظیمات</Button>
             </div>

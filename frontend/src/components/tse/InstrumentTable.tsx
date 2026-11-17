@@ -65,16 +65,16 @@ export function InstrumentTable({
   };
 
   if (instruments.length === 0) {
-    return <p className="text-sm text-surface-500">این insCodeها در دیتابیس ذخیره نشده‌اند.</p>;
+    return <p className="text-body text-text-subtle">این insCodeها در دیتابیس ذخیره نشده‌اند.</p>;
   }
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[900px] text-right">
+      <table className="w-full min-w-[900px] text-start">
         <thead>
-          <tr className="border-b border-surface-200 dark:border-surface-700">
+          <tr className="border-b border-border">
             {['نماد', 'نام', 'مارکت', 'بازار', 'تاریخ عرضه', 'دریافت داده', 'ارزیابی', 'عملیات'].map((title) => (
-              <th key={title} className="px-2 py-2 text-xs font-medium text-surface-500">{title}</th>
+              <th key={title} className="px-2 py-2 text-label text-text-muted">{title}</th>
             ))}
           </tr>
         </thead>
@@ -82,30 +82,30 @@ export function InstrumentTable({
           {instruments.map((item) => (
             <tr
               key={item.id}
-              className={`border-b border-surface-100 dark:border-surface-800 ${highlight.includes(item.ins_code) ? 'bg-warning-400/10' : ''}`}
+              className={`border-b border-border ${highlight.includes(item.ins_code) ? 'bg-warning/12' : ''}`}
             >
               <td className="px-2 py-2">
                 <div className="flex items-center gap-1.5">
-                  <Link to={`/tse/markets/${item.id}`} className="font-bold text-primary-700 hover:underline dark:text-primary-300">
+                  <Link to={`/tse/markets/${item.id}`} className="font-bold text-link hover:underline">
                     {item.symbol}
                   </Link>
                   {item.delisted && <Badge variant="danger">لغو پذیرش</Badge>}
                   {item.manually_added && <Badge variant="warning">دستی</Badge>}
                 </div>
-                <div className="text-[11px] text-surface-400" dir="ltr">{item.instrument_id || '—'} · {item.ins_code}</div>
+                <div className="text-[11px] text-text-subtle" dir="ltr">{item.instrument_id || '—'} · {item.ins_code}</div>
               </td>
-              <td className="px-2 py-2 text-sm">{item.name}</td>
-              <td className="px-2 py-2 text-xs">
+              <td className="px-2 py-2 text-body">{item.name}</td>
+              <td className="px-2 py-2 text-caption">
                 {item.market_label}
-                {item.market_members > 1 && <span className="text-surface-400"> · {item.market_members.toLocaleString('fa-IR')} insCode</span>}
+                {item.market_members > 1 && <span className="text-text-subtle"> · {item.market_members.toLocaleString('fa-IR')} insCode</span>}
               </td>
-              <td className="px-2 py-2 text-xs text-surface-600 dark:text-surface-300">{item.market_type_label || '—'}</td>
-              <td className="px-2 py-2 text-xs">{formatDate(item.release_date)}</td>
+              <td className="px-2 py-2 text-caption text-text-muted">{item.market_type_label || '—'}</td>
+              <td className="px-2 py-2 text-caption">{formatDate(item.release_date)}</td>
               <td className="px-2 py-2">
-                <Toggle enabled={item.data_collection_enabled} onChange={(value) => setFlags(item, { data_collection_enabled: value })} />
+                <Toggle aria-label={`جمع‌آوری داده ${item.symbol}`} enabled={item.data_collection_enabled} onChange={(value) => setFlags(item, { data_collection_enabled: value })} />
               </td>
               <td className="px-2 py-2">
-                <Toggle enabled={item.evaluation_enabled} onChange={(value) => setFlags(item, { evaluation_enabled: value })} />
+                <Toggle aria-label={`ارزیابی ${item.symbol}`} enabled={item.evaluation_enabled} onChange={(value) => setFlags(item, { evaluation_enabled: value })} />
               </td>
               <td className="px-2 py-2">
                 <div className="flex flex-wrap items-center gap-1">
@@ -126,7 +126,7 @@ export function InstrumentTable({
                     <Link2 className="h-4 w-4" />
                   </Button>
                   <Button size="sm" variant="ghost" title="حذف insCode" disabled={busyId !== null} onClick={() => remove(item)}>
-                    <Trash2 className="h-4 w-4 text-danger-500" />
+                    <Trash2 className="h-4 w-4 text-error" />
                   </Button>
                   {extraActions?.(item)}
                 </div>

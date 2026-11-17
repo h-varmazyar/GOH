@@ -26,6 +26,7 @@ coverage.html
 
 # TDLib session data
 .tdlib/
+tdlib/
 .tdlib2/
 
 # OS files

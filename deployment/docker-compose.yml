@@ -281,9 +281,50 @@ services:
         condition: service_healthy
       clickhouse:
         condition: service_healthy
+    # A running job is queued again on stop, before the process exits.
+    stop_grace_period: 40s
     networks:
       gatec:
         ipv4_address: 10.72.20.9
+
+  # Builds candles in ClickHouse from the stored trades; runs the candle jobs.
+  candle-builder:
+    <<: *worker
+    command: ["candle-builder"]
+    restart: on-failure
+    environment:
+      LOG_FILE: /app/logs/candle-builder.log
+    volumes:
+      - ./server/logs:/app/logs
+      - ./server/secrets:/app/configs/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+    # A running job is queued again on stop, before the process exits.
+    stop_grace_period: 40s
+    networks:
+      gatec:
+        ipv4_address: 10.72.20.10
+
+  # Queues the daily trade history and candle jobs at
+  # WORKER_JOB_SCHEDULER_SCHEDULE_HOUR:MIN, Asia/Tehran.
+  job-scheduler:
+    <<: *worker
+    command: ["job-scheduler"]
+    restart: on-failure
+    environment:
+      LOG_FILE: /app/logs/job-scheduler.log
+    volumes:
+      - ./server/logs:/app/logs
+      - ./server/secrets:/app/configs/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      gatec:
+        ipv4_address: 10.72.20.11
 
   # --- one-off tools (profile "tools": never started by `compose up`) --------
   # Run once and exit; no fixed IP so parallel runs do not clash.
@@ -326,11 +367,15 @@ services:
       - gatec
 
 volumes:
-  # names kept from the previous compose so existing data is reused
+  # Fixed names: renaming the compose project must not switch to empty volumes.
   nats-data:
+    name: gatec_nats-data
   postgres-data:
+    name: gatec_postgres-data
   clickhouse-data:
+    name: gatec_clickhouse-data
   ch-ui-data:
+    name: gatec_ch-ui-data
 
 networks:
   gatec:

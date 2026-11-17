@@ -20,7 +20,9 @@ import (
 
 // stateWaitTimeout is how long we wait for TDLib to transition states
 // after we submit credentials. This covers network latency + Telegram processing.
-const stateWaitTimeout = 30 * time.Second
+// Through a proxy a single step has been seen to take ~30s, and go-tdlib itself
+// allows a request 60s, so this must stay above that.
+const stateWaitTimeout = 75 * time.Second
 
 // Service provides telegram account management over REST APIs.
 // It handles the multi-step authentication flow by coordinating
@@ -85,7 +87,9 @@ func (s *Service) SetOnSessionReadyHook(hook func(ctx context.Context, sessionID
 type CreateAccountResponse struct {
 	SessionID string `json:"session_id"`
 	State     string `json:"state"`
-	Error     string `json:"error,omitempty"`
+	// QrLink is the tg://login link to render as a QR code (QR sessions only).
+	QrLink string `json:"qr_link,omitempty"`
+	Error  string `json:"error,omitempty"`
 }
 
 // CreateAccount starts a new telegram account authentication session.
@@ -97,8 +101,10 @@ func (s *Service) CreateAccount(ctx context.Context, sessionType string) (*Creat
 		st = tgclient.SessionTypeClient
 	case "bot":
 		st = tgclient.SessionTypeBot
+	case "qr":
+		st = tgclient.SessionTypeQr
 	default:
-		return nil, fmt.Errorf("invalid session type: %s (must be 'client' or 'bot')", sessionType)
+		return nil, fmt.Errorf("invalid session type: %s (must be 'client', 'bot' or 'qr')", sessionType)
 	}
 
 	proxy, err := s.proxyRepo.GetByID(ctx, 1)
@@ -132,10 +138,51 @@ func (s *Service) CreateAccount(ctx context.Context, sessionType string) (*Creat
 		return nil, fmt.Errorf("wait for initial state: %w", err)
 	}
 
-	return &CreateAccountResponse{
+	resp := &CreateAccountResponse{
 		SessionID: sessionID,
 		State:     string(state),
-	}, nil
+	}
+
+	switch state {
+	case tgclient.SessionStateError, tgclient.SessionStateClosed:
+		s.cleanupFailedSession(sessionID)
+		return nil, fmt.Errorf("failed to start telegram session")
+	case tgclient.SessionStateWaitQrScan:
+		// No request drives the scan, so follow it in the background; the client polls GetSessionState.
+		resp.QrLink, _ = s.manager.QrLink(sessionID)
+		go s.watchQrLogin(sessionID)
+	}
+
+	logStepResult(sessionID, "create", state)
+	return resp, nil
+}
+
+// watchQrLogin waits for the QR code to be scanned. A 2FA account then waits for
+// SubmitPassword as usual; an account without 2FA becomes ready here and is persisted.
+func (s *Service) watchQrLogin(sessionID string) {
+	state, err := s.manager.WaitForState(context.Background(), sessionID, s.manager.GetAuthTimeout())
+	if err != nil {
+		// Timed out or session gone: watchAuthTimeout handles the cleanup
+		return
+	}
+	logStepResult(sessionID, "qr_scan", state)
+
+	switch state {
+	case tgclient.SessionStateReady:
+		s.onSessionReady(context.Background(), sessionID, "")
+	case tgclient.SessionStateError, tgclient.SessionStateClosed:
+		s.cleanupFailedSession(sessionID)
+	}
+}
+
+// logStepResult records which state an auth step handed back to the client,
+// so a stuck login can be traced to the backend or the UI.
+func logStepResult(sessionID, step string, state tgclient.SessionState) {
+	logrus.WithFields(logrus.Fields{
+		"session_id": sessionID,
+		"step":       step,
+		"next_step":  state,
+	}).Info("auth step completed")
 }
 
 // watchAuthTimeout waits for the auth timeout duration. If the session is still
@@ -186,6 +233,8 @@ func (s *Service) SubmitPhone(ctx context.Context, sessionID, phone string) (*Su
 		return nil, fmt.Errorf("authentication failed after phone submission")
 	}
 
+	logStepResult(sessionID, "phone", state)
+
 	return &SubmitPhoneResponse{
 		SessionID: sessionID,
 		State:     string(state),
@@ -228,6 +277,8 @@ func (s *Service) SubmitBotToken(ctx context.Context, sessionID, token string) (
 		s.onSessionReady(ctx, sessionID, token)
 	}
 
+	logStepResult(sessionID, "bot_token", state)
+
 	return &SubmitBotTokenResponse{
 		SessionID: sessionID,
 		State:     string(state),
@@ -262,6 +313,8 @@ func (s *Service) SubmitCode(ctx context.Context, sessionID, code string) (*Subm
 		s.onSessionReady(ctx, sessionID, "")
 	}
 
+	logStepResult(sessionID, "code", state)
+
 	return &SubmitCodeResponse{
 		SessionID: sessionID,
 		State:     string(state),
@@ -295,19 +348,31 @@ func (s *Service) SubmitPassword(ctx context.Context, sessionID, password string
 		s.onSessionReady(ctx, sessionID, "")
 	}
 
+	logStepResult(sessionID, "password", state)
+
 	return &SubmitPasswordResponse{
 		SessionID: sessionID,
 		State:     string(state),
 	}, nil
 }
 
-// GetSessionState returns the current state of a session.
-func (s *Service) GetSessionState(ctx context.Context, sessionID string) (string, error) {
+// SessionStateResponse is the current state of a session, polled by the client during QR login.
+type SessionStateResponse struct {
+	State  string `json:"state"`
+	QrLink string `json:"qr_link,omitempty"`
+}
+
+// GetSessionState returns the current state of a session, plus the latest QR link while waiting for a scan.
+func (s *Service) GetSessionState(ctx context.Context, sessionID string) (*SessionStateResponse, error) {
 	state, err := s.manager.GetState(sessionID)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return string(state), nil
+	resp := &SessionStateResponse{State: string(state)}
+	if state == tgclient.SessionStateWaitQrScan {
+		resp.QrLink, _ = s.manager.QrLink(sessionID)
+	}
+	return resp, nil
 }
 
 // --- Re-authentication Flow ---

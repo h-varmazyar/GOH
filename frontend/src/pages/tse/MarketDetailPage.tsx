@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { AlertTriangle, ArrowRight, Trash2 } from 'lucide-react';
+import { ArrowRight, Trash2 } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
@@ -15,6 +15,7 @@ import {
   type TseMarket,
   type TseMarketIssue,
 } from '../../services/tseMarketService';
+import { Alert } from '../../components/ui/Alert';
 
 const statusLabel = Object.fromEntries(issueStatusOptions.map((option) => [option.value, option.label]));
 
@@ -25,9 +26,9 @@ const releaseSource: Record<string, string> = {
 
 function Field({ label, children, ltr }: { label: string; children: ReactNode; ltr?: boolean }) {
   return (
-    <div className="flex items-start justify-between gap-3 border-b border-surface-100 py-2 last:border-0 dark:border-surface-800">
-      <span className="text-xs text-surface-500">{label}</span>
-      <span className="text-left text-sm text-surface-900 dark:text-surface-100" dir={ltr ? 'ltr' : undefined}>
+    <div className="flex items-start justify-between gap-3 border-b border-border py-2 last:border-0">
+      <span className="text-caption text-text-subtle">{label}</span>
+      <span className={`text-body text-text ${ltr ? 'text-start' : 'text-end'}`} dir={ltr ? 'ltr' : undefined}>
         {children === '' || children === null || children === undefined ? '—' : children}
       </span>
     </div>
@@ -98,12 +99,12 @@ export function MarketDetailPage() {
   if (!market) {
     return (
       <div className="space-y-4">
-        <Link to="/tse/markets" className="inline-flex items-center gap-1 text-sm text-primary-600 hover:underline">
+        <Link to="/tse/markets" className="inline-flex items-center gap-1 text-body text-link hover:underline">
           <ArrowRight className="h-4 w-4" />
           بازگشت به فهرست نمادها
         </Link>
         <Card>
-          <p className="text-center text-sm text-surface-500">{error || 'در حال دریافت...'}</p>
+          <p className="text-center text-body text-text-subtle">{error || 'در حال دریافت...'}</p>
         </Card>
       </div>
     );
@@ -113,40 +114,43 @@ export function MarketDetailPage() {
 
   return (
     <div className="space-y-4">
-      <Link to="/tse/markets" className="inline-flex items-center gap-1 text-sm text-primary-600 hover:underline">
+      <Link to="/tse/markets" className="inline-flex items-center gap-1 text-body text-link hover:underline">
         <ArrowRight className="h-4 w-4" />
         بازگشت به فهرست نمادها
       </Link>
 
       <div className="flex flex-wrap items-center gap-2">
-        <h1 className="text-2xl font-bold text-surface-900 dark:text-white">{market.symbol}</h1>
-        <span className="text-surface-600 dark:text-surface-300">{market.name}</span>
+        <h1 className="text-h1 font-bold text-text">{market.symbol}</h1>
+        <span className="text-text-muted">{market.name}</span>
         {market.kind_label && <Badge>{market.kind_label}</Badge>}
         {market.market_type_label && <Badge variant="primary">{market.market_type_label}</Badge>}
         {market.delisted && <Badge variant="danger">لغو پذیرش</Badge>}
         {market.manually_added && <Badge variant="warning">دستی</Badge>}
-        <Button size="sm" variant="danger" className="mr-auto" isLoading={deleting} onClick={() => removeMarket(market)}>
+        <Button size="sm" variant="danger" className="ms-auto" isLoading={deleting} onClick={() => removeMarket(market)}>
           <Trash2 className="h-4 w-4" />
           حذف کامل نماد
         </Button>
       </div>
 
-      {error && <div className="rounded-lg bg-danger-50 p-3 text-sm text-danger-600 dark:bg-danger-950/40">{error}</div>}
-      {notice && <div className="rounded-lg bg-success-50 p-3 text-sm text-success-700 dark:bg-success-950/40">{notice}</div>}
+      {error && <Alert tone="error">{error}</Alert>}
+      {notice && <Alert tone="success">{notice}</Alert>}
 
       {openIssues.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 rounded-lg bg-warning-400/15 p-3 text-sm text-warning-700 dark:text-warning-400">
-          <AlertTriangle className="h-4 w-4" />
+        <Alert
+          tone="warning"
+          actions={
+            <Link to={`/tse/markets/issues?q=${encodeURIComponent(market.ins_code)}`} className="text-label text-link underline">
+              مشاهده در صفحه بررسی
+            </Link>
+          }
+        >
           {openIssues.length.toLocaleString('fa-IR')} مورد نیازمند تصمیم درباره این نماد یا مارکت آن هست.
-          <Link to={`/tse/markets/issues?q=${encodeURIComponent(market.ins_code)}`} className="font-medium underline">
-            مشاهده در صفحه بررسی
-          </Link>
-        </div>
+        </Alert>
       )}
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card padding="sm">
-          <h2 className="mb-2 font-semibold text-surface-900 dark:text-white">شناسه‌ها</h2>
+          <h2 className="mb-2 font-semibold text-text">شناسه‌ها</h2>
           <Field label="insCode" ltr>{market.ins_code}</Field>
           <Field label="شناسه نماد (IR)" ltr>{market.instrument_id}</Field>
           <Field label="شناسه شرکت" ltr>{market.company_isin}</Field>
@@ -155,20 +159,20 @@ export function MarketDetailPage() {
           <Field label="کد تابلو" ltr>{market.board_code}</Field>
         </Card>
         <Card padding="sm">
-          <h2 className="mb-2 font-semibold text-surface-900 dark:text-white">طبقه‌بندی و تاریخ‌ها</h2>
+          <h2 className="mb-2 font-semibold text-text">طبقه‌بندی و تاریخ‌ها</h2>
           <Field label="گروه صنعت">{market.industry_group_name || market.industry_group_code}</Field>
           <Field label="زیرگروه" ltr>{market.industry_sub_code}</Field>
           <Field label="تاریخ درج">{formatDate(market.insert_date)}</Field>
           <Field label="تاریخ عرضه">
             {formatDate(market.release_date)}
             {market.release_date && market.release_date_source && (
-              <span className="mr-1 text-xs text-surface-400">({releaseSource[market.release_date_source] || market.release_date_source})</span>
+              <span className="ms-1 text-caption text-text-subtle">({releaseSource[market.release_date_source] || market.release_date_source})</span>
             )}
           </Field>
           <Field label="تاریخ پذیرش">{formatDate(market.acceptance_date)}</Field>
         </Card>
         <Card padding="sm">
-          <h2 className="mb-2 font-semibold text-surface-900 dark:text-white">اطلاعات TSETMC</h2>
+          <h2 className="mb-2 font-semibold text-text">اطلاعات TSETMC</h2>
           <Field label="تعداد سهام">{formatNumber(market.total_shares)}</Field>
           <Field label="حجم مبنا">{formatNumber(market.base_volume)}</Field>
           <Field label="NAV">{formatNumber(market.nav)}</Field>
@@ -183,8 +187,8 @@ export function MarketDetailPage() {
 
       <Card padding="sm">
         <div className="mb-3">
-          <h2 className="font-semibold text-surface-900 dark:text-white">سوابق مارکت {market.market_label}</h2>
-          <p className="text-xs text-surface-500">
+          <h2 className="font-semibold text-text">سوابق مارکت {market.market_label}</h2>
+          <p className="text-caption text-text-subtle">
             همه insCodeهایی که در این مارکت‌اند، مثلاً insCodeهای قبلی نماد پیش از انتقال بین بازارها. هر insCode قیمت‌های جداگانه خودش را دارد.
           </p>
         </div>
@@ -192,25 +196,25 @@ export function MarketDetailPage() {
       </Card>
 
       <Card padding="sm">
-        <h2 className="mb-3 font-semibold text-surface-900 dark:text-white">موارد بررسی</h2>
+        <h2 className="mb-3 font-semibold text-text">موارد بررسی</h2>
         {issues.length === 0 ? (
-          <p className="text-sm text-surface-500">موردی برای این نماد یا مارکت آن ثبت نشده است.</p>
+          <p className="text-body text-text-subtle">موردی برای این نماد یا مارکت آن ثبت نشده است.</p>
         ) : (
           <div className="space-y-2">
             {issues.map((issue) => (
-              <div key={issue.id} className="rounded-lg border border-surface-100 p-3 dark:border-surface-800">
+              <div key={issue.id} className="rounded-md border border-border p-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant={issue.severity === 'ERROR' ? 'danger' : issue.severity === 'WARNING' ? 'warning' : 'default'}>{issue.type_label}</Badge>
                   <Badge variant={issue.status === 'OPEN' ? 'primary' : issue.status === 'IGNORED' ? 'success' : 'default'}>
                     {statusLabel[issue.status] || issue.status}
                   </Badge>
-                  <span className="text-[11px] text-surface-400">{formatDateTime(issue.detected_at)}</span>
+                  <span className="text-[11px] text-text-subtle">{formatDateTime(issue.detected_at)}</span>
                 </div>
-                <p className="mt-1 text-sm leading-7 text-surface-700 dark:text-surface-300">{issue.detail}</p>
-                {issue.note && <p className="text-xs text-surface-500">یادداشت: {issue.note}</p>}
+                <p className="mt-1 text-body leading-7 text-text-muted">{issue.detail}</p>
+                {issue.note && <p className="text-caption text-text-subtle">یادداشت: {issue.note}</p>}
               </div>
             ))}
-            <Link to={`/tse/markets/issues?q=${encodeURIComponent(market.ins_code)}`} className="text-sm text-primary-600 hover:underline">
+            <Link to={`/tse/markets/issues?q=${encodeURIComponent(market.ins_code)}`} className="text-body text-link hover:underline">
               تصمیم‌گیری در صفحه بررسی نمادها
             </Link>
           </div>

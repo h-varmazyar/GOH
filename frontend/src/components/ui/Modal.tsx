@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useId, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 
 export function Modal({
@@ -7,13 +7,17 @@ export function Modal({
   onClose,
   children,
   footer,
+  size = 'md',
 }: {
   title: string;
   icon?: ReactNode;
   onClose: () => void;
   children: ReactNode;
   footer: ReactNode;
+  size?: 'md' | 'lg';
 }) {
+  const titleId = useId();
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
@@ -23,20 +27,34 @@ export function Modal({
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative w-full max-w-md rounded-xl border border-surface-200 bg-white shadow-xl dark:border-surface-700 dark:bg-surface-900">
-        <div className="flex items-center justify-between border-b border-surface-200 p-4 dark:border-surface-700">
-          <h3 className="flex items-center gap-2 text-lg font-semibold text-surface-900 dark:text-white">
+    <div
+      className="fixed inset-0 z-(--z-modal) flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
+    >
+      <div className="absolute inset-0 bg-scrim" onClick={onClose} aria-hidden="true" />
+      <div
+        className={`relative flex max-h-[calc(100dvh-2rem)] w-full flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-lg ${
+          size === 'lg' ? 'max-w-2xl' : 'max-w-md'
+        }`}
+      >
+        <div className="flex items-center justify-between gap-3 border-b border-border px-6 py-4">
+          <h2 id={titleId} className="flex items-center gap-2 text-h3 text-text">
             {icon}
             {title}
-          </h3>
-          <button onClick={onClose} className="rounded p-1 hover:bg-surface-100 dark:hover:bg-surface-800">
-            <X className="h-5 w-5 text-surface-500" />
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="-me-3 inline-flex h-11 w-11 items-center justify-center rounded-md text-text-subtle hover:bg-surface-muted hover:text-text"
+            aria-label="بستن"
+          >
+            <X className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
-        <div className="space-y-4 p-4">{children}</div>
-        <div className="flex gap-2 border-t border-surface-200 p-4 dark:border-surface-700">{footer}</div>
+        <div className="space-y-4 overflow-y-auto px-6 py-5">{children}</div>
+        <div className="flex gap-2 border-t border-border px-6 py-4">{footer}</div>
       </div>
     </div>
   );

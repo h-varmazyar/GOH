@@ -295,3 +295,77 @@ func (r *TSEMarketRepository) ListRelated(ctx context.Context, insCodes []string
 	}
 	return markets, tx.Order("market_id ASC").Order("delisted ASC").Order("id ASC").Find(&markets).Error
 }
+
+// TSEMarketSummary is a market of the provider with the details of its main
+// TSE instrument: the instrument still listed, else the first one.
+type TSEMarketSummary struct {
+	ID                uint   `json:"id"`
+	Label             string `json:"label"`
+	Name              string `json:"name"`
+	MarketType        string `json:"market_type"`
+	IndustryGroupName string `json:"industry_group_name"`
+	// Instruments is the number of TSE instruments of the market.
+	Instruments int64 `json:"instruments"`
+	// Delisted is true when every instrument of the market is delisted.
+	Delisted bool `json:"delisted"`
+}
+
+// TSEMarketSummaryFilter selects markets; empty fields match everything.
+type TSEMarketSummaryFilter struct {
+	ProviderID uint
+	// Query matches the label of the market and the symbols, names, insCodes
+	// and ISINs of its instruments.
+	Query             string
+	IndustryGroupCode string
+	// IncludeDelisted keeps markets whose instruments are all delisted.
+	IncludeDelisted bool
+}
+
+// MarketSummaries returns a page of the markets with TSE instruments, by label.
+func (r *TSEMarketRepository) MarketSummaries(ctx context.Context, filter TSEMarketSummaryFilter, page paginator.Params) ([]TSEMarketSummary, int64, error) {
+	grouped := r.db.WithContext(ctx).Table("markets AS m").
+		Select(`m.id, m.label,
+			(ARRAY_AGG(t.name ORDER BY t.delisted, t.id))[1] AS name,
+			(ARRAY_AGG(t.market_type ORDER BY t.delisted, t.id))[1] AS market_type,
+			(ARRAY_AGG(t.industry_group_name ORDER BY t.delisted, t.id))[1] AS industry_group_name,
+			COUNT(t.id) AS instruments,
+			BOOL_AND(t.delisted) AS delisted`).
+		Joins("JOIN tse_markets AS t ON t.market_id = m.id").
+		Where("m.provider_id = ? AND m.deleted_at IS NULL", filter.ProviderID).
+		Group("m.id, m.label")
+	if query := strings.TrimSpace(filter.Query); query != "" {
+		like := "%" + query + "%"
+		grouped = grouped.Where(`m.label ILIKE ? OR EXISTS (SELECT 1 FROM tse_markets AS s WHERE s.market_id = m.id AND
+			(s.label ILIKE ? OR s.name ILIKE ? OR s.ins_code = ? OR s.instrument_id ILIKE ?))`, like, like, like, query, like)
+	}
+	if filter.IndustryGroupCode != "" {
+		grouped = grouped.Where("EXISTS (SELECT 1 FROM tse_markets AS s WHERE s.market_id = m.id AND s.industry_group_code = ?)", filter.IndustryGroupCode)
+	}
+	if !filter.IncludeDelisted {
+		grouped = grouped.Having("NOT BOOL_AND(t.delisted)")
+	}
+	var total int64
+	if err := r.db.WithContext(ctx).Table("(?) AS markets", grouped).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	out := make([]TSEMarketSummary, 0)
+	err := page.Apply(r.db.WithContext(ctx).Table("(?) AS markets", grouped)).
+		Order("label ASC, id ASC").Scan(&out).Error
+	return out, total, err
+}
+
+// ProviderMarketLabels returns the labels of the markets of a provider among
+// the IDs.
+func (r *TSEMarketRepository) ProviderMarketLabels(ctx context.Context, providerID uint, ids []uint) (map[uint]string, error) {
+	rows := make([]struct {
+		ID    uint
+		Label string
+	}, 0)
+	err := r.db.WithContext(ctx).Model(&models.Market{}).Select("id, label").
+		Where("provider_id = ? AND id IN ?", providerID, ids).Scan(&rows).Error
+	labels := make(map[uint]string, len(rows))
+	for _, row := range rows {
+		labels[row.ID] = row.Label
+	}
+	return labels, err
+}

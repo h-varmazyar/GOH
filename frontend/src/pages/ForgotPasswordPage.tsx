@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { LineChart, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, CheckCircle2 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { Card } from '../components/ui/Card';
+import { Alert } from '../components/ui/Alert';
+import { AuthLayout } from '../components/layout/AuthLayout';
 
 export function ForgotPasswordPage() {
   const [mobile, setMobile] = useState('');
@@ -30,67 +31,58 @@ export function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-surface-50 to-surface-100 dark:from-surface-950 dark:to-surface-900">
-      <Card className="w-full max-w-sm" padding="lg">
-        <div className="flex flex-col items-center mb-6">
-          <div className="w-14 h-14 rounded-2xl bg-primary-600 flex items-center justify-center mb-4 shadow-lg shadow-primary-600/30">
-            <LineChart className="w-8 h-8 text-white" />
+    <AuthLayout title="بازیابی رمز عبور">
+      {sent ? (
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 rounded-pill bg-success/12 mx-auto flex items-center justify-center">
+            <CheckCircle2 className="w-8 h-8 text-success" />
           </div>
-          <h1 className="text-xl font-bold text-surface-900 dark:text-white">بازیابی رمز عبور</h1>
+          <p className="text-body text-text-muted">
+            لینک بازیابی رمز عبور به شماره موبایل شما ارسال شد.
+          </p>
+          <Link
+            to="/login"
+            className="inline-flex items-center gap-1 text-body text-link hover:underline"
+          >
+            <ArrowRight className="w-4 h-4" />
+            بازگشت به صفحه ورود
+          </Link>
         </div>
+      ) : (
+        <>
+          <p className="mb-5 text-body text-text-muted">
+            شماره موبایل خود را وارد کنید تا کد بازیابی برایتان ارسال شود.
+          </p>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Input
+              label="شماره موبایل"
+              type="tel"
+              value={mobile}
+              onChange={(e) => setMobile(e.target.value.replace(/\D/g, ''))}
+              placeholder="09123456789"
+              dir="ltr"
+              maxLength={11}
+              autoFocus
+            />
 
-        {sent ? (
-          <div className="text-center space-y-4">
-            <div className="w-16 h-16 rounded-full bg-success-400/20 mx-auto flex items-center justify-center">
-              <CheckCircle2 className="w-8 h-8 text-success-500" />
-            </div>
-            <p className="text-sm text-surface-700 dark:text-surface-300">
-              لینک بازیابی رمز عبور به شماره موبایل شما ارسال شد.
-            </p>
+            {error && <Alert tone="error">{error}</Alert>}
+
+            <Button type="submit" isLoading={isLoading} className="w-full" size="lg">
+              ارسال کد بازیابی
+            </Button>
+          </form>
+
+          <div className="mt-6 text-center">
             <Link
               to="/login"
-              className="inline-flex items-center gap-1 text-sm text-primary-600 dark:text-primary-300 hover:underline"
+              className="inline-flex items-center gap-1 text-body text-text-subtle hover:text-text"
             >
               <ArrowRight className="w-4 h-4" />
-              بازگشت به صفحه ورود
+              بازگشت
             </Link>
           </div>
-        ) : (
-          <>
-            <p className="text-sm text-surface-500 dark:text-surface-400 mb-5 text-center">
-              شماره موبایل خود را وارد کنید تا کد بازیابی برایتان ارسال شود.
-            </p>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <Input
-                label="شماره موبایل"
-                type="tel"
-                value={mobile}
-                onChange={(e) => setMobile(e.target.value.replace(/\D/g, ''))}
-                placeholder="09123456789"
-                dir="ltr"
-                maxLength={11}
-                autoFocus
-              />
-
-              {error && <p className="text-sm text-danger-500 text-center">{error}</p>}
-
-              <Button type="submit" isLoading={isLoading} className="w-full" size="lg">
-                ارسال کد بازیابی
-              </Button>
-            </form>
-
-            <div className="mt-6 text-center">
-              <Link
-                to="/login"
-                className="inline-flex items-center gap-1 text-sm text-surface-500 hover:text-surface-700 dark:hover:text-surface-300"
-              >
-                <ArrowRight className="w-4 h-4" />
-                بازگشت
-              </Link>
-            </div>
-          </>
-        )}
-      </Card>
-    </div>
+        </>
+      )}
+    </AuthLayout>
   );
 }

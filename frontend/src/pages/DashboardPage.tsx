@@ -28,57 +28,57 @@ export function DashboardPage() {
       label: 'سود کل',
       value: `$${stats.totalPnl.toLocaleString()}`,
       icon: TrendingUp,
-      color: 'text-success-500',
-      bgColor: 'bg-success-400/10',
+      color: 'text-success',
+      bgColor: 'bg-success/8',
     },
     {
       label: 'سود امروز',
       value: `$${stats.dailyPnl.toLocaleString()}`,
       icon: stats.dailyPnl >= 0 ? TrendingUp : TrendingDown,
-      color: stats.dailyPnl >= 0 ? 'text-success-500' : 'text-danger-500',
-      bgColor: stats.dailyPnl >= 0 ? 'bg-success-400/10' : 'bg-danger-400/10',
+      color: stats.dailyPnl >= 0 ? 'text-success' : 'text-error',
+      bgColor: stats.dailyPnl >= 0 ? 'bg-success/8' : 'bg-error/8',
     },
     {
       label: 'نرخ برد',
       value: `${stats.winRate}%`,
       icon: Target,
-      color: 'text-primary-500',
-      bgColor: 'bg-primary-400/10',
+      color: 'text-link',
+      bgColor: 'bg-selected/10',
     },
     {
       label: 'معاملات کل',
       value: stats.totalTrades.toLocaleString(),
       icon: BarChart3,
-      color: 'text-primary-500',
-      bgColor: 'bg-primary-400/10',
+      color: 'text-link',
+      bgColor: 'bg-selected/10',
     },
     {
       label: 'استراتژی فعال',
       value: stats.activeStrategies.toString(),
       icon: Zap,
-      color: 'text-warning-500',
-      bgColor: 'bg-warning-400/10',
+      color: 'text-warning-text',
+      bgColor: 'bg-warning/12',
     },
     {
       label: 'پوزیشن باز',
       value: stats.openPositions.toString(),
       icon: Activity,
-      color: 'text-primary-500',
-      bgColor: 'bg-primary-400/10',
+      color: 'text-link',
+      bgColor: 'bg-selected/10',
     },
     {
       label: 'حداکثر افت',
       value: `${stats.maxDrawdown}%`,
       icon: AlertTriangle,
-      color: 'text-danger-500',
-      bgColor: 'bg-danger-400/10',
+      color: 'text-error',
+      bgColor: 'bg-error/8',
     },
     {
       label: 'شارپ ریشو',
       value: stats.sharpeRatio.toFixed(2),
       icon: Award,
-      color: 'text-success-500',
-      bgColor: 'bg-success-400/10',
+      color: 'text-success',
+      bgColor: 'bg-success/8',
     },
   ];
 
@@ -86,20 +86,20 @@ export function DashboardPage() {
     <div className="space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-bold text-surface-900 dark:text-white">داشبورد</h1>
-        <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">نمای کلی عملکرد سیستم معاملاتی</p>
+        <h1 className="text-h1 font-bold text-text">داشبورد</h1>
+        <p className="text-body text-text-subtle mt-1">نمای کلی عملکرد سیستم معاملاتی</p>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
         {statCards.map((stat) => (
           <Card key={stat.label} padding="sm" className="flex items-center gap-3">
-            <div className={`p-2 rounded-lg ${stat.bgColor}`}>
+            <div className={`p-2 rounded-md ${stat.bgColor}`}>
               <stat.icon className={`w-5 h-5 ${stat.color}`} />
             </div>
             <div>
-              <p className="text-xs text-surface-500 dark:text-surface-400">{stat.label}</p>
-              <p className="text-lg font-bold text-surface-900 dark:text-white">{stat.value}</p>
+              <p className="text-caption text-text-subtle">{stat.label}</p>
+              <p className="text-h3 font-bold text-text">{stat.value}</p>
             </div>
           </Card>
         ))}
@@ -108,12 +108,12 @@ export function DashboardPage() {
       {/* Active Strategies */}
       <Card>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-surface-900 dark:text-white">استراتژی‌های فعال</h2>
+          <h2 className="text-h3 font-semibold text-text">استراتژی‌های فعال</h2>
           <Badge variant="primary">{strategies.filter((s) => s.enabled).length} فعال</Badge>
         </div>
 
         {strategies.length === 0 ? (
-          <p className="text-sm text-surface-500 dark:text-surface-400 text-center py-8">
+          <p className="text-body text-text-subtle text-center py-8">
             هنوز استراتژی‌ای ایجاد نشده است
           </p>
         ) : (
@@ -121,13 +121,13 @@ export function DashboardPage() {
             {strategies.map((strategy) => (
               <div
                 key={strategy.id}
-                className="flex items-center justify-between p-3 rounded-lg bg-surface-50 dark:bg-surface-800/50 border border-surface-100 dark:border-surface-700"
+                className="flex items-center justify-between p-3 rounded-md bg-surface-muted border border-border"
               >
                 <div className="flex items-center gap-3">
-                  <div className={`w-2 h-2 rounded-full ${strategy.enabled ? 'bg-success-500' : 'bg-surface-400'}`} />
+                  <div className={`w-2 h-2 rounded-pill ${strategy.enabled ? 'bg-success' : 'bg-border-strong'}`} />
                   <div>
-                    <p className="text-sm font-medium text-surface-900 dark:text-white">{strategy.name}</p>
-                    <p className="text-xs text-surface-500 dark:text-surface-400">{strategy.provider}</p>
+                    <p className="text-body font-medium text-text">{strategy.name}</p>
+                    <p className="text-caption text-text-subtle">{strategy.provider}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">

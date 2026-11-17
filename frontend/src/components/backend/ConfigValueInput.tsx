@@ -59,9 +59,7 @@ export const parseConfigValue = (value: string, type?: string): ConfigValue => {
 
 export function ConfigValueInput({ config, value, onChange, disabled, ariaLabel }: ConfigValueInputProps) {
   const normalizedType = normalizeType(config.type);
-  const baseClass = `w-full px-3 py-2 rounded-lg border bg-white dark:bg-surface-800
-    border-surface-300 dark:border-surface-600 text-surface-900 dark:text-surface-100
-    focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed`;
+  const baseClass = 'field';
 
   if (booleanTypes.has(normalizedType)) {
     return (
@@ -72,9 +70,9 @@ export function ConfigValueInput({ config, value, onChange, disabled, ariaLabel 
           checked={value === 'true'}
           onChange={(event) => onChange(String(event.target.checked))}
           disabled={disabled}
-          className="w-5 h-5 rounded border-surface-300 text-primary-600 focus:ring-primary-500"
+          className="h-5 w-5"
         />
-        <span className="text-sm text-surface-700 dark:text-surface-300">
+        <span className="text-body text-text-muted">
           {value === 'true' ? 'فعال' : 'غیرفعال'}
         </span>
       </label>
@@ -90,7 +88,7 @@ export function ConfigValueInput({ config, value, onChange, disabled, ariaLabel 
         disabled={disabled}
         rows={5}
         dir="ltr"
-        className={`${baseClass} font-mono text-sm`}
+        className={`${baseClass} font-mono text-body`}
       />
     );
   }

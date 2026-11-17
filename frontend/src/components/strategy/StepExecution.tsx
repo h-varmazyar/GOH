@@ -29,11 +29,11 @@ export function StepExecution({ strategy, onChange }: Props) {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-lg font-semibold text-surface-900 dark:text-white">اجرا و تنظیمات پیشرفته</h2>
+      <h2 className="text-h3 font-semibold text-text">اجرا و تنظیمات پیشرفته</h2>
 
       {/* Execution */}
       <div>
-        <h3 className="text-sm font-medium text-surface-700 dark:text-surface-300 mb-3">اجرای سفارش</h3>
+        <h3 className="text-body font-medium text-text-muted mb-3">اجرای سفارش</h3>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <Select
             label="نوع سفارش"
@@ -87,7 +87,7 @@ export function StepExecution({ strategy, onChange }: Props) {
 
       {/* Scoring */}
       <div>
-        <h3 className="text-sm font-medium text-surface-700 dark:text-surface-300 mb-3">امتیاز اطمینان</h3>
+        <h3 className="text-body font-medium text-text-muted mb-3">امتیاز اطمینان</h3>
         <Input
           label="حداقل امتیاز اطمینان"
           type="number"
@@ -101,7 +101,7 @@ export function StepExecution({ strategy, onChange }: Props) {
 
       {/* Multi Timeframe */}
       <div>
-        <h3 className="text-sm font-medium text-surface-700 dark:text-surface-300 mb-3">چند تایم‌فریمی</h3>
+        <h3 className="text-body font-medium text-text-muted mb-3">چند تایم‌فریمی</h3>
         <div className="space-y-3">
           <Toggle
             enabled={multi_timeframe.enabled}
@@ -121,7 +121,7 @@ export function StepExecution({ strategy, onChange }: Props) {
 
       {/* Telemetry */}
       <div>
-        <h3 className="text-sm font-medium text-surface-700 dark:text-surface-300 mb-3">تلمتری و لاگ</h3>
+        <h3 className="text-body font-medium text-text-muted mb-3">تلمتری و لاگ</h3>
         <div className="space-y-3">
           <Toggle
             enabled={telemetry.enabled}
@@ -148,17 +148,17 @@ export function StepExecution({ strategy, onChange }: Props) {
                 />
               </div>
               <div>
-                <p className="text-xs text-surface-500 dark:text-surface-400 mb-2">متریک‌ها</p>
+                <p className="text-caption text-text-subtle mb-2">متریک‌ها</p>
                 <div className="flex flex-wrap gap-2">
                   {mockMetrics.map((metric) => (
                     <button
                       key={metric}
                       type="button"
                       onClick={() => toggleMetric(metric)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border
+                      className={`px-3 py-1.5 rounded-md text-caption font-medium transition-colors border
                         ${telemetry.metrics.includes(metric)
-                          ? 'bg-primary-600 text-white border-primary-600'
-                          : 'bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 border-surface-300 dark:border-surface-600 hover:border-primary-400'
+                          ? 'bg-action text-on-action border-selected'
+                          : 'bg-surface text-text-muted border-border-strong hover:border-selected'
                         }`}
                     >
                       {metric}

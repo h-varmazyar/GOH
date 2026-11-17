@@ -1,41 +1,58 @@
-import { forwardRef, type InputHTMLAttributes } from 'react';
+import { forwardRef, useId, type InputHTMLAttributes, type ReactNode } from 'react';
+import { AlertCircle } from 'lucide-react';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
   hint?: string;
+  /** Decorative icon at the inline start of the field. */
+  leadingIcon?: ReactNode;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, hint, className = '', id, ...props }, ref) => {
-    const inputId = id || label?.replace(/\s/g, '-').toLowerCase();
+  ({ label, error, hint, leadingIcon, className = '', id, ...props }, ref) => {
+    const generatedId = useId();
+    const inputId = id || generatedId;
+    const messageId = `${inputId}-message`;
+    const message = error || hint;
 
     return (
       <div className="w-full">
         {label && (
-          <label htmlFor={inputId} className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
+          <label htmlFor={inputId} className="mb-1.5 block text-label text-text">
             {label}
           </label>
         )}
-        <input
-          ref={ref}
-          id={inputId}
-          className={`w-full px-3 py-2 rounded-lg border transition-colors
-            bg-white dark:bg-surface-800
-            border-surface-300 dark:border-surface-600
-            text-surface-900 dark:text-surface-100
-            placeholder:text-surface-400 dark:placeholder:text-surface-500
-            focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
-            disabled:opacity-50 disabled:cursor-not-allowed
-            ${error ? 'border-danger-500 focus:ring-danger-500' : ''}
-            ${className}`}
-          {...props}
-        />
-        {hint && !error && (
-          <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">{hint}</p>
-        )}
-        {error && (
-          <p className="mt-1 text-xs text-danger-500">{error}</p>
+        {/* Shares the field direction so the icon and its padding stay on the same side. */}
+        <div className="relative" dir={props.dir}>
+          {leadingIcon && (
+            <span
+              className="pointer-events-none absolute inset-y-0 start-3 flex items-center text-text-subtle [&_svg]:h-4 [&_svg]:w-4"
+              aria-hidden="true"
+            >
+              {leadingIcon}
+            </span>
+          )}
+          <input
+            ref={ref}
+            id={inputId}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={message ? messageId : undefined}
+            className={`field ${leadingIcon ? 'ps-10' : ''} ${className}`}
+            {...props}
+          />
+        </div>
+        {error ? (
+          <p id={messageId} className="mt-1.5 flex items-center gap-1.5 text-caption text-error">
+            <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
+            {error}
+          </p>
+        ) : (
+          hint && (
+            <p id={messageId} className="mt-1.5 text-caption text-text-subtle">
+              {hint}
+            </p>
+          )
         )}
       </div>
     );

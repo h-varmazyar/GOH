@@ -13,7 +13,9 @@ import (
 	airdropHandlerV1 "github.com/h-varmazyar/gatec/internal/api/rest/handlers/v1/airdrop"
 	applogHandlerV1 "github.com/h-varmazyar/gatec/internal/api/rest/handlers/v1/applog"
 	authHandlerV1 "github.com/h-varmazyar/gatec/internal/api/rest/handlers/v1/auth"
+	candleHandlerV1 "github.com/h-varmazyar/gatec/internal/api/rest/handlers/v1/candles"
 	configurationHandlerV1 "github.com/h-varmazyar/gatec/internal/api/rest/handlers/v1/configuration"
+	indicatorHandlerV1 "github.com/h-varmazyar/gatec/internal/api/rest/handlers/v1/indicators"
 	messagingHandlerV1 "github.com/h-varmazyar/gatec/internal/api/rest/handlers/v1/messaging"
 	proxyHandlerV1 "github.com/h-varmazyar/gatec/internal/api/rest/handlers/v1/proxy"
 	tabdealHandlerV1 "github.com/h-varmazyar/gatec/internal/api/rest/handlers/v1/tabdeal"
@@ -26,7 +28,9 @@ import (
 	airdropService "github.com/h-varmazyar/gatec/internal/services/airdrop"
 	applogService "github.com/h-varmazyar/gatec/internal/services/applog"
 	authService "github.com/h-varmazyar/gatec/internal/services/auth"
+	candleService "github.com/h-varmazyar/gatec/internal/services/candles"
 	dynamicConfigService "github.com/h-varmazyar/gatec/internal/services/dynamicconfig"
+	indicatorService "github.com/h-varmazyar/gatec/internal/services/indicators"
 	messagingService "github.com/h-varmazyar/gatec/internal/services/messaging"
 	proxyService "github.com/h-varmazyar/gatec/internal/services/proxy"
 	tgAccountService "github.com/h-varmazyar/gatec/internal/services/tgaccount"
@@ -50,6 +54,8 @@ type Server struct {
 	messagingHandler      messagingHandlerV1.Handler
 	tseMarketHandler      tseMarketHandlerV1.Handler
 	tradeHistoryHandler   tradeHistoryHandlerV1.Handler
+	candleHandler         candleHandlerV1.Handler
+	indicatorHandler      indicatorHandlerV1.Handler
 }
 
 func NewServer(
@@ -64,6 +70,8 @@ func NewServer(
 	dynamicConfigService *dynamicConfigService.Service,
 	tseMarketService *tseMarketService.Service,
 	tradeHistoryService *tradeHistoryService.Service,
+	candleService *candleService.Service,
+	indicatorService *indicatorService.Service,
 ) *Server {
 	r := gin.New()
 	r.ContextWithFallback = true
@@ -95,6 +103,8 @@ func NewServer(
 		messagingHandler:      messagingHandlerV1.New(messagingService),
 		tseMarketHandler:      tseMarketHandlerV1.New(tseMarketService),
 		tradeHistoryHandler:   tradeHistoryHandlerV1.New(tradeHistoryService),
+		candleHandler:         candleHandlerV1.New(candleService),
+		indicatorHandler:      indicatorHandlerV1.New(indicatorService),
 		engine:                r,
 	}
 	return server

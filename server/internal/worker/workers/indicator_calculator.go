@@ -652,6 +652,9 @@ func (w *IndicatorCalculator) prepareIndicatorsValue(ctx context.Context) {
 	logrus.Infof("ind count: %v", len(dbIndicators))
 
 	for _, dbIndicator := range dbIndicators {
+		if !dbIndicator.Enabled {
+			continue
+		}
 		indicator, err := CreateIndicatorFromDefinition(dbIndicator)
 		if err != nil {
 			continue

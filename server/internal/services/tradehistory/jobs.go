@@ -271,3 +271,14 @@ func (s *Service) PlanDays(ctx context.Context, job *models.TSETradeHistoryJob, 
 func (s *Service) FindDay(ctx context.Context, tseMarketID uint, date time.Time) (*repositories.TradeDayRef, error) {
 	return s.statusRepo.FindDay(ctx, tseMarketID, dateOnly(date))
 }
+
+// NotifyJobs wakes the tse-trade-history workers of every process.
+func (s *Service) NotifyJobs(ctx context.Context) error {
+	return s.statusRepo.NotifyJobs(ctx)
+}
+
+// NotifyJobFinished wakes the queues whose jobs wait for a trade history job,
+// such as candle jobs.
+func (s *Service) NotifyJobFinished(ctx context.Context) error {
+	return s.statusRepo.NotifyJobFinished(ctx)
+}

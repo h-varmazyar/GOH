@@ -64,17 +64,17 @@ export function TelegramAuth() {
           
           return (
             <div key={step.id} className="flex items-center">
-              <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium transition-colors
-                ${isActive ? 'bg-primary-600 text-white' : 
-                  isCompleted ? 'bg-success-500 text-white' : 
-                  'bg-surface-200 dark:bg-surface-700 text-surface-500 dark:text-surface-400'}`}>
+              <div className={`flex items-center justify-center w-8 h-8 rounded-pill text-body font-medium transition-colors
+                ${isActive ? 'bg-action text-on-action' :
+                  isCompleted ? 'bg-success text-on-action' :
+                  'bg-border text-text-subtle'}`}>
                 {isCompleted ? '✓' : index + 1}
               </div>
-              <span className={`mr-2 text-sm ${isActive ? 'text-primary-600 font-medium' : 'text-surface-500 dark:text-surface-400'}`}>
+              <span className={`ms-2 text-body ${isActive ? 'text-link font-medium' : 'text-text-subtle'}`}>
                 {step.label}
               </span>
               {index < steps.length - 1 && (
-                <div className="w-8 h-0.5 mx-2 bg-surface-200 dark:bg-surface-700" />
+                <div className="w-8 h-0.5 mx-2 bg-border" />
               )}
             </div>
           );
@@ -91,22 +91,22 @@ export function TelegramAuth() {
           <ArrowLeft className="w-4 h-4" />
         </Button>
         <div>
-          <h2 className="text-lg font-semibold text-surface-900 dark:text-white">احراز هویت اکانت</h2>
-          <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
+          <h2 className="text-h3 font-semibold text-text">احراز هویت اکانت</h2>
+          <p className="text-body text-text-subtle mt-1">
             تکمیل احراز هویت برای @{account.username}
           </p>
         </div>
       </div>
 
       {/* Account Info */}
-      <Card className="bg-primary-50 dark:bg-primary-950/20 border-primary-200 dark:border-primary-800">
+      <Card className="bg-selected/10 border-selected/40">
         <div className="flex items-center gap-3">
-          <AlertCircle className="w-5 h-5 text-primary-600" />
+          <AlertCircle className="w-5 h-5 text-link" />
           <div>
-            <p className="text-sm font-medium text-primary-900 dark:text-primary-100">
+            <p className="text-body font-medium text-link">
               این اکانت نیاز به احراز هویت دارد
             </p>
-            <p className="text-xs text-primary-700 dark:text-primary-300 mt-0.5">
+            <p className="text-caption text-link mt-0.5">
               نوع اکانت: {account.type === 'bot' ? 'ربات' : 'حساب شخصی'}
             </p>
           </div>
@@ -130,10 +130,10 @@ export function TelegramAuth() {
                 dir="ltr"
                 maxLength={5}
               />
-              <p className="mt-2 text-xs text-surface-500 dark:text-surface-400">
+              <p className="mt-2 text-caption text-text-subtle">
                 کد ارسال شده به تلگرام را وارد کنید
                 <br />
-                <span className="text-surface-400">شماره: </span>
+                <span className="text-text-subtle">شماره: </span>
                 <span dir="ltr">{account.phone}</span>
               </p>
             </div>
@@ -149,7 +149,7 @@ export function TelegramAuth() {
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 dir="ltr"
               />
-              <p className="mt-2 text-xs text-surface-500 dark:text-surface-400">
+              <p className="mt-2 text-caption text-text-subtle">
                 رمز دو مرحله‌ای تلگرام خود را وارد کنید
               </p>
             </div>

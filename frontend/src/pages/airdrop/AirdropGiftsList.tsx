@@ -5,6 +5,7 @@ import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Input } from '../../components/ui/Input';
 import { airdropService, type AirdropGift, type AirdropGiftAllocation, type Pagination } from '../../services/airdropService';
+import { Alert } from '../../components/ui/Alert';
 
 const PAGE_SIZE = 20;
 
@@ -149,37 +150,32 @@ export function AirdropGiftsList() {
     <>
       <Card>
         {error && (
-          <div className="mb-4 p-3 rounded-lg bg-danger-50 dark:bg-danger-950/20 border border-danger-200 dark:border-danger-800">
-            <p className="text-sm text-danger-700 dark:text-danger-300">{error}</p>
-          </div>
+          <Alert tone="error" className="mb-4">{error}</Alert>
         )}
 
         {allocationError && (
-          <div className="mb-4 p-3 rounded-lg bg-danger-50 dark:bg-danger-950/20 border border-danger-200 dark:border-danger-800 flex items-start justify-between gap-2">
-            <p className="text-sm text-danger-700 dark:text-danger-300">{allocationError}</p>
-            <button onClick={() => setAllocationError('')} className="p-0.5 rounded hover:bg-danger-100 dark:hover:bg-danger-900/40">
-              <X className="w-4 h-4 text-danger-500" />
-            </button>
-          </div>
+          <Alert tone="error" className="mb-4" onDismiss={() => setAllocationError('')}>
+            {allocationError}
+          </Alert>
         )}
 
         {isLoading ? (
           <div className="text-center py-8">
-            <p className="text-sm text-surface-500 dark:text-surface-400">در حال بارگذاری...</p>
+            <p className="text-body text-text-subtle">در حال بارگذاری...</p>
           </div>
         ) : gifts.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-sm text-surface-500 dark:text-surface-400">هیچ ایردراپی یافت نشد</p>
+            <p className="text-body text-text-subtle">هیچ ایردراپی یافت نشد</p>
           </div>
         ) : (
           <>
             {/* Table */}
             <div className="overflow-x-auto">
-              <table className="w-full text-sm text-center">
+              <table className="w-full text-body text-center">
                 <thead>
-                  <tr className="border-b border-surface-200 dark:border-surface-700">
+                  <tr className="border-b border-border">
                     {['ردیف', 'عبارت جستجو', 'کد هدیه', 'وضعیت', 'خطا', 'تاریخ', 'تخصیص‌ها', 'عملیات'].map((title) => (
-                      <th key={title} className="text-center py-3 px-2 font-medium text-surface-600 dark:text-surface-400">
+                      <th key={title} className="text-center py-3 px-2 text-label text-text-muted">
                         {title}
                       </th>
                     ))}
@@ -191,21 +187,21 @@ export function AirdropGiftsList() {
                     const isExpanded = expandedGiftIds.has(gift.ID);
                     return (
                       <Fragment key={gift.ID}>
-                        <tr className="border-b border-surface-100 dark:border-surface-800 hover:bg-surface-50 dark:hover:bg-surface-800/50">
-                          <td className="py-3 px-2 text-surface-500 dark:text-surface-400">
+                        <tr className="border-b border-border hover:bg-surface-muted">
+                          <td className="py-3 px-2 text-text-subtle">
                             {(rowOffset + index + 1).toLocaleString('fa-IR')}
                           </td>
-                          <td className="py-3 px-2 text-surface-900 dark:text-surface-100">
+                          <td className="py-3 px-2 text-text">
                             {gift.SearchPhrase || '—'}
                           </td>
-                          <td className="py-3 px-2 text-surface-900 dark:text-surface-100 font-mono text-xs" dir="ltr">
+                          <td className="py-3 px-2 text-text font-mono text-caption" dir="ltr">
                             {gift.GiftCode || '—'}
                           </td>
                           <td className="py-3 px-2">{getStatusBadge(gift.Status)}</td>
-                          <td className="py-3 px-2 text-surface-500 dark:text-surface-400 text-xs max-w-[150px] truncate" title={gift.ErrorMessage}>
+                          <td className="py-3 px-2 text-text-subtle text-caption max-w-[150px] truncate" title={gift.ErrorMessage}>
                             {gift.ErrorMessage || '—'}
                           </td>
-                          <td className="py-3 px-2 text-surface-700 dark:text-surface-300 text-xs whitespace-nowrap">
+                          <td className="py-3 px-2 text-text-muted text-caption whitespace-nowrap">
                             {formatDateTime(gift.CreatedAt)}
                           </td>
                           <td className="py-3 px-2">
@@ -234,7 +230,7 @@ export function AirdropGiftsList() {
                           </td>
                         </tr>
                         {isExpanded && allocations.length > 0 && (
-                          <tr className="border-b border-surface-100 dark:border-surface-800 bg-surface-50/60 dark:bg-surface-800/30">
+                          <tr className="border-b border-border bg-surface-muted">
                             <td colSpan={8} className="py-2 px-4">
                               <AllocationsTable
                                 allocations={allocations}
@@ -255,8 +251,8 @@ export function AirdropGiftsList() {
 
             {/* Pagination */}
             {pagination && pagination.total_pages > 1 && (
-              <div className="flex items-center justify-between mt-4 pt-4 border-t border-surface-200 dark:border-surface-700">
-                <p className="text-xs text-surface-500 dark:text-surface-400">
+              <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
+                <p className="text-caption text-text-subtle">
                   صفحه {pagination.page} از {pagination.total_pages} (مجموع: {pagination.total_items})
                 </p>
                 <div className="flex items-center gap-1">
@@ -268,7 +264,7 @@ export function AirdropGiftsList() {
                   >
                     <ChevronRight className="w-4 h-4" />
                   </Button>
-                  <span className="px-3 py-1 text-sm text-surface-700 dark:text-surface-300">
+                  <span className="px-3 py-1 text-body text-text-muted">
                     {pagination.page}
                   </span>
                   <Button
@@ -288,19 +284,21 @@ export function AirdropGiftsList() {
 
       {/* Detail Modal */}
       {selectedGift && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div role="dialog" aria-modal="true" className="fixed inset-0 z-(--z-modal) flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-black/50"
+            className="absolute inset-0 bg-scrim"
             onClick={() => setSelectedGift(null)}
           />
-          <div className="relative bg-white dark:bg-surface-900 rounded-xl shadow-xl w-full max-w-lg max-h-[80vh] overflow-y-auto border border-surface-200 dark:border-surface-700">
-            <div className="flex items-center justify-between p-4 border-b border-surface-200 dark:border-surface-700">
-              <h3 className="text-lg font-semibold text-surface-900 dark:text-white">جزئیات ایردراپ</h3>
+          <div className="relative bg-surface rounded-xl shadow-lg w-full max-w-lg max-h-[80vh] overflow-y-auto border border-border">
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <h3 className="text-h3 font-semibold text-text">جزئیات ایردراپ</h3>
               <button
+                type="button"
+                aria-label="بستن"
                 onClick={() => setSelectedGift(null)}
-                className="p-1 rounded hover:bg-surface-100 dark:hover:bg-surface-800"
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-text-subtle hover:text-text hover:bg-surface-muted"
               >
-                <X className="w-5 h-5 text-surface-500" />
+                <X className="h-5 w-5" aria-hidden="true" />
               </button>
             </div>
             <div className="p-4 space-y-4">
@@ -308,20 +306,20 @@ export function AirdropGiftsList() {
               <DetailRow label="کد هدیه" value={selectedGift.GiftCode} dir="ltr" />
               <DetailRow label="مسیر" value={selectedGift.Route} dir="ltr" />
               <div>
-                <p className="text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">وضعیت</p>
+                <p className="text-caption font-medium text-text-subtle mb-1">وضعیت</p>
                 {getStatusBadge(selectedGift.Status)}
               </div>
               <DetailRow label="پیام خطا" value={selectedGift.ErrorMessage} />
               <div>
-                <p className="text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">متن پیام</p>
-                <div className="p-3 rounded-lg bg-surface-50 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 text-sm text-surface-800 dark:text-surface-200 whitespace-pre-wrap max-h-48 overflow-y-auto" dir="ltr">
+                <p className="text-caption font-medium text-text-subtle mb-1">متن پیام</p>
+                <div className="p-3 rounded-md bg-surface-muted border border-border text-body text-text whitespace-pre-wrap max-h-48 overflow-y-auto" dir="ltr">
                   {selectedGift.RawMessage || '—'}
                 </div>
               </div>
               <DetailRow label="تاریخ ایجاد" value={formatDateTime(selectedGift.CreatedAt)} />
               {(selectedGift.Allocations ?? []).length > 0 && (
                 <div>
-                  <p className="text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">تخصیص‌ها</p>
+                  <p className="text-caption font-medium text-text-subtle mb-1">تخصیص‌ها</p>
                   <AllocationsTable
                     allocations={selectedGift.Allocations ?? []}
                     retryingAllocationId={retryingAllocationId}
@@ -332,7 +330,7 @@ export function AirdropGiftsList() {
                 </div>
               )}
             </div>
-            <div className="p-4 border-t border-surface-200 dark:border-surface-700 flex gap-3">
+            <div className="p-4 border-t border-border flex gap-3">
               <Button variant="secondary" className="flex-1" onClick={() => setSelectedGift(null)}>
                 بستن
               </Button>
@@ -345,7 +343,7 @@ export function AirdropGiftsList() {
                     setManualGiftCode(selectedGift.GiftCode || '');
                   }}
                 >
-                  <RefreshCw className="w-4 h-4 ml-2" />
+                  <RefreshCw className="w-4 h-4 me-2" />
                   تلاش مجدد
                 </Button>
               )}
@@ -356,38 +354,36 @@ export function AirdropGiftsList() {
 
       {/* Retry Modal */}
       {retryGiftId && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div role="dialog" aria-modal="true" className="fixed inset-0 z-(--z-toast) flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-black/50"
+            className="absolute inset-0 bg-scrim"
             onClick={() => !isRetrying && setRetryGiftId(null)}
           />
-          <div className="relative bg-white dark:bg-surface-900 rounded-xl shadow-xl w-full max-w-md border border-surface-200 dark:border-surface-700">
-            <div className="flex items-center justify-between p-4 border-b border-surface-200 dark:border-surface-700">
-              <h3 className="text-lg font-semibold text-surface-900 dark:text-white">تلاش مجدد برای دریافت جایزه</h3>
+          <div className="relative bg-surface rounded-xl shadow-lg w-full max-w-md border border-border">
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <h3 className="text-h3 font-semibold text-text">تلاش مجدد برای دریافت جایزه</h3>
               <button
+                type="button"
+                aria-label="بستن"
                 onClick={() => !isRetrying && setRetryGiftId(null)}
                 disabled={isRetrying}
-                className="p-1 rounded hover:bg-surface-100 dark:hover:bg-surface-800 disabled:opacity-50"
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-text-subtle hover:text-text hover:bg-surface-muted disabled:opacity-40"
               >
-                <X className="w-5 h-5 text-surface-500" />
+                <X className="h-5 w-5" aria-hidden="true" />
               </button>
             </div>
             
             <div className="p-4 space-y-4">
               {retryError && (
-                <div className="p-3 rounded-lg bg-danger-50 dark:bg-danger-950/20 border border-danger-200 dark:border-danger-800">
-                  <p className="text-sm text-danger-700 dark:text-danger-300">{retryError}</p>
-                </div>
+                <Alert tone="error">{retryError}</Alert>
               )}
               
               {retrySuccess && (
-                <div className="p-3 rounded-lg bg-success-50 dark:bg-success-950/20 border border-success-200 dark:border-success-800">
-                  <p className="text-sm text-success-700 dark:text-success-300">{retrySuccess}</p>
-                </div>
+                <Alert tone="success">{retrySuccess}</Alert>
               )}
               
               <div>
-                <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+                <label className="block text-body font-medium text-text-muted mb-2">
                   کد هدیه (اختیاری)
                 </label>
                 <Input
@@ -399,17 +395,17 @@ export function AirdropGiftsList() {
                   className="font-mono"
                   disabled={isRetrying}
                 />
-                <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">
+                <p className="text-caption text-text-subtle mt-1">
                   در صورت خالی گذاشتن، از کد موجود در سیستم استفاده می‌شود
                 </p>
               </div>
               
-              <div className="text-sm text-surface-600 dark:text-surface-400">
+              <div className="text-body text-text-muted">
                 <p>این عملیات درخواست تست مجدد برای دریافت جایزه ارسال می‌کند.</p>
               </div>
             </div>
             
-            <div className="p-4 border-t border-surface-200 dark:border-surface-700 flex gap-3">
+            <div className="p-4 border-t border-border flex gap-3">
               <Button
                 variant="secondary"
                 className="flex-1"
@@ -426,12 +422,12 @@ export function AirdropGiftsList() {
               >
                 {isRetrying ? (
                   <>
-                    <RefreshCw className="w-4 h-4 ml-2 animate-spin" />
+                    <RefreshCw className="w-4 h-4 me-2 animate-spin" />
                     در حال ارسال...
                   </>
                 ) : (
                   <>
-                    <RefreshCw className="w-4 h-4 ml-2" />
+                    <RefreshCw className="w-4 h-4 me-2" />
                     ارسال درخواست
                   </>
                 )}
@@ -462,11 +458,11 @@ function AllocationsTable({
   isSuccessfulStatus: (status: string) => boolean;
 }) {
   return (
-    <table className="w-full text-xs text-center">
+    <table className="w-full text-caption text-center">
       <thead>
-        <tr className="text-surface-500 dark:text-surface-400">
+        <tr className="text-text-subtle">
           {['ردیف', 'ارز', 'وضعیت', 'خطا', 'تاریخ', 'عملیات'].map((title) => (
-            <th key={title} className="text-center py-2 px-2 font-medium">{title}</th>
+            <th key={title} className="text-center py-2 px-2 text-label text-text-muted">{title}</th>
           ))}
         </tr>
       </thead>
@@ -474,14 +470,14 @@ function AllocationsTable({
         {allocations.map((allocation, index) => {
           const isRetrying = retryingAllocationId === allocation.ID;
           return (
-            <tr key={allocation.ID} className="border-t border-surface-200/70 dark:border-surface-700/70">
-              <td className="py-2 px-2 text-surface-500 dark:text-surface-400">{(index + 1).toLocaleString('fa-IR')}</td>
-              <td className="py-2 px-2 font-mono text-surface-900 dark:text-surface-100" dir="ltr">{allocation.Currency || '—'}</td>
+            <tr key={allocation.ID} className="border-t border-border">
+              <td className="py-2 px-2 text-text-subtle">{(index + 1).toLocaleString('fa-IR')}</td>
+              <td className="py-2 px-2 font-mono text-text" dir="ltr">{allocation.Currency || '—'}</td>
               <td className="py-2 px-2">{getStatusBadge(allocation.Status)}</td>
-              <td className="py-2 px-2 text-surface-500 dark:text-surface-400 max-w-[200px] truncate" title={allocation.ErrorMessage}>
+              <td className="py-2 px-2 text-text-subtle max-w-[200px] truncate" title={allocation.ErrorMessage}>
                 {allocation.ErrorMessage || '—'}
               </td>
-              <td className="py-2 px-2 text-surface-700 dark:text-surface-300 whitespace-nowrap">{formatDateTime(allocation.CreatedAt)}</td>
+              <td className="py-2 px-2 text-text-muted whitespace-nowrap">{formatDateTime(allocation.CreatedAt)}</td>
               <td className="py-2 px-2">
                 {isSuccessfulStatus(allocation.Status) ? (
                   '—'
@@ -508,8 +504,8 @@ function AllocationsTable({
 function DetailRow({ label, value, dir }: { label: string; value?: string; dir?: string }) {
   return (
     <div>
-      <p className="text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">{label}</p>
-      <p className="text-sm text-surface-900 dark:text-surface-100" dir={dir}>
+      <p className="text-caption font-medium text-text-subtle mb-1">{label}</p>
+      <p className="text-body text-text" dir={dir}>
         {value || '—'}
       </p>
     </div>

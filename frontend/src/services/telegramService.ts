@@ -5,9 +5,11 @@ export interface TelegramSessionResponse {
   SessionId: string;
   NextStep: string;
   Failed: boolean;
+  /** tg://login link to show as a QR code while NextStep is wait_qr_scan. */
+  QrLink: string;
 }
 
-export type TelegramAccountType = 'bot' | 'client';
+export type TelegramAccountType = 'bot' | 'client' | 'qr';
 
 /** Telegram account returned from the API list */
 export interface TelegramAccountListItem {
@@ -49,6 +51,7 @@ function normalizeResponse(data: Record<string, unknown>): TelegramSessionRespon
     SessionId: (data.SessionId ?? data.session_id ?? '') as string,
     NextStep: (data.NextStep ?? data.next_step ?? '') as string,
     Failed: (data.Failed ?? data.failed ?? false) as boolean,
+    QrLink: (data.QrLink ?? data.qr_link ?? '') as string,
   };
 }
 
@@ -94,6 +97,14 @@ export const telegramService = {
       session_id: sessionId,
       password,
     });
+    return normalizeResponse(raw);
+  },
+
+  /** Current state of a session; polled during QR login to get refreshed links and the scan result */
+  getSessionState: async (sessionId: string): Promise<TelegramSessionResponse> => {
+    const raw = await api.get<Record<string, unknown>>(
+      `/v1/telegram/sessions/${encodeURIComponent(sessionId)}/state`
+    );
     return normalizeResponse(raw);
   },
 

@@ -21,18 +21,18 @@ function JobProgress({ job }: { job: TradeHistoryJob }) {
   return (
     <div className="space-y-1">
       {job.status === 'RUNNING' && (
-        <div className="h-1.5 overflow-hidden rounded-full bg-surface-100 dark:bg-surface-700">
-          <div className="h-full rounded-full bg-primary-500 transition-all" style={{ width: `${percent}%` }} />
+        <div className="h-1.5 overflow-hidden rounded-pill bg-surface-muted">
+          <div className="h-full rounded-pill bg-action transition-all" style={{ width: `${percent}%` }} />
         </div>
       )}
-      <p className="text-xs text-surface-500">
+      <p className="text-caption text-text-subtle">
         {job.total_markets > 0 && <>نماد {fa(job.done_markets)} از {fa(job.total_markets)} · </>}
         روز {fa(job.processed_days)} از {fa(job.planned_days)}
         {job.processed_days > 0 && (
           <>
-            {' '}· <span className="text-success-600">{fa(job.fetched_days)} دریافت</span>
-            {' '}· <span className="text-warning-600">{fa(job.empty_days)} خالی</span>
-            {' '}· <span className="text-danger-600">{fa(job.failed_days)} خطا</span>
+            {' '}· <span className="text-success">{fa(job.fetched_days)} دریافت</span>
+            {' '}· <span className="text-warning-text">{fa(job.empty_days)} خالی</span>
+            {' '}· <span className="text-error">{fa(job.failed_days)} خطا</span>
           </>
         )}
         {job.status === 'RUNNING' && job.current_market && <> · در حال دریافت {job.current_market}</>}
@@ -75,10 +75,10 @@ export function TradeHistoryJobs({
     }
   };
 
-  if (jobs.length === 0) return <p className="text-sm text-surface-500">{emptyText}</p>;
+  if (jobs.length === 0) return <p className="text-body text-text-subtle">{emptyText}</p>;
 
   return (
-    <div className="divide-y divide-surface-100 dark:divide-surface-800">
+    <div className="divide-y divide-border">
       {jobs.map((job) => {
         const active = job.status === 'PENDING' || job.status === 'RUNNING';
         return (
@@ -86,15 +86,15 @@ export function TradeHistoryJobs({
             <div className="min-w-0 flex-1 space-y-1">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant={statusVariant[job.status]}>
-                  {job.status === 'RUNNING' && <Loader2 className="ml-1 h-3 w-3 animate-spin" />}
+                  {job.status === 'RUNNING' && <Loader2 className="me-1 h-3 w-3 animate-spin" />}
                   {job.cancel_requested && active ? 'در حال لغو' : tradeJobStatusLabel[job.status]}
                 </Badge>
-                <span className="text-sm font-medium text-surface-900 dark:text-white">{job.title}</span>
-                <span className="text-[11px] text-surface-400">#{fa(job.id)} · {formatDateTime(job.created_at)}</span>
+                <span className="text-body font-medium text-text">{job.title}</span>
+                <span className="text-[11px] text-text-subtle">#{fa(job.id)} · {formatDateTime(job.created_at)}</span>
               </div>
               {(job.status !== 'PENDING' || job.processed_days > 0) && <JobProgress job={job} />}
-              {job.error && <p className="text-xs text-danger-600">{job.error}</p>}
-              {job.finished_at && <p className="text-[11px] text-surface-400">پایان: {formatDateTime(job.finished_at)}</p>}
+              {job.error && <p className="text-caption text-error">{job.error}</p>}
+              {job.finished_at && <p className="text-[11px] text-text-subtle">پایان: {formatDateTime(job.finished_at)}</p>}
             </div>
             {active && !job.cancel_requested && (
               <Button size="sm" variant="ghost" isLoading={canceling === job.id} onClick={() => cancel(job)}>

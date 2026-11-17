@@ -1,28 +1,39 @@
 import { create } from 'zustand';
 
-type Theme = 'light' | 'dark';
+/** system follows prefers-color-scheme; light and dark set data-theme on <html>. */
+export type Theme = 'system' | 'light' | 'dark';
+
+function readTheme(): Theme {
+  try {
+    const stored = localStorage.getItem('theme');
+    if (stored === 'light' || stored === 'dark') return stored;
+  } catch {
+    // Storage can be unavailable (private mode); fall back to the system theme.
+  }
+  return 'system';
+}
+
+function applyTheme(theme: Theme) {
+  const root = document.documentElement;
+  if (theme === 'system') delete root.dataset.theme;
+  else root.dataset.theme = theme;
+  try {
+    if (theme === 'system') localStorage.removeItem('theme');
+    else localStorage.setItem('theme', theme);
+  } catch {
+    // Ignore: the theme still applies for this session.
+  }
+}
 
 interface ThemeStore {
   theme: Theme;
-  toggleTheme: () => void;
   setTheme: (theme: Theme) => void;
 }
 
 export const useThemeStore = create<ThemeStore>((set) => ({
-  theme: (localStorage.getItem('theme') as Theme) || 'dark',
-
-  toggleTheme: () => {
-    set((state) => {
-      const newTheme = state.theme === 'dark' ? 'light' : 'dark';
-      localStorage.setItem('theme', newTheme);
-      document.documentElement.classList.toggle('dark', newTheme === 'dark');
-      return { theme: newTheme };
-    });
-  },
-
+  theme: readTheme(),
   setTheme: (theme) => {
-    localStorage.setItem('theme', theme);
-    document.documentElement.classList.toggle('dark', theme === 'dark');
+    applyTheme(theme);
     set({ theme });
   },
 }));

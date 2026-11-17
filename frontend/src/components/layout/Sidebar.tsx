@@ -7,6 +7,7 @@ import {
   LogOut,
   Moon,
   Sun,
+  Monitor,
   X,
   Send,
   ChevronDown,
@@ -30,7 +31,7 @@ import {
   History,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
-import { useThemeStore } from '../../store/themeStore';
+import { useThemeStore, type Theme } from '../../store/themeStore';
 import { Logo } from '../ui/Logo';
 
 interface SidebarProps {
@@ -80,7 +81,6 @@ const navEntries: NavEntry[] = [
     basePath: '/telegram',
     children: [
       { to: '/telegram', icon: Eye, label: 'نمای کلی' },
-      { to: '/telegram/add', icon: PlusCircle, label: 'افزودن اکانت' },
       { to: '/telegram/accounts', icon: List, label: 'لیست اکانت‌ها' },
       { to: '/telegram/proxies', icon: Shield, label: 'پراکسی‌ها' },
     ],
@@ -125,12 +125,23 @@ const navEntries: NavEntry[] = [
   { to: '/profile', icon: User, label: 'پروفایل' },
 ];
 
+const themeOptions: { value: Theme; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { value: 'system', label: 'سیستم', icon: Monitor },
+  { value: 'light', label: 'روشن', icon: Sun },
+  { value: 'dark', label: 'تاریک', icon: Moon },
+];
+
+const itemBase =
+  'flex w-full items-center gap-3 rounded-md border-s-3 text-body transition-colors duration-(--duration-fast)';
+const itemIdle = 'border-transparent text-nav-text-muted hover:bg-white/8 hover:text-nav-text';
+const itemActive = 'border-nav-selected bg-white/10 font-semibold text-nav-text';
+
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { logout, user } = useAuthStore();
-  const { theme, toggleTheme } = useThemeStore();
+  const { theme, setTheme } = useThemeStore();
   const location = useLocation();
 
-  // Determine which groups should be open by default based on current path
+  // Groups containing the current page start expanded.
   const getDefaultOpen = (): Record<string, boolean> => {
     const open: Record<string, boolean> = {};
     for (const entry of navEntries) {
@@ -153,135 +164,130 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   return (
     <>
-      {/* Overlay for mobile */}
+      {/* Scrim for the mobile drawer */}
       {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={onClose}
-        />
+        <div className="fixed inset-0 z-(--z-overlay) bg-scrim lg:hidden" onClick={onClose} aria-hidden="true" />
       )}
 
-      {/* Sidebar */}
       <aside
-        className={`fixed top-0 right-0 z-50 h-full w-64 bg-white dark:bg-surface-900 border-l border-surface-200 dark:border-surface-700
-          transition-transform duration-200 ease-in-out
-          lg:translate-x-0 lg:static lg:z-auto
-          ${isOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}`}
+        id="app-sidebar"
+        aria-label="ناوبری اصلی"
+        className={`fixed inset-y-0 start-0 z-(--z-modal) flex h-full w-72 flex-col bg-nav text-nav-text
+          transition-transform duration-(--duration-slow) ease-standard
+          lg:static lg:z-auto lg:w-64
+          ${isOpen ? '' : 'max-lg:ltr:-translate-x-full max-lg:rtl:translate-x-full'}`}
       >
-        <div className="flex flex-col h-full">
-          {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-surface-200 dark:border-surface-700">
-            <div className="flex items-center gap-2">
-              <Logo size={32} />
-              <span className="font-bold text-lg text-surface-900 dark:text-white">Gate</span>
-            </div>
-            <button
-              onClick={onClose}
-              className="lg:hidden p-1 rounded hover:bg-surface-100 dark:hover:bg-surface-800"
-              aria-label="بستن منو"
-            >
-              <X className="w-5 h-5" />
-            </button>
+        {/* Brand */}
+        <div className="flex h-16 shrink-0 items-center justify-between border-b border-nav-border px-4">
+          <div className="flex items-center gap-3">
+            <Logo size={32} />
+            <span className="text-h3">Gate</span>
           </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="-me-2 inline-flex h-11 w-11 items-center justify-center rounded-md text-nav-text-muted hover:bg-white/8 hover:text-nav-text lg:hidden"
+            aria-label="بستن منو"
+          >
+            <X className="h-5 w-5" aria-hidden="true" />
+          </button>
+        </div>
 
-          {/* User info */}
-          <div className="p-4 border-b border-surface-200 dark:border-surface-700">
-            <p className="text-sm font-medium text-surface-900 dark:text-white">{fullName}</p>
-            <p className="text-xs text-surface-500 dark:text-surface-400 mt-0.5" dir="ltr">{user?.phone}</p>
-          </div>
+        {/* Signed-in user */}
+        <div className="border-b border-nav-border px-4 py-3">
+          <p className="truncate text-label text-nav-text">{fullName}</p>
+          <p className="text-caption text-nav-text-muted" dir="ltr">
+            <span className="block text-end">{user?.phone}</span>
+          </p>
+        </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-            {navEntries.map((entry) => {
-              if (isGroup(entry)) {
-                const isGroupActive = location.pathname.startsWith(entry.basePath);
-                const isExpanded = openGroups[entry.id] ?? false;
+        <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+          {navEntries.map((entry) => {
+            if (isGroup(entry)) {
+              const isGroupActive = location.pathname.startsWith(entry.basePath);
+              const isExpanded = openGroups[entry.id] ?? false;
+              const panelId = `nav-group-${entry.id}`;
 
-                return (
-                  <div key={entry.id}>
-                    {/* Group Header */}
-                    <button
-                      onClick={() => toggleGroup(entry.id)}
-                      className={`flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
-                        ${isGroupActive
-                          ? 'text-primary-700 dark:text-primary-300'
-                          : 'text-surface-600 hover:bg-surface-100 dark:text-surface-400 dark:hover:bg-surface-800'
-                        }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <entry.icon className="w-5 h-5" />
-                        {entry.label}
-                      </div>
-                      <ChevronDown
-                        className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
-                      />
-                    </button>
-
-                    {/* Sub-items */}
-                    {isExpanded && (
-                      <div className="mt-1 mr-4 border-r border-surface-200 dark:border-surface-700 space-y-0.5">
-                        {entry.children.map((child) => (
-                          <NavLink
-                            key={child.to}
-                            to={child.to}
-                            end={child.end || child.to === entry.basePath}
-                            onClick={onClose}
-                            className={({ isActive }) =>
-                              `flex items-center gap-2 px-3 py-2 pr-4 rounded-lg text-sm transition-colors
-                              ${isActive
-                                ? 'bg-primary-50 text-primary-700 dark:bg-primary-950 dark:text-primary-300 font-medium'
-                                : 'text-surface-500 hover:bg-surface-100 dark:text-surface-400 dark:hover:bg-surface-800'
-                              }`
-                            }
-                          >
-                            <child.icon className="w-4 h-4" />
-                            {child.label}
-                          </NavLink>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              }
-
-              // Simple nav item
               return (
-                <NavLink
-                  key={entry.to}
-                  to={entry.to}
-                  onClick={onClose}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
-                    ${isActive
-                      ? 'bg-primary-50 text-primary-700 dark:bg-primary-950 dark:text-primary-300'
-                      : 'text-surface-600 hover:bg-surface-100 dark:text-surface-400 dark:hover:bg-surface-800'
-                    }`
-                  }
+                <div key={entry.id}>
+                  <button
+                    type="button"
+                    onClick={() => toggleGroup(entry.id)}
+                    aria-expanded={isExpanded}
+                    aria-controls={panelId}
+                    className={`${itemBase} min-h-11 justify-between px-3 ${
+                      isGroupActive ? 'border-transparent font-semibold text-nav-text hover:bg-white/8' : itemIdle
+                    }`}
+                  >
+                    <span className="flex items-center gap-3">
+                      <entry.icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+                      {entry.label}
+                    </span>
+                    <ChevronDown
+                      className={`h-4 w-4 shrink-0 transition-transform duration-(--duration-base) ${isExpanded ? 'rotate-180' : ''}`}
+                      aria-hidden="true"
+                    />
+                  </button>
+
+                  {isExpanded && (
+                    <div id={panelId} className="mt-1 ms-5 space-y-0.5 border-s border-nav-border ps-2">
+                      {entry.children.map((child) => (
+                        <NavLink
+                          key={child.to}
+                          to={child.to}
+                          end={child.end || child.to === entry.basePath}
+                          onClick={onClose}
+                          className={({ isActive }) => `${itemBase} min-h-10 px-3 ${isActive ? itemActive : itemIdle}`}
+                        >
+                          <child.icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                          {child.label}
+                        </NavLink>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            return (
+              <NavLink
+                key={entry.to}
+                to={entry.to}
+                onClick={onClose}
+                className={({ isActive }) => `${itemBase} min-h-11 px-3 ${isActive ? itemActive : itemIdle}`}
+              >
+                <entry.icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+                {entry.label}
+              </NavLink>
+            );
+          })}
+        </nav>
+
+        {/* Footer: theme and sign-out */}
+        <div className="space-y-2 border-t border-nav-border p-3">
+          <div role="group" aria-label="تم" className="grid grid-cols-3 gap-1 rounded-md bg-black/20 p-1">
+            {themeOptions.map((option) => {
+              const active = theme === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setTheme(option.value)}
+                  aria-pressed={active}
+                  className={`inline-flex h-9 items-center justify-center gap-1.5 rounded-sm text-caption transition-colors ${
+                    active ? 'bg-white/15 font-semibold text-nav-text' : 'text-nav-text-muted hover:text-nav-text'
+                  }`}
                 >
-                  <entry.icon className="w-5 h-5" />
-                  {entry.label}
-                </NavLink>
+                  <option.icon className="h-4 w-4" aria-hidden="true" />
+                  {option.label}
+                </button>
               );
             })}
-          </nav>
-
-          {/* Footer */}
-          <div className="p-3 border-t border-surface-200 dark:border-surface-700 space-y-1">
-            <button
-              onClick={toggleTheme}
-              className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-surface-600 hover:bg-surface-100 dark:text-surface-400 dark:hover:bg-surface-800 transition-colors"
-            >
-              {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-              {theme === 'dark' ? 'تم روشن' : 'تم تاریک'}
-            </button>
-            <button
-              onClick={logout}
-              className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-danger-500 hover:bg-danger-400/10 transition-colors"
-            >
-              <LogOut className="w-5 h-5" />
-              خروج
-            </button>
           </div>
+          <button type="button" onClick={logout} className={`${itemBase} min-h-11 px-3 ${itemIdle}`}>
+            <LogOut className="h-5 w-5 shrink-0 rtl:-scale-x-100" aria-hidden="true" />
+            خروج
+          </button>
         </div>
       </aside>
     </>

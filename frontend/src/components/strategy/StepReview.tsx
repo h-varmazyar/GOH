@@ -8,8 +8,8 @@ interface Props {
 export function StepReview({ strategy }: Props) {
   return (
     <div className="space-y-6">
-      <h2 className="text-lg font-semibold text-surface-900 dark:text-white">بررسی نهایی</h2>
-      <p className="text-sm text-surface-500 dark:text-surface-400">
+      <h2 className="text-h3 font-semibold text-text">بررسی نهایی</h2>
+      <p className="text-body text-text-subtle">
         لطفاً اطلاعات استراتژی را بررسی کنید. در صورت نیاز به تغییر، به مراحل قبل بازگردید.
       </p>
 
@@ -21,11 +21,11 @@ export function StepReview({ strategy }: Props) {
         <InfoRow label="توضیحات" value={strategy.description || '—'} />
         <InfoRow label="وضعیت" value={strategy.enabled ? 'فعال' : 'غیرفعال'} />
         <div className="flex items-center gap-2">
-          <span className="text-xs text-surface-500 dark:text-surface-400 w-24">برچسب‌ها:</span>
+          <span className="text-caption text-text-subtle w-24">برچسب‌ها:</span>
           <div className="flex flex-wrap gap-1">
             {strategy.tags.length > 0
               ? strategy.tags.map((t) => <Badge key={t} size="sm">{t}</Badge>)
-              : <span className="text-xs text-surface-400">—</span>}
+              : <span className="text-caption text-text-subtle">—</span>}
           </div>
         </div>
       </Section>
@@ -33,14 +33,14 @@ export function StepReview({ strategy }: Props) {
       {/* Indicators */}
       <Section title={`اندیکاتورها (${Object.keys(strategy.indicators).length})`}>
         {Object.keys(strategy.indicators).length === 0 ? (
-          <p className="text-xs text-surface-400">بدون اندیکاتور</p>
+          <p className="text-caption text-text-subtle">بدون اندیکاتور</p>
         ) : (
           <div className="space-y-1">
             {Object.entries(strategy.indicators).map(([key, ind]) => (
-              <div key={key} className="flex items-center gap-2 text-xs">
+              <div key={key} className="flex items-center gap-2 text-caption">
                 <Badge size="sm" variant="primary">{ind.type}</Badge>
-                <span className="text-surface-700 dark:text-surface-300 font-medium">{key}</span>
-                <span className="text-surface-400">({ind.timeframe})</span>
+                <span className="text-text-muted font-medium">{key}</span>
+                <span className="text-text-subtle">({ind.timeframe})</span>
               </div>
             ))}
           </div>
@@ -92,8 +92,8 @@ export function StepReview({ strategy }: Props) {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="p-4 rounded-lg bg-surface-50 dark:bg-surface-800/50 border border-surface-200 dark:border-surface-700">
-      <h3 className="text-sm font-semibold text-surface-800 dark:text-surface-200 mb-3">{title}</h3>
+    <div className="p-4 rounded-md bg-surface-muted border border-border">
+      <h3 className="text-body font-semibold text-text mb-3">{title}</h3>
       <div className="space-y-2">{children}</div>
     </div>
   );
@@ -101,9 +101,9 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-start gap-2 text-xs">
-      <span className="text-surface-500 dark:text-surface-400 w-28 flex-shrink-0">{label}:</span>
-      <span className="text-surface-800 dark:text-surface-200 font-medium">{value}</span>
+    <div className="flex items-start gap-2 text-caption">
+      <span className="text-text-subtle w-28 flex-shrink-0">{label}:</span>
+      <span className="text-text font-medium">{value}</span>
     </div>
   );
 }

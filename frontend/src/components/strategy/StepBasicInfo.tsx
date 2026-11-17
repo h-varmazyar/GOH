@@ -24,7 +24,7 @@ export function StepBasicInfo({ strategy, onChange }: Props) {
 
   return (
     <div className="space-y-5">
-      <h2 className="text-lg font-semibold text-surface-900 dark:text-white">اطلاعات پایه استراتژی</h2>
+      <h2 className="text-h3 font-semibold text-text">اطلاعات پایه استراتژی</h2>
 
       <Input
         label="نام استراتژی"
@@ -54,7 +54,7 @@ export function StepBasicInfo({ strategy, onChange }: Props) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
+        <label className="block text-body font-medium text-text-muted mb-1.5">
           توضیحات
         </label>
         <textarea
@@ -62,18 +62,12 @@ export function StepBasicInfo({ strategy, onChange }: Props) {
           onChange={(e) => onChange({ description: e.target.value })}
           placeholder="توضیح مختصری درباره استراتژی..."
           rows={3}
-          className="w-full px-3 py-2 rounded-lg border transition-colors
-            bg-white dark:bg-surface-800
-            border-surface-300 dark:border-surface-600
-            text-surface-900 dark:text-surface-100
-            placeholder:text-surface-400 dark:placeholder:text-surface-500
-            focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
-            resize-none"
+          className="field resize-none"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+        <label className="block text-body font-medium text-text-muted mb-2">
           برچسب‌ها (Tags)
         </label>
         <div className="flex flex-wrap gap-2">
@@ -82,10 +76,10 @@ export function StepBasicInfo({ strategy, onChange }: Props) {
               key={tag}
               type="button"
               onClick={() => handleTagToggle(tag)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors border
+              className={`px-3 py-1.5 rounded-pill text-body font-medium transition-colors border
                 ${strategy.tags.includes(tag)
-                  ? 'bg-primary-600 text-white border-primary-600'
-                  : 'bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 border-surface-300 dark:border-surface-600 hover:border-primary-400'
+                  ? 'bg-action text-on-action border-selected'
+                  : 'bg-surface text-text-muted border-border-strong hover:border-selected'
                 }`}
             >
               {tag}

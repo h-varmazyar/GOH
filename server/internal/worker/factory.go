@@ -10,6 +10,7 @@ import (
 	"github.com/h-varmazyar/gatec/internal/adapters/crypto"
 	"github.com/h-varmazyar/gatec/internal/adapters/stock/tse"
 	"github.com/h-varmazyar/gatec/internal/repositories"
+	"github.com/h-varmazyar/gatec/internal/services/candles"
 	"github.com/h-varmazyar/gatec/internal/services/tradehistory"
 	"github.com/h-varmazyar/gatec/internal/worker/events"
 	"github.com/h-varmazyar/gatec/internal/worker/workers"
@@ -31,6 +32,8 @@ var workerNames = []string{
 	"tse-market-data-sync",
 	"tse-trade-history",
 	"tse-market-watch",
+	"candle-builder",
+	"job-scheduler",
 }
 
 type WorkerInfo struct {
@@ -65,6 +68,9 @@ type Bundles struct {
 	Channels     *ChannelsBundle
 	EventBus     events.EventBus
 	TgManager    *tgclient.Manager
+	// Listen returns a listener of Postgres notifications on the channels,
+	// which wakes job workers when a job is queued.
+	Listen func(channels ...string) func(ctx context.Context, wake func())
 }
 
 type RepositoriesBundle struct {
@@ -92,8 +98,10 @@ type AdaptersBundle struct {
 }
 
 type ServicesBundle struct {
-	TgAccount    any
-	TradeHistory *tradehistory.Service
+	TgAccount     any
+	TradeHistory  *tradehistory.Service
+	Candles       *candles.Service
+	ScheduledRuns *repositories.ScheduledRunRepository
 }
 
 type ChannelsBundle struct {
@@ -313,7 +321,8 @@ func (f *WorkerFactory) createWorkerLocked(name string) (Worker, error) {
 		if f.cfg.TSETradeHistory == nil || len(f.bundles.Adapters.StockProviders) == 0 || f.bundles.Services.TradeHistory == nil {
 			return nil, fmt.Errorf("tse-trade-history dependencies are missing")
 		}
-		return workers.NewTSETradeHistory(f.bundles.Services.TradeHistory, f.cfg.TSETradeHistory), nil
+		return workers.NewTSETradeHistory(f.bundles.Services.TradeHistory, f.cfg.TSETradeHistory,
+			f.listen(repositories.TradeHistoryJobChannel)), nil
 	case "tse-market-watch":
 		if f.cfg.TSEMarketWatch == nil || len(f.bundles.Adapters.StockProviders) == 0 {
 			return nil, fmt.Errorf("tse-market-watch dependencies are missing. %t, %t", f.cfg.TSEMarketWatch == nil, len(f.bundles.Adapters.StockProviders) == 0)
@@ -324,9 +333,31 @@ func (f *WorkerFactory) createWorkerLocked(name string) (Worker, error) {
 			f.bundles.Repositories.TSEMarket,
 			f.bundles.EventBus,
 		), nil
+	case "candle-builder":
+		if f.cfg.CandleBuilder == nil || f.bundles.Services.Candles == nil {
+			return nil, fmt.Errorf("candle-builder dependencies are missing")
+		}
+		// Candle jobs may wait for a trade history job, so they become
+		// runnable when one finishes.
+		return workers.NewCandleBuilder(f.bundles.Services.Candles, f.cfg.CandleBuilder,
+			f.listen(repositories.CandleJobChannel, repositories.TradeHistoryJobFinishedChannel)), nil
+	case "job-scheduler":
+		if f.cfg.JobScheduler == nil || f.bundles.Services.TradeHistory == nil || f.bundles.Services.Candles == nil {
+			return nil, fmt.Errorf("job-scheduler dependencies are missing")
+		}
+		return workers.NewJobScheduler(f.cfg.JobScheduler, f.bundles.Services.TradeHistory,
+			f.bundles.Services.Candles, f.bundles.Services.ScheduledRuns), nil
 	default:
 		return nil, fmt.Errorf("worker %q not found", name)
 	}
+}
+
+// listen returns a listener of the channels, or nil to poll only.
+func (f *WorkerFactory) listen(channels ...string) func(context.Context, func()) {
+	if f.bundles.Listen == nil {
+		return nil
+	}
+	return f.bundles.Listen(channels...)
 }
 
 // func (f *WorkerFactory) enabledLocked(name string) bool {

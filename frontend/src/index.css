@@ -1,102 +1,387 @@
+/*
+ * Deep Forest Green — Design System v1.1 (see frontend/design.md)
+ *
+ * Layers:
+ *   1. Primitive tokens  — the raw palette; brand primitives never change between themes.
+ *   2. Semantic tokens   — roles (bg, surface, text, action, border-strong…); themes remap only these.
+ *   3. Tailwind utilities are generated from the semantic layer, so components write
+ *      `bg-surface`, `text-text-muted`, `border-border-strong`, `bg-action`, never raw hex.
+ *
+ * Product-specific extensions (design.md §13 — documented, core brand tokens unchanged):
+ *   --color-warning-text  Readable amber for warning text/icons on light surfaces
+ *                         (#8A5A00 ≥ 5.0:1 on white / bg / surface-muted); #F9A825 in dark.
+ *   --color-destructive   Destructive button fill, constant in both themes (§7 Buttons).
+ *   --color-nav-*         Brand navigation area (§7 Navigation, strong brand variant).
+ */
 @import "tailwindcss";
 
-@custom-variant dark (&:where(.dark, .dark *));
+/* Dark utilities follow the same rule as the tokens: system preference unless overridden. */
+@custom-variant dark {
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]) *) {
+      @slot;
+    }
+  }
+  &:where([data-theme="dark"] *) {
+    @slot;
+  }
+}
 
 @theme {
-  /* Primary - Emerald/Teal scale based on #2FA084, #1F6F5F, #12372A, #8BDFDD */
-  --color-primary-50: #e6f7f4;
-  --color-primary-100: #c5ede5;
-  --color-primary-200: #8BDFDD;
-  --color-primary-300: #6dd0c2;
-  --color-primary-400: #4ab9a5;
-  --color-primary-500: #2FA084;
-  --color-primary-600: #258872;
-  --color-primary-700: #1F6F5F;
-  --color-primary-800: #195648;
-  --color-primary-900: #12372A;
-  --color-primary-950: #0a2218;
+  /* Only design-system colors exist; Tailwind's default palette is removed. */
+  --color-*: initial;
+  --color-white: #FFFFFF;
+  --color-black: #000000;
 
-  /* Accent - Periwinkle (#A6B1E1) */
-  --color-accent-100: #eceffa;
-  --color-accent-200: #d4daf0;
-  --color-accent-300: #A6B1E1;
-  --color-accent-400: #8a96d3;
-  --color-accent-500: #6e7cc1;
+  /* ── Primitives: brand (constant across themes) ── */
+  --color-brand-primary: #263B38;
+  --color-brand-primary-light: #3F5F5A;
+  --color-brand-primary-dark: #1A2A28;
+  --color-brand-mint: #4E8B7F;
+  --color-brand-mint-light: #6AA397;
 
-  /* Success - Mint (#6FCF97) */
-  --color-success-300: #9ce0b6;
-  --color-success-400: #6FCF97;
-  --color-success-500: #4cb87b;
-  --color-success-600: #389e64;
+  /* ── Primitives: neutral ── */
+  --color-neutral-950: #1B1F1E;
+  --color-neutral-800: #34413E;
+  --color-neutral-700: #4A5654;
+  --color-neutral-600: #5F6E6B;
+  --color-neutral-500: #7A8A87;
+  --color-neutral-300: #C7D0CD;
+  --color-neutral-100: #E7EDEA;
+  --color-neutral-50: #F1F5F3;
 
-  /* Danger - (#DA0037) */
-  --color-danger-300: #f25577;
-  --color-danger-400: #ed2d56;
-  --color-danger-500: #DA0037;
-  --color-danger-600: #b3002e;
+  /* ── Primitives: accent (data-viz marks, category tags only) ── */
+  --color-accent-teal: #00BFA5;
+  --color-accent-cyan: #00BCD4;
+  --color-accent-indigo: #3F51B5;
+  --color-accent-purple: #7E57C2;
 
-  /* Warning - Soft Pink/Cream (#FFC7C7, #FFF5E4) */
-  --color-warning-200: #FFF5E4;
-  --color-warning-300: #FFC7C7;
-  --color-warning-400: #ffa3a3;
-  --color-warning-500: #f57f7f;
-  --color-warning-600: #e05c5c;
+  /* ── Semantic: light theme (default); dark overrides below ── */
+  --color-bg: #F1F5F3;
+  --color-surface: #FFFFFF;
+  --color-surface-muted: #E7EDEA;
+  --color-text: #1B1F1E;
+  --color-text-muted: #4A5654;
+  --color-text-subtle: #5F6E6B;
+  --color-text-disabled: #7A8A87;
+  --color-link: #3F5F5A;
+  --color-border: #C7D0CD;
+  --color-border-strong: #7A8A87;
 
-  /* Surface - based on #222831 (dark) and #364F6B (mid) */
-  --color-surface-50: #f7f8fa;
-  --color-surface-100: #eef0f4;
-  --color-surface-200: #dce0e8;
-  --color-surface-300: #b8c0cf;
-  --color-surface-400: #8b95aa;
-  --color-surface-500: #5d6a82;
-  --color-surface-600: #475669;
-  --color-surface-700: #364F6B;
-  --color-surface-800: #2b3849;
-  --color-surface-900: #222831;
-  --color-surface-950: #161b22;
+  --color-action: #263B38;
+  --color-action-hover: #3F5F5A;
+  --color-action-pressed: #1A2A28;
+  --color-on-action: #FFFFFF;
+  --color-focus-ring: #4E8B7F;
+  --color-selected: #4E8B7F;
+
+  --color-success: #2E7D32;
+  --color-info: #1976D2;
+  --color-warning: #F9A825;
+  --color-warning-text: #8A5A00;
+  --color-on-warning: #1B1F1E;
+  --color-error: #D32F2F;
+  --color-error-hover: #B71C1C;
+  --color-destructive: #D32F2F;
+
+  --color-scrim: rgb(27 31 30 / 48%);
+
+  /* Brand navigation area: #263B38 with #F1F5F3 (10.8:1) and #C7D0CD (7.55:1). */
+  --color-nav: #263B38;
+  --color-nav-text: #F1F5F3;
+  --color-nav-text-muted: #C7D0CD;
+  --color-nav-border: #3F5F5A;
+  --color-nav-selected: #6AA397;
+
+  /* ── Typography ── */
+  --font-sans: Vazirmatn, Tahoma, sans-serif;
+
+  --text-*: initial;
+  --text-display: 2.25rem;
+  --text-display--line-height: 1.15;
+  --text-display--font-weight: 700;
+  --text-h1: 1.875rem;
+  --text-h1--line-height: 1.2;
+  --text-h1--font-weight: 700;
+  --text-h2: 1.5rem;
+  --text-h2--line-height: 1.25;
+  --text-h2--font-weight: 650;
+  --text-h3: 1.25rem;
+  --text-h3--line-height: 1.3;
+  --text-h3--font-weight: 600;
+  --text-h4: 1rem;
+  --text-h4--line-height: 1.3;
+  --text-h4--font-weight: 600;
+  --text-body-lg: 1rem;
+  --text-body-lg--line-height: var(--line-height-relaxed);
+  --text-body: 0.875rem;
+  --text-body--line-height: var(--line-height-body);
+  --text-label: 0.8125rem;
+  --text-label--line-height: 1.5;
+  --text-label--font-weight: 600;
+  /* Persian interface: captions use the 13px minimum (§4). */
+  --text-caption: 0.8125rem;
+  --text-caption--line-height: 1.5;
+
+  /* ── Shape ── */
+  --radius-*: initial;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-pill: 999px;
+
+  /* ── Elevation ── */
+  --shadow-*: initial;
+  --shadow-sm: 0 1px 2px rgb(27 31 30 / 8%);
+  --shadow-md: 0 4px 12px rgb(27 31 30 / 10%);
+  --shadow-lg: 0 12px 32px rgb(27 31 30 / 14%);
+
+  /* ── Breakpoints ── */
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+
+  /* ── Motion ── */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --default-transition-duration: var(--duration-fast);
+  --default-transition-timing-function: var(--ease-standard);
 }
 
-html, body {
-  height: 100%;
+:root {
+  color-scheme: light dark;
+
+  --line-height-tight: 1.2;
+  --line-height-heading: 1.3;
+  --line-height-body: 1.5;
+  --line-height-relaxed: 1.6;
+
+  --control-height-sm: 40px;
+  --control-height-md: 44px;
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+
+  --gradient-brand: linear-gradient(110deg, #263B38 0%, #4E8B7F 100%);
+
+  --z-sticky: 100;
+  --z-dropdown: 200;
+  --z-overlay: 300;
+  --z-modal: 400;
+  --z-toast: 500;
+
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+  --duration-slow: 240ms;
 }
 
-body {
-  background-color: var(--color-surface-50);
-  color: var(--color-surface-900);
-  font-family: 'Vazirmatn', 'Inter', system-ui, sans-serif;
-  direction: rtl;
+:root[data-theme="light"] {
+  color-scheme: light;
 }
 
-.dark body {
-  background-color: var(--color-surface-950);
-  color: var(--color-surface-100);
+/* ── Dark theme: automatic, unless the user forced light ── */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-bg: #1B1F1E;
+    --color-surface: #263B38;
+    --color-surface-muted: #34413E;
+    --color-text: #F1F5F3;
+    --color-text-muted: #C7D0CD;
+    --color-text-subtle: #C7D0CD;
+    --color-link: #82B5AA;
+    --color-border: #4A5654;
+    --color-border-strong: #8A9A97;
+
+    --color-action: #6AA397;
+    --color-action-hover: #82B5AA;
+    --color-action-pressed: #5C978B;
+    --color-on-action: #1B1F1E;
+    --color-focus-ring: #6AA397;
+    --color-selected: #6AA397;
+
+    --color-success: #81C784;
+    --color-info: #90CAF9;
+    --color-warning-text: #F9A825;
+    --color-error: #EF9A9A;
+
+    --color-nav: #1A2A28;
+    --color-nav-border: #34413E;
+
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 30%);
+    --shadow-md: 0 4px 12px rgb(0 0 0 / 35%);
+    --shadow-lg: 0 12px 32px rgb(0 0 0 / 45%);
+  }
 }
 
-/* Scrollbar styling */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* ── Dark theme: manual override ── */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-bg: #1B1F1E;
+  --color-surface: #263B38;
+  --color-surface-muted: #34413E;
+  --color-text: #F1F5F3;
+  --color-text-muted: #C7D0CD;
+  --color-text-subtle: #C7D0CD;
+  --color-link: #82B5AA;
+  --color-border: #4A5654;
+  --color-border-strong: #8A9A97;
+
+  --color-action: #6AA397;
+  --color-action-hover: #82B5AA;
+  --color-action-pressed: #5C978B;
+  --color-on-action: #1B1F1E;
+  --color-focus-ring: #6AA397;
+  --color-selected: #6AA397;
+
+  --color-success: #81C784;
+  --color-info: #90CAF9;
+  --color-warning-text: #F9A825;
+  --color-error: #EF9A9A;
+
+  --color-nav: #1A2A28;
+  --color-nav-border: #34413E;
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 30%);
+  --shadow-md: 0 4px 12px rgb(0 0 0 / 35%);
+  --shadow-lg: 0 12px 32px rgb(0 0 0 / 45%);
 }
 
-::-webkit-scrollbar-track {
-  @apply bg-surface-100 dark:bg-surface-800;
+/* ── Persian / RTL: +0.1 body line-height ── */
+:root[lang="fa"],
+:root[dir="rtl"] {
+  --line-height-body: 1.6;
+  --line-height-relaxed: 1.7;
 }
 
-::-webkit-scrollbar-thumb {
-  @apply bg-surface-300 dark:bg-surface-600 rounded-full;
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 1ms;
+    --duration-base: 1ms;
+    --duration-slow: 1ms;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
+  }
 }
 
-::-webkit-scrollbar-thumb:hover {
-  @apply bg-surface-400 dark:bg-surface-500;
+/* ── Base ── */
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--line-height-body);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :focus-visible {
+    outline: var(--focus-ring-width) solid var(--color-focus-ring);
+    outline-offset: var(--focus-ring-offset);
+  }
+
+  /* Numbers in data views line up (§4). */
+  table,
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Native controls follow the brand action color. */
+  input[type="checkbox"],
+  input[type="radio"],
+  input[type="range"],
+  progress {
+    accent-color: var(--color-action);
+  }
+
+  ::placeholder {
+    color: var(--color-text-subtle);
+    opacity: 1;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--color-selected) 30%, transparent);
+  }
+
+  /* Scrollbars */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: var(--radius-pill);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-border-strong);
+  }
+
+  /* Number inputs: no spinner arrows */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
 }
 
-/* Input number arrows removal */
-input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
+/* gradient.brand, mirrored in RTL so start-aligned text stays on the #263B38 side (§2.5). */
+@utility bg-brand-gradient {
+  background-image: var(--gradient-brand);
+
+  &:where([dir="rtl"], [dir="rtl"] *) {
+    background-image: linear-gradient(250deg, #263B38 0%, #4E8B7F 100%);
+  }
 }
 
-input[type="number"] {
-  -moz-appearance: textfield;
+/* Shared component recipes. Built from semantic tokens only. */
+@utility field {
+  width: 100%;
+  min-height: var(--control-height-md);
+  padding-block: 8px;
+  padding-inline: 12px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-body);
+  transition: border-color var(--duration-fast) var(--ease-standard);
+
+  &:disabled {
+    background: var(--color-surface-muted);
+    color: var(--color-text-disabled);
+    cursor: not-allowed;
+  }
+
+  &[aria-invalid="true"] {
+    border-color: var(--color-error);
+  }
+
+  @media (width >= 64rem) {
+    min-height: var(--control-height-sm);
+  }
 }

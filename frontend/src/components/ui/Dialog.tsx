@@ -24,7 +24,7 @@ function DialogView({ dialog }: { dialog: OpenDialog }) {
   return (
     <Modal
       title={options.title}
-      icon={danger ? <AlertTriangle className="h-5 w-5 text-danger-500" /> : <HelpCircle className="h-5 w-5 text-primary-500" />}
+      icon={danger ? <AlertTriangle className="h-5 w-5 text-error" aria-hidden="true" /> : <HelpCircle className="h-5 w-5 text-selected" aria-hidden="true" />}
       onClose={() => close(null)}
       footer={
         <>
@@ -37,11 +37,12 @@ function DialogView({ dialog }: { dialog: OpenDialog }) {
         </>
       }
     >
-      <div className="text-sm leading-7 text-surface-700 dark:text-surface-300">{options.message}</div>
+      <div className="text-body-lg text-text-muted">{options.message}</div>
       {prompt && (
         <div>
-          {options.label && <label className="mb-1.5 block text-sm font-medium text-surface-700 dark:text-surface-300">{options.label}</label>}
+          {options.label && <label htmlFor="dialog-prompt" className="mb-1.5 block text-label text-text">{options.label}</label>}
           <textarea
+            id="dialog-prompt"
             autoFocus
             rows={3}
             value={value}
@@ -50,13 +51,16 @@ function DialogView({ dialog }: { dialog: OpenDialog }) {
             onKeyDown={(e) => {
               if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) close(value);
             }}
-            className="w-full rounded-lg border border-surface-300 bg-white px-3 py-2 text-sm text-surface-900 placeholder:text-surface-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-surface-600 dark:bg-surface-800 dark:text-surface-100 dark:placeholder:text-surface-500"
+            className="field"
           />
         </div>
       )}
       {options.warning && (
-        <div className={`flex gap-2 rounded-lg p-3 text-xs leading-6 ${danger ? 'bg-danger-50 text-danger-600 dark:bg-danger-950/40' : 'bg-warning-400/15 text-warning-700 dark:text-warning-400'}`}>
-          <AlertTriangle className="mt-1 h-4 w-4 shrink-0" />
+        <div
+          role="note"
+          className={`flex gap-2 rounded-md border-s-3 p-3 text-body text-text ${danger ? 'border-error bg-error/8' : 'border-warning bg-warning/12'}`}
+        >
+          <AlertTriangle className={`mt-0.5 h-4 w-4 shrink-0 ${danger ? 'text-error' : 'text-warning-text'}`} aria-hidden="true" />
           <div>{options.warning}</div>
         </div>
       )}

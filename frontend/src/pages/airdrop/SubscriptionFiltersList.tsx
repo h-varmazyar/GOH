@@ -14,6 +14,7 @@ import {
 } from '../../services/telegramService';
 import type { Pagination } from '../../services/airdropService';
 import { X } from 'lucide-react';
+import { Alert } from '../../components/ui/Alert';
 
 export function SubscriptionFiltersList() {
   const [filters, setFilters] = useState<SubscriptionFilter[]>([]);
@@ -105,7 +106,7 @@ export function SubscriptionFiltersList() {
       <Card>
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-medium text-surface-700 dark:text-surface-300">
+          <h3 className="text-body font-medium text-text-muted">
             لیست تخصیص اکانت‌ها به کانال‌ها
           </h3>
           <Button size="sm" onClick={handleOpenCreate}>
@@ -115,18 +116,16 @@ export function SubscriptionFiltersList() {
         </div>
 
         {error && (
-          <div className="mb-4 p-3 rounded-lg bg-danger-50 dark:bg-danger-950/20 border border-danger-200 dark:border-danger-800">
-            <p className="text-sm text-danger-700 dark:text-danger-300">{error}</p>
-          </div>
+          <Alert tone="error" className="mb-4">{error}</Alert>
         )}
 
         {isLoading ? (
           <div className="text-center py-8">
-            <p className="text-sm text-surface-500 dark:text-surface-400">در حال بارگذاری...</p>
+            <p className="text-body text-text-subtle">در حال بارگذاری...</p>
           </div>
         ) : filters.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-sm text-surface-500 dark:text-surface-400">
+            <p className="text-body text-text-subtle">
               هیچ فیلتری تعریف نشده است
             </p>
           </div>
@@ -134,19 +133,19 @@ export function SubscriptionFiltersList() {
           <>
             {/* Table */}
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-body">
                 <thead>
-                  <tr className="border-b border-surface-200 dark:border-surface-700">
-                    <th className="text-right py-3 px-2 font-medium text-surface-600 dark:text-surface-400">
+                  <tr className="border-b border-border">
+                    <th className="text-start py-3 px-2 text-label text-text-muted">
                       اکانت
                     </th>
-                    <th className="text-center py-3 px-2 font-medium text-surface-600 dark:text-surface-400">
+                    <th className="text-center py-3 px-2 text-label text-text-muted">
                       شناسه چت
                     </th>
-                    <th className="text-center py-3 px-2 font-medium text-surface-600 dark:text-surface-400">
+                    <th className="text-center py-3 px-2 text-label text-text-muted">
                       تاریخ ایجاد
                     </th>
-                    <th className="text-center py-3 px-2 font-medium text-surface-600 dark:text-surface-400">
+                    <th className="text-center py-3 px-2 text-label text-text-muted">
                       عملیات
                     </th>
                   </tr>
@@ -155,17 +154,17 @@ export function SubscriptionFiltersList() {
                   {filters.map((filter) => (
                     <tr
                       key={filter.ID}
-                      className="border-b border-surface-100 dark:border-surface-800 hover:bg-surface-50 dark:hover:bg-surface-800/50"
+                      className="border-b border-border hover:bg-surface-muted"
                     >
-                      <td className="py-3 px-2 text-surface-900 dark:text-surface-100">
+                      <td className="py-3 px-2 text-text">
                         {filter.AccountUsername
                           ? `@${filter.AccountUsername}`
                           : filter.AccountPhone || filter.AccountID}
                       </td>
-                      <td className="py-3 px-2 text-center text-surface-900 dark:text-surface-100 font-mono text-xs" dir="ltr">
+                      <td className="py-3 px-2 text-center text-text font-mono text-caption" dir="ltr">
                         {filter.ChatID}
                       </td>
-                      <td className="py-3 px-2 text-center text-surface-500 dark:text-surface-400 text-xs" dir="ltr">
+                      <td className="py-3 px-2 text-center text-text-subtle text-caption" dir="ltr">
                         {new Date(filter.CreatedAt).toLocaleDateString('fa-IR')}
                       </td>
                       <td className="py-3 px-2 text-center">
@@ -174,7 +173,7 @@ export function SubscriptionFiltersList() {
                           size="sm"
                           onClick={() => handleDelete(filter.ID)}
                           disabled={isDeleting === filter.ID}
-                          className="text-danger-500 hover:text-danger-700"
+                          className="text-error hover:underline"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -187,8 +186,8 @@ export function SubscriptionFiltersList() {
 
             {/* Pagination */}
             {pagination && pagination.total_pages > 1 && (
-              <div className="flex items-center justify-between mt-4 pt-4 border-t border-surface-200 dark:border-surface-700">
-                <p className="text-xs text-surface-500 dark:text-surface-400">
+              <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
+                <p className="text-caption text-text-subtle">
                   صفحه {pagination.page} از {pagination.total_pages} (مجموع: {pagination.total_items})
                 </p>
                 <div className="flex items-center gap-1">
@@ -200,7 +199,7 @@ export function SubscriptionFiltersList() {
                   >
                     <ChevronRight className="w-4 h-4" />
                   </Button>
-                  <span className="px-3 py-1 text-sm text-surface-700 dark:text-surface-300">
+                  <span className="px-3 py-1 text-body text-text-muted">
                     {pagination.page}
                   </span>
                   <Button
@@ -220,18 +219,20 @@ export function SubscriptionFiltersList() {
 
       {/* Create Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setShowModal(false)} />
-          <div className="relative bg-white dark:bg-surface-900 rounded-xl shadow-xl w-full max-w-md border border-surface-200 dark:border-surface-700">
-            <div className="flex items-center justify-between p-4 border-b border-surface-200 dark:border-surface-700">
-              <h3 className="text-lg font-semibold text-surface-900 dark:text-white">
+        <div role="dialog" aria-modal="true" className="fixed inset-0 z-(--z-modal) flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-scrim" onClick={() => setShowModal(false)} />
+          <div className="relative bg-surface rounded-xl shadow-lg w-full max-w-md border border-border">
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <h3 className="text-h3 font-semibold text-text">
                 افزودن فیلتر اشتراک
               </h3>
               <button
+                type="button"
+                aria-label="بستن"
                 onClick={() => setShowModal(false)}
-                className="p-1 rounded hover:bg-surface-100 dark:hover:bg-surface-800"
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-text-subtle hover:text-text hover:bg-surface-muted"
               >
-                <X className="w-5 h-5 text-surface-500" />
+                <X className="h-5 w-5" aria-hidden="true" />
               </button>
             </div>
             <div className="p-4 space-y-4">
@@ -258,11 +259,11 @@ export function SubscriptionFiltersList() {
                 onChange={(e) => setChatIdInput(e.target.value)}
                 dir="ltr"
               />
-              <p className="text-xs text-surface-500 dark:text-surface-400">
+              <p className="text-caption text-text-subtle">
                 شناسه چت کانال یا گروهی که پیام‌ها از آن خوانده می‌شود را وارد کنید.
               </p>
             </div>
-            <div className="flex gap-2 p-4 border-t border-surface-200 dark:border-surface-700">
+            <div className="flex gap-2 p-4 border-t border-border">
               <Button variant="secondary" className="flex-1" onClick={() => setShowModal(false)}>
                 انصراف
               </Button>
