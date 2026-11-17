@@ -7,7 +7,7 @@
 # binary with `entrypoint`: gatec (API), gatec-worker <name>,
 # gatec-airdrop-catcher, gatec-signal-replay.
 
-name: gatec
+name: gate
 
 # --- shared blocks -----------------------------------------------------------
 
@@ -46,7 +46,7 @@ services:
       timeout: 3s
       retries: 12
     networks:
-      gatec:
+      gate:
         ipv4_address: 10.72.0.10
 
   postgres:
@@ -67,7 +67,7 @@ services:
       retries: 12
       start_period: 10s
     networks:
-      gatec:
+      gate:
         ipv4_address: 10.72.0.20
 
   clickhouse:
@@ -90,7 +90,7 @@ services:
       retries: 12
       start_period: 15s
     networks:
-      gatec:
+      gate:
         ipv4_address: 10.72.0.21
 
   # Web UI for browsing/querying ClickHouse. Sign in with CLICKHOUSE_USER /
@@ -110,7 +110,7 @@ services:
       clickhouse:
         condition: service_healthy
     networks:
-      gatec:
+      gate:
         ipv4_address: 10.72.0.22
 
 # App images run on 80xx ports
@@ -120,7 +120,7 @@ services:
     ports:
       - "${FRONTEND_BIND_ADDRESS:-127.0.0.1}:${FRONTEND_HOST_PORT:-8091}:3000"
     networks:
-      gatec:
+      gate:
         ipv4_address: 10.72.10.20
 
   server:
@@ -138,7 +138,7 @@ services:
       clickhouse:
         condition: service_healthy
     networks:
-      gatec:
+      gate:
         ipv4_address: 10.72.10.10
 
   # Telegram airdrop consumer. Shares ./server/tdlib (Telegram sessions) with
@@ -156,7 +156,7 @@ services:
       postgres:
         condition: service_healthy
     networks:
-      gatec:
+      gate:
         ipv4_address: 10.72.20.8
 
   candle-polling:
@@ -169,7 +169,7 @@ services:
       - ./server/secrets:/app/configs/secrets:ro
     depends_on: *depends-pg-nats
     networks:
-      gatec:
+      gate:
         ipv4_address: 10.72.20.0
 
   market-sync:
@@ -182,7 +182,7 @@ services:
       - ./server/secrets:/app/configs/secrets:ro
     depends_on: *depends-pg-nats
     networks:
-      gatec:
+      gate:
         ipv4_address: 10.72.20.1
 
   tse-market-data-sync:
@@ -196,7 +196,7 @@ services:
       - ./server/secrets:/app/configs/secrets:ro
     depends_on: *depends-pg-nats
     networks:
-      gatec:
+      gate:
         ipv4_address: 10.72.20.2
 
   indicator-watch:
@@ -210,7 +210,7 @@ services:
       - ./server/secrets:/app/configs/secrets:ro
     depends_on: *depends-pg-nats
     networks:
-      gatec:
+      gate:
         ipv4_address: 10.72.20.3
 
   proxy-health-checker:
@@ -224,7 +224,7 @@ services:
       - ./server/secrets:/app/configs/secrets:ro
     depends_on: *depends-pg-nats
     networks:
-      gatec:
+      gate:
         ipv4_address: 10.72.20.4
 
   connection-monitor:
@@ -238,7 +238,7 @@ services:
       - ./server/secrets:/app/configs/secrets:ro
     depends_on: *depends-pg-nats
     networks:
-      gatec:
+      gate:
         ipv4_address: 10.72.20.5
 
   stock-market-sync:
@@ -251,7 +251,7 @@ services:
       - ./server/secrets:/app/configs/secrets:ro
     depends_on: *depends-pg-nats
     networks:
-      gatec:
+      gate:
         ipv4_address: 10.72.20.6
 
   stock-instrument-sync:
@@ -264,7 +264,7 @@ services:
       - ./server/secrets:/app/configs/secrets:ro
     depends_on: *depends-pg-nats
     networks:
-      gatec:
+      gate:
         ipv4_address: 10.72.20.7
 
   tse-trade-history:
@@ -284,7 +284,7 @@ services:
     # A running job is queued again on stop, before the process exits.
     stop_grace_period: 40s
     networks:
-      gatec:
+      gate:
         ipv4_address: 10.72.20.9
 
   # Builds candles in ClickHouse from the stored trades; runs the candle jobs.
@@ -305,7 +305,7 @@ services:
     # A running job is queued again on stop, before the process exits.
     stop_grace_period: 40s
     networks:
-      gatec:
+      gate:
         ipv4_address: 10.72.20.10
 
   # Queues the daily trade history and candle jobs at
@@ -323,7 +323,7 @@ services:
       postgres:
         condition: service_healthy
     networks:
-      gatec:
+      gate:
         ipv4_address: 10.72.20.11
 
   # --- one-off tools (profile "tools": never started by `compose up`) --------
@@ -344,7 +344,7 @@ services:
       - ./server/secrets:/app/configs/secrets:ro
     depends_on: *depends-pg-nats
     networks:
-      - gatec
+      - gate
 
   # Strategy backtest over stored candles (server/cmd/signal-replay):
   #   make tool APP=signal-replay CMD="-strategy <id|file> -from 2026-01-01 -to 2026-06-30"
@@ -364,22 +364,22 @@ services:
       postgres:
         condition: service_healthy
     networks:
-      - gatec
+      - gate
 
 volumes:
   # Fixed names: renaming the compose project must not switch to empty volumes.
   nats-data:
-    name: gatec_nats-data
+    name: gate_nats-data
   postgres-data:
-    name: gatec_postgres-data
+    name: gate_postgres-data
   clickhouse-data:
-    name: gatec_clickhouse-data
+    name: gate_clickhouse-data
   ch-ui-data:
-    name: gatec_ch-ui-data
+    name: gate_ch-ui-data
 
 networks:
-  gatec:
-    name: gatec
+  gate:
+    name: gate
     driver: bridge
     ipam:
       config:
